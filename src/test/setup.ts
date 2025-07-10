@@ -93,3 +93,6 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: vi.fn(),
   })),
 });
+
+// Mock URL.createObjectURL for jsdom
+global.URL.createObjectURL = vi.fn(() => 'mock-url');
