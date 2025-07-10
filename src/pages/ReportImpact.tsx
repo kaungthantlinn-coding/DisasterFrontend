@@ -136,7 +136,11 @@ const assistanceTypes = [
   'Volunteer Coordination'
 ];
 
-const ReportImpact: React.FC = () => {
+interface ReportImpactProps {
+  testMode?: boolean;
+}
+
+const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
@@ -178,8 +182,11 @@ const ReportImpact: React.FC = () => {
         if (formData.disasterDetail === 'Other Natural' || formData.disasterDetail === 'Other Human-Made' || formData.disasterDetail === 'Other Health') {
           if (!formData.customDisasterDetail) newErrors.customDisasterDetail = 'Please specify the disaster type';
         }
-        if (!formData.description.trim()) newErrors.description = 'Please provide a description';
-        if (formData.description.length < 20) newErrors.description = 'Description must be at least 20 characters';
+        if (!formData.description.trim()) {
+          newErrors.description = 'Please provide a description';
+        } else if (formData.description.length < 20) {
+          newErrors.description = 'Description must be at least 20 characters';
+        }
         if (!formData.severity) newErrors.severity = 'Please select severity level';
         if (!formData.dateTime) newErrors.dateTime = 'Please specify when the disaster occurred';
         break;
@@ -210,15 +217,56 @@ const ReportImpact: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
+  // Check if current step can proceed without setting errors
+  const checkCanProceed = useCallback((step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(
+          formData.disasterType && 
+          formData.disasterDetail && 
+          formData.description.trim() && 
+          formData.description.length >= 20 &&
+          formData.severity && 
+          formData.dateTime &&
+          (formData.disasterDetail !== 'Other Natural' && 
+           formData.disasterDetail !== 'Other Human-Made' && 
+           formData.disasterDetail !== 'Other Health' || 
+           formData.customDisasterDetail)
+        );
+        
+      case 2:
+        return !!(
+          formData.location &&
+          formData.impactType.length > 0 &&
+          formData.affectedPeople !== '' &&
+          (!formData.impactType.includes('Other') || formData.customImpactType)
+        );
+        
+      case 3:
+        return !!(
+          formData.assistanceNeeded.length > 0 &&
+          formData.assistanceDescription.trim() &&
+          formData.urgencyLevel &&
+          formData.contactName.trim() &&
+          (formData.contactPhone.trim() || formData.contactEmail.trim())
+        );
+        
+      default:
+        return true;
+    }
+  }, [formData]);
+
+  // Only run validation when explicitly needed, not on every form change
   const canProceed = useMemo(() => {
-    return validateStep(currentStep);
-  }, [currentStep, validateStep]);
+    return checkCanProceed(currentStep);
+  }, [currentStep, checkCanProceed]);
 
   const handleNext = useCallback(() => {
     if (validateStep(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, 4));
       setErrors({});
     }
+    // If validation fails, errors will be set by validateStep
   }, [currentStep, validateStep]);
 
   const handleBack = useCallback(() => {
@@ -498,6 +546,7 @@ const ReportImpact: React.FC = () => {
                           <button
                             key={key}
                             type="button"
+                            role="button"
                             onClick={() => setFormData(prev => ({ ...prev, disasterType: key, disasterDetail: '' }))}
                             className={`p-4 border-2 rounded-xl transition-all duration-200 text-left ${
                               formData.disasterType === key
@@ -601,10 +650,11 @@ const ReportImpact: React.FC = () => {
 
                   {/* Date and Time */}
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="dateTime" className="block text-sm font-medium text-gray-700 mb-2">
                       When did this occur? *
                     </label>
                     <input
+                      id="dateTime"
                       type="datetime-local"
                       value={formData.dateTime}
                       onChange={(e) => setFormData(prev => ({ ...prev, dateTime: e.target.value }))}
@@ -629,13 +679,14 @@ const ReportImpact: React.FC = () => {
                       placeholder="Provide detailed information about what happened, current situation, and any immediate concerns..."
                     />
                     <div className="flex justify-between mt-2">
-                      {errors.description ? (
-                        <p className="text-sm text-red-600">{errors.description}</p>
-                      ) : (
-                        <p className="text-sm text-gray-500">
-                          {formData.description.length}/500 characters (minimum 20)
-                        </p>
-                      )}
+                      <div>
+                        {errors.description && (
+                          <p className="text-sm text-red-600">{errors.description}</p>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {formData.description.length}/500 characters
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -711,10 +762,11 @@ const ReportImpact: React.FC = () => {
                 {/* Affected People */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="affected-people" className="block text-sm font-medium text-gray-700 mb-2">
                       Number of People Affected *
                     </label>
                     <input
+                      id="affected-people"
                       type="number"
                       min="0"
                       value={formData.affectedPeople}

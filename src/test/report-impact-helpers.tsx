@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/dom';
+import { expect } from 'vitest';
 
 export interface FormData {
   disasterCategory: 'natural' | 'humanMade' | 'health';
@@ -52,13 +53,16 @@ export const mockFormData: FormData = {
 export const fillStep1 = async (user: any, data: Partial<FormData> = {}) => {
   const formData = { ...mockFormData, ...data };
   
-  // Select disaster category
+  // Select disaster category - use text content since buttons have visible labels
   if (formData.disasterCategory === 'natural') {
-    await user.click(screen.getByText('Natural Disasters'));
+    const button = screen.getByText('Natural Disasters');
+    await user.click(button);
   } else if (formData.disasterCategory === 'humanMade') {
-    await user.click(screen.getByText('Human-Made Disasters'));
+    const button = screen.getByText('Human-Made Disasters');
+    await user.click(button);
   } else if (formData.disasterCategory === 'health') {
-    await user.click(screen.getByText('Health Emergencies'));
+    const button = screen.getByText('Health Emergencies');
+    await user.click(button);
   }
   
   // Select specific disaster type
@@ -179,32 +183,56 @@ export const navigateToStep = async (user: any, stepNumber: number, data: Partia
     throw new Error('Step number must be between 1 and 4');
   }
   
+  // Always start from step 1 - don't auto-fill unless specifically requested
+  if (stepNumber === 1) {
+    // Just ensure we're on step 1
+    return;
+  }
+  
   if (stepNumber >= 2) {
     await fillStep1(user, data);
     await user.click(screen.getByText('Next'));
+    
+    // Wait for step 2 to be active
+    await waitFor(() => {
+      screen.getByRole('heading', { level: 2, name: 'Location & Impact Assessment' });
+    });
   }
   
   if (stepNumber >= 3) {
     await fillStep2(user, data);
     await user.click(screen.getByText('Next'));
+    
+    // Wait for step 3 to be active
+    await waitFor(() => {
+      screen.getByRole('heading', { level: 2, name: 'Assistance Needed & Contact Information' });
+    });
   }
   
   if (stepNumber >= 4) {
     await fillStep3(user, data);
     await user.click(screen.getByText('Next'));
+    
+    // Wait for step 4 to be active
+    await waitFor(() => {
+      screen.getByRole('heading', { level: 2, name: 'Review & Submit' });
+    });
   }
 };
 
 export const expectStepToBeActive = (stepNumber: number) => {
   const stepTitles = [
     'Disaster Information',
-    'Location & Impact',
-    'Assistance & Contact',
+    'Location & Impact Assessment',
+    'Assistance Needed & Contact Information',
     'Review & Submit'
   ];
   
-  // Check that the correct step content is visible
-  expect(screen.getByText(stepTitles[stepNumber - 1])).toBeInTheDocument();
+  // Check that the correct step content is visible by looking for the step heading
+  const expectedTitle = stepTitles[stepNumber - 1];
+  
+  // Just return the screen element - let the test file handle expectations
+  return screen.getByRole('heading', { level: 2, name: expectedTitle });
 };
 
 export const mockPhotoFiles = [
@@ -275,4 +303,55 @@ export const mockSubmissionData = {
   contactEmail: mockFormData.contactEmail,
   isEmergency: false,
   photos: []
+};
+
+// Test setup helper to ensure consistent state
+export const setupTestOnStep = async (user: any, stepNumber: number = 1) => {
+  // Check current step by looking for headings
+  const stepHeadings = [
+    'Disaster Information',
+    'Location & Impact Assessment', 
+    'Assistance Needed & Contact Information',
+    'Review & Submit'
+  ];
+  
+  let currentStep = 1;
+  for (let i = 0; i < stepHeadings.length; i++) {
+    if (screen.queryByRole('heading', { level: 2, name: stepHeadings[i] })) {
+      currentStep = i + 1;
+      break;
+    }
+  }
+  
+  // Navigate to desired step
+  if (currentStep > stepNumber) {
+    // Go back to desired step
+    while (currentStep > stepNumber) {
+      await user.click(screen.getByText('Back'));
+      await waitFor(() => {
+        screen.getByRole('heading', { level: 2, name: stepHeadings[stepNumber - 1] });
+      });
+      currentStep--;
+    }
+  } else if (currentStep < stepNumber) {
+    // Go forward to desired step (will need to fill forms)
+    while (currentStep < stepNumber) {
+      if (currentStep === 1) {
+        await fillStep1(user);
+      } else if (currentStep === 2) {
+        await fillStep2(user);
+      } else if (currentStep === 3) {
+        await fillStep3(user);
+      }
+      await user.click(screen.getByText('Next'));
+      currentStep++;
+      if (currentStep <= 4) {
+        await waitFor(() => {
+          screen.getByRole('heading', { level: 2, name: stepHeadings[currentStep - 1] });
+        });
+      }
+    }
+  }
+  
+  return currentStep;
 };

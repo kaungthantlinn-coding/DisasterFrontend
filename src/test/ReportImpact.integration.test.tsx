@@ -4,18 +4,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import ReportImpact from '../pages/ReportImpact';
 import {
+  fillStep1,
+  fillStep2, 
+  fillStep3,
   fillCompleteForm,
   navigateToStep,
   expectStepToBeActive,
-  mockFormData,
-  mockSubmissionData,
+  setupTestOnStep,
   mockPhotoFiles,
   mockInvalidFiles,
-  disasterTypesByCategory,
-  impactTypes,
-  assistanceTypes,
-  severityLevels,
-  urgencyLevels,
+  mockFormData,
+  mockSubmissionData
 } from './report-impact-helpers';
 
 // Mock dependencies
@@ -95,8 +94,8 @@ describe('ReportImpact Integration Tests', () => {
 
   describe('Complete Form Flow - Happy Path', () => {
     it('successfully completes the entire form submission process', async () => {
-      const { ReportsAPI } = require('../apis/reports');
-      ReportsAPI.submitReport.mockResolvedValue({
+      const reportsModule = await import('../apis/reports');
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockResolvedValue({
         id: 'report-123',
         status: 'submitted',
         estimatedResponseTime: '24 hours',
@@ -109,7 +108,8 @@ describe('ReportImpact Integration Tests', () => {
       await fillCompleteForm(user);
 
       // Verify we're on the review step
-      expectStepToBeActive(4);
+      const reviewHeading = expectStepToBeActive(4);
+      expect(reviewHeading).toBeInTheDocument();
       expect(screen.getByText('Review & Submit')).toBeInTheDocument();
 
       // Verify all information is displayed correctly
@@ -123,7 +123,7 @@ describe('ReportImpact Integration Tests', () => {
 
       // Verify API call
       await waitFor(() => {
-        expect(ReportsAPI.submitReport).toHaveBeenCalledWith(
+        expect(reportsModule.ReportsAPI.submitReport).toHaveBeenCalledWith(
           expect.objectContaining({
             disasterType: 'flood',
             disasterDetail: 'Flood',
@@ -157,8 +157,8 @@ describe('ReportImpact Integration Tests', () => {
     });
 
     it('handles emergency situations correctly', async () => {
-      const { ReportsAPI } = require('../apis/reports');
-      ReportsAPI.submitReport.mockResolvedValue({ id: 'report-456' });
+      const reportsModule = await import('../apis/reports');
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockResolvedValue({ id: 'report-456' });
 
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
@@ -175,7 +175,7 @@ describe('ReportImpact Integration Tests', () => {
 
       // Verify emergency flag in submission
       await waitFor(() => {
-        expect(ReportsAPI.submitReport).toHaveBeenCalledWith(
+        expect(reportsModule.ReportsAPI.submitReport).toHaveBeenCalledWith(
           expect.objectContaining({
             isEmergency: true,
           })
@@ -192,15 +192,29 @@ describe('ReportImpact Integration Tests', () => {
       // Try to proceed from step 1 without filling anything
       await user.click(screen.getByText('Next'));
       
+      // Wait for validation messages to appear after clicking Next
+      await waitFor(() => {
+        expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
+      }, { timeout: 3000 });
+      
       expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
       expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
       expect(screen.getByText('Please provide a description')).toBeInTheDocument();
 
       // Fill step 1 partially
       await user.click(screen.getByText('Natural Disasters'));
+      
+      // Wait a moment for the form to update
+      await waitFor(() => {
+        expect(screen.getByText('Flood')).toBeInTheDocument();
+      });
+      
       await user.click(screen.getByText('Next'));
 
-      expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
+      // Wait for partial validation message
+      await waitFor(() => {
+        expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
+      }, { timeout: 3000 });
 
       // Complete step 1 properly
       await user.click(screen.getByText('Flood'));
@@ -215,10 +229,16 @@ describe('ReportImpact Integration Tests', () => {
       await user.click(screen.getByText('Next'));
 
       // Now on step 2
-      expectStepToBeActive(2);
+      const step2Heading = expectStepToBeActive(2);
+      expect(step2Heading).toBeInTheDocument();
 
       // Try to proceed without location
       await user.click(screen.getByText('Next'));
+      
+      // Wait for step 2 validation messages
+      await waitFor(() => {
+        expect(screen.getByText('Please select a location on the map')).toBeInTheDocument();
+      }, { timeout: 3000 });
       
       expect(screen.getByText('Please select a location on the map')).toBeInTheDocument();
       expect(screen.getByText('Please select at least one impact type')).toBeInTheDocument();
@@ -279,18 +299,21 @@ describe('ReportImpact Integration Tests', () => {
       await user.click(screen.getByText('Next'));
 
       // Now on step 2
-      expectStepToBeActive(2);
+      const step2Heading = expectStepToBeActive(2);
+      expect(step2Heading).toBeInTheDocument();
 
       // Go back to step 1
       await user.click(screen.getByText('Back'));
 
       // Verify data is preserved
-      expectStepToBeActive(1);
+      const step1Heading = expectStepToBeActive(1);
+      expect(step1Heading).toBeInTheDocument();
       expect(screen.getByDisplayValue(/Earthquake damage description/)).toBeInTheDocument();
 
       // Go forward again
       await user.click(screen.getByText('Next'));
-      expectStepToBeActive(2);
+      const step2HeadingAgain = expectStepToBeActive(2);
+      expect(step2HeadingAgain).toBeInTheDocument();
     });
 
     it('disables back button on first step', () => {
@@ -306,25 +329,32 @@ describe('ReportImpact Integration Tests', () => {
 
       // Navigate through steps and verify indicators
       await navigateToStep(user, 2);
-      expectStepToBeActive(2);
+      const step2NavHeading = expectStepToBeActive(2);
+      expect(step2NavHeading).toBeInTheDocument();
 
       await navigateToStep(user, 3);
-      expectStepToBeActive(3);
+      const step3NavHeading = expectStepToBeActive(3);
+      expect(step3NavHeading).toBeInTheDocument();
 
       await navigateToStep(user, 4);
-      expectStepToBeActive(4);
+      const step4NavHeading = expectStepToBeActive(4);
+      expect(step4NavHeading).toBeInTheDocument();
     });
   });
 
   describe('Photo Upload Functionality', () => {
     beforeEach(async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-      await navigateToStep(user, 2);
+      // Don't auto-navigate to step 2, let each test control its own navigation
+      // Reset the mock call count before each photo test
+      vi.clearAllMocks();
     });
 
     it('handles multiple photo uploads', async () => {
       const user = userEvent.setup();
+      renderWithRouter(<ReportImpact />);
+      
+      // Navigate to step 2 manually for photo upload tests
+      await navigateToStep(user, 2);
 
       const fileInput = screen.getByLabelText(/Click to upload photos/);
       await user.upload(fileInput, mockPhotoFiles);
@@ -335,6 +365,10 @@ describe('ReportImpact Integration Tests', () => {
 
     it('rejects invalid file types and sizes', async () => {
       const user = userEvent.setup();
+      renderWithRouter(<ReportImpact />);
+      
+      // Navigate to step 2 manually 
+      await navigateToStep(user, 2);
 
       const fileInput = screen.getByLabelText(/Click to upload photos/);
       await user.upload(fileInput, mockInvalidFiles);
@@ -345,6 +379,10 @@ describe('ReportImpact Integration Tests', () => {
 
     it('allows removing uploaded photos', async () => {
       const user = userEvent.setup();
+      renderWithRouter(<ReportImpact />);
+      
+      // Navigate to step 2 manually
+      await navigateToStep(user, 2);
 
       const fileInput = screen.getByLabelText(/Click to upload photos/);
       await user.upload(fileInput, [mockPhotoFiles[0]]);
@@ -375,7 +413,8 @@ describe('ReportImpact Integration Tests', () => {
 
       await user.click(screen.getByText('Next'));
 
-      expectStepToBeActive(2);
+      const step2CustomHeading = expectStepToBeActive(2);
+      expect(step2CustomHeading).toBeInTheDocument();
     });
 
     it('handles custom impact types', async () => {
@@ -419,8 +458,8 @@ describe('ReportImpact Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('handles form submission errors gracefully', async () => {
-      const { ReportsAPI } = require('../apis/reports');
-      ReportsAPI.submitReport.mockRejectedValue(new Error('Network error'));
+      const reportsModule = await import('../apis/reports');
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockRejectedValue(new Error('Network error'));
 
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
@@ -434,13 +473,13 @@ describe('ReportImpact Integration Tests', () => {
     });
 
     it('shows loading state during submission', async () => {
-      const { ReportsAPI } = require('../apis/reports');
+      const reportsModule = await import('../apis/reports');
       // Create a promise that we can control
       let resolveSubmission: (value: any) => void;
       const submissionPromise = new Promise((resolve) => {
         resolveSubmission = resolve;
       });
-      ReportsAPI.submitReport.mockReturnValue(submissionPromise);
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockReturnValue(submissionPromise);
 
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
@@ -462,8 +501,8 @@ describe('ReportImpact Integration Tests', () => {
 
   describe('Authentication Integration', () => {
     it('shows login prompt for unauthenticated users', async () => {
-      const { useAuth } = require('../hooks/useAuth');
-      useAuth.mockReturnValue({
+      const useAuthModule = await import('../hooks/useAuth');
+      vi.mocked(useAuthModule.useAuth).mockReturnValue({
         user: null,
         isAuthenticated: false,
       });
@@ -475,7 +514,7 @@ describe('ReportImpact Integration Tests', () => {
       await user.click(screen.getByText('Submit Report'));
 
       expect(screen.getByText('Login Required')).toBeInTheDocument();
-      expect(screen.getByText('You need to be logged in to submit a disaster impact report.')).toBeInTheDocument();
+      expect(screen.getByText(/You need to be logged in to submit a disaster impact report/)).toBeInTheDocument();
     });
 
     it('pre-fills contact information for authenticated users', () => {
@@ -496,20 +535,39 @@ describe('ReportImpact Integration Tests', () => {
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'Test description');
 
-      expect(screen.getByText(/Test description.length\/500 characters/)).toBeInTheDocument();
+      // Wait for character count to appear and look for the exact pattern
+      await waitFor(() => {
+        // The text should be exactly "16/500 characters"
+        expect(screen.getByText('16/500 characters')).toBeInTheDocument();
+      });
     });
 
     it('shows validation messages in real-time', async () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
 
+      // Ensure we're on step 1 using the robust helper
+      await setupTestOnStep(user, 1);
+
       // Try to proceed without selecting anything
       await user.click(screen.getByText('Next'));
 
+      // Wait for validation messages to appear with longer timeout
+      await waitFor(() => {
+        expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
+      }, { timeout: 3000 });
+      
       // Multiple validation messages should appear
       expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
-      expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
-      expect(screen.getByText('Please provide a description')).toBeInTheDocument();
+      
+      // Wait for other validation messages to appear
+      await waitFor(() => {
+        expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
+      }, { timeout: 3000 });
+      
+      await waitFor(() => {
+        expect(screen.getByText('Please provide a description')).toBeInTheDocument();
+      }, { timeout: 3000 });
     });
 
     it('updates progress indicators correctly', async () => {
@@ -523,7 +581,8 @@ describe('ReportImpact Integration Tests', () => {
 
       // The visual indicators would be tested here
       // For now, we just verify we can navigate through all steps
-      expectStepToBeActive(4);
+      const finalStepHeading = expectStepToBeActive(4);
+      expect(finalStepHeading).toBeInTheDocument();
     });
   });
 });
