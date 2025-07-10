@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
@@ -56,9 +56,10 @@ const renderWithRouter = (component: React.ReactElement) => {
 
 describe('ReportImpact Component', () => {
   const mockUser = {
-    id: '1',
+    userId: '1',
     name: 'John Doe',
     email: 'john@example.com',
+    roles: ['user'],
   };
 
   beforeEach(async () => {
@@ -69,6 +70,8 @@ describe('ReportImpact Component', () => {
     vi.mocked(useAuthModule.useAuth).mockReturnValue({
       user: mockUser,
       isAuthenticated: true,
+      isLoading: false,
+      logout: vi.fn(),
     });
   });
 
@@ -106,7 +109,7 @@ describe('ReportImpact Component', () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
-      await user.click(screen.getByText('Natural Disasters'));
+      await user.click(screen.getByRole('button', { name: /Natural Disasters/i }));
       
       expect(screen.getByText('Earthquake')).toBeInTheDocument();
       expect(screen.getByText('Flood')).toBeInTheDocument();
@@ -156,10 +159,10 @@ describe('ReportImpact Component', () => {
       await user.click(screen.getByText('Natural Disasters'));
       
       // Select specific disaster type
-      await user.click(screen.getByText('Flood'));
+      await user.click(screen.getByRole('button', { name: /Flood/i }));
       
       // Select severity
-      await user.click(screen.getByText('High'));
+      await user.click(screen.getByRole('button', { name: /High/i }));
       
       // Fill description
       const description = screen.getByPlaceholderText(/Provide detailed information/);
@@ -182,14 +185,14 @@ describe('ReportImpact Component', () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
-      await user.click(screen.getByText('Natural Disasters'));
-      await user.click(screen.getByText('Flood'));
-      await user.click(screen.getByText('High'));
+      await user.click(screen.getByRole('button', { name: /Natural Disasters/i }));
+      await user.click(screen.getByRole('button', { name: /Flood/i }));
+      await user.click(screen.getByRole('button', { name: /High/i }));
       
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'This is a detailed description of the flood disaster that is more than 20 characters long.');
       
-      const dateInput = screen.getByLabelText('When did this occur? *');
+      const dateInput = screen.getByLabelText(/When did this occur/);
       await user.type(dateInput, '2024-01-15T10:30');
       
       await user.click(screen.getByText('Next'));
@@ -238,7 +241,7 @@ describe('ReportImpact Component', () => {
     it('allows entering number of affected people', async () => {
       const user = userEvent.setup();
       
-      const affectedPeopleInput = screen.getByLabelText('Number of People Affected *');
+      const affectedPeopleInput = screen.getByLabelText(/Number of People Affected/);
       await user.type(affectedPeopleInput, '50');
       
       expect(affectedPeopleInput).toHaveValue(50);
@@ -264,16 +267,16 @@ describe('ReportImpact Component', () => {
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'This is a detailed description of the flood disaster that is more than 20 characters long.');
       
-      const dateInput = screen.getByLabelText('When did this occur? *');
+      const dateInput = screen.getByLabelText(/When did this occur/);
       await user.type(dateInput, '2024-01-15T10:30');
       
       await user.click(screen.getByText('Next'));
       
       // Complete step 2
       await user.click(screen.getByTestId('select-location'));
-      await user.click(screen.getByLabelText('Property Damage'));
+      await user.click(screen.getByRole('checkbox', { name: /Property Damage/i }));
       
-      const affectedPeopleInput = screen.getByLabelText('Number of People Affected *');
+      const affectedPeopleInput = screen.getByLabelText(/Number of People Affected/);
       await user.type(affectedPeopleInput, '50');
       
       await user.click(screen.getByText('Next'));
@@ -305,7 +308,7 @@ describe('ReportImpact Component', () => {
     it('allows selecting urgency level', async () => {
       const user = userEvent.setup();
       
-      await user.click(screen.getByText('Immediate'));
+      await user.click(screen.getByRole('button', { name: /Immediate/i }));
       
       // Check that the button appears selected (would need to check styling in real implementation)
       expect(screen.getByText('Immediate')).toBeInTheDocument();
@@ -339,7 +342,7 @@ describe('ReportImpact Component', () => {
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'This is a detailed description of the flood disaster that is more than 20 characters long.');
       
-      const dateInput = screen.getByLabelText('When did this occur? *');
+      const dateInput = screen.getByLabelText(/When did this occur/);
       await user.type(dateInput, '2024-01-15T10:30');
       
       await user.click(screen.getByText('Next'));
@@ -355,7 +358,7 @@ describe('ReportImpact Component', () => {
       
       // Complete step 3
       await user.click(screen.getByText('Immediate'));
-      await user.click(screen.getByLabelText('Emergency Rescue'));
+      await user.click(screen.getByRole('checkbox', { name: /Emergency Rescue/i }));
       
       const assistanceDescription = screen.getByPlaceholderText(/Please provide specific details/);
       await user.type(assistanceDescription, 'We need immediate rescue assistance for trapped people.');
@@ -411,9 +414,9 @@ describe('ReportImpact Component', () => {
       renderWithRouter(<ReportImpact />);
       
       // Go to step 2
-      await user.click(screen.getByText('Natural Disasters'));
-      await user.click(screen.getByText('Flood'));
-      await user.click(screen.getByText('High'));
+      await user.click(screen.getByRole('button', { name: /Natural Disasters/i }));
+      await user.click(screen.getByRole('button', { name: /Flood/i }));
+      await user.click(screen.getByRole('button', { name: /High/i }));
       
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'This is a detailed description of the flood disaster that is more than 20 characters long.');
@@ -441,8 +444,10 @@ describe('ReportImpact Component', () => {
     it('shows login prompt for unauthenticated users when submitting', async () => {
       const useAuthModule = await import('../../hooks/useAuth');
       vi.mocked(useAuthModule.useAuth).mockReturnValue({
-        user: null,
+        user: undefined,
         isAuthenticated: false,
+        isLoading: false,
+        logout: vi.fn(),
       });
 
       const user = userEvent.setup();
@@ -464,14 +469,14 @@ describe('ReportImpact Component', () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
-      await user.click(screen.getByText('Natural Disasters'));
-      await user.click(screen.getByText('Flood'));
-      await user.click(screen.getByText('High'));
+      await user.click(screen.getByRole('button', { name: /Natural Disasters/i }));
+      await user.click(screen.getByRole('button', { name: /Flood/i }));
+      await user.click(screen.getByRole('button', { name: /High/i }));
       
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'This is a detailed description of the flood disaster that is more than 20 characters long.');
       
-      const dateInput = screen.getByLabelText('When did this occur? *');
+      const dateInput = screen.getByLabelText(/When did this occur/);
       await user.type(dateInput, '2024-01-15T10:30');
       
       await user.click(screen.getByText('Next'));
@@ -495,7 +500,8 @@ describe('ReportImpact Component', () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
-      const emergencyToggle = screen.getByLabelText('This is an emergency situation');
+      // Find the emergency checkbox by its role and nearby text
+      const emergencyToggle = screen.getByRole('checkbox', { name: /This is an emergency situation/ });
       await user.click(emergencyToggle);
       
       expect(screen.getByText('Emergency Situation Detected')).toBeInTheDocument();
@@ -506,9 +512,13 @@ describe('ReportImpact Component', () => {
   describe('Form Submission', () => {
     it('successfully submits a complete form', async () => {
       const reportsModule = await import('../../apis/reports');
-      vi.mocked(reportsModule.ReportsAPI.submitReport).mockResolvedValue({ success: true });
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockResolvedValue({
+        id: 'report-123',
+        status: 'pending',
+        submittedAt: '2024-01-15T10:30:00Z',
+        estimatedResponseTime: '24 hours'
+      });
 
-      const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
       // This would need a complete form filling helper

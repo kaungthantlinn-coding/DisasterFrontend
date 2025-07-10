@@ -7,15 +7,8 @@ import {
   fillCompleteForm,
   navigateToStep,
   expectStepToBeActive,
-  mockFormData,
-  mockSubmissionData,
   mockPhotoFiles,
   mockInvalidFiles,
-  disasterTypesByCategory,
-  impactTypes,
-  assistanceTypes,
-  severityLevels,
-  urgencyLevels,
 } from './report-impact-helpers';
 
 // Mock dependencies
@@ -78,9 +71,10 @@ const renderWithRouter = (component: React.ReactElement) => {
 
 describe('ReportImpact Integration Tests', () => {
   const mockUser = {
-    id: '1',
+    userId: '1',
     name: 'John Doe',
     email: 'john@example.com',
+    roles: ['user'],
   };
 
   beforeEach(async () => {
@@ -90,6 +84,8 @@ describe('ReportImpact Integration Tests', () => {
     vi.mocked(useAuthModule.useAuth).mockReturnValue({
       user: mockUser,
       isAuthenticated: true,
+      isLoading: false,
+      logout: vi.fn(),
     });
   });
 

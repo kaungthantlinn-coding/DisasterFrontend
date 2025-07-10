@@ -711,10 +711,11 @@ const ReportImpact: React.FC = () => {
                 {/* Affected People */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="affected-people" className="block text-sm font-medium text-gray-700 mb-2">
                       Number of People Affected *
                     </label>
                     <input
+                      id="affected-people"
                       type="number"
                       min="0"
                       value={formData.affectedPeople}

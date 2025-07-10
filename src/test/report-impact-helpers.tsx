@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event';
 import { screen } from '@testing-library/react';
+import { expect } from 'vitest';
 
 export interface FormData {
   disasterCategory: 'natural' | 'humanMade' | 'health';
@@ -53,16 +54,23 @@ export const fillStep1 = async (user: any, data: Partial<FormData> = {}) => {
   const formData = { ...mockFormData, ...data };
   
   // Select disaster category
-  if (formData.disasterCategory === 'natural') {
-    await user.click(screen.getByText('Natural Disasters'));
-  } else if (formData.disasterCategory === 'humanMade') {
-    await user.click(screen.getByText('Human-Made Disasters'));
-  } else if (formData.disasterCategory === 'health') {
-    await user.click(screen.getByText('Health Emergencies'));
+  const categoryMap = {
+    natural: 'Natural Disasters',
+    humanMade: 'Human-Made Disasters', 
+    health: 'Health Emergencies'
+  };
+  
+  const categoryText = categoryMap[formData.disasterCategory];
+  if (!categoryText) {
+    throw new Error(`Invalid disaster category: ${formData.disasterCategory}`);
   }
   
+  // Find and click the disaster category button by role and name
+  const categoryButton = screen.getByRole('button', { name: new RegExp(categoryText, 'i') });
+  await user.click(categoryButton);
+  
   // Select specific disaster type
-  await user.click(screen.getByText(formData.disasterType));
+  await user.click(screen.getByRole('button', { name: new RegExp(formData.disasterType, 'i') }));
   
   // Handle custom disaster type if needed
   if (formData.disasterType.includes('Other') && formData.customDisasterType) {
@@ -72,7 +80,7 @@ export const fillStep1 = async (user: any, data: Partial<FormData> = {}) => {
   
   // Select severity
   const severityText = formData.severity.charAt(0).toUpperCase() + formData.severity.slice(1);
-  await user.click(screen.getByText(severityText));
+  await user.click(screen.getByRole('button', { name: new RegExp(severityText, 'i') }));
   
   // Fill description
   const descriptionField = screen.getByPlaceholderText(/Provide detailed information/);
@@ -80,18 +88,20 @@ export const fillStep1 = async (user: any, data: Partial<FormData> = {}) => {
   await user.type(descriptionField, formData.description);
   
   // Set date/time
-  const dateInput = screen.getByLabelText('When did this occur? *');
-  await user.type(dateInput, formData.dateTime);
+  const dateInput = document.querySelector('input[type="datetime-local"]');
+  if (dateInput) {
+    await user.type(dateInput, formData.dateTime);
+  }
   
   // Toggle emergency if needed
   if (formData.isEmergency) {
-    const emergencyToggle = screen.getByLabelText('This is an emergency situation');
+    const emergencyToggle = screen.getByRole('checkbox', { name: /This is an emergency situation/ });
     await user.click(emergencyToggle);
   }
 };
 
-export const fillStep2 = async (user: any, data: Partial<FormData> = {}) => {
-  const formData = { ...mockFormData, ...data };
+export const fillStep2 = async (formData: FormData) => {
+  const user = userEvent.setup();
   
   // Select location (using mock location picker)
   await user.click(screen.getByTestId('select-location'));
@@ -119,14 +129,14 @@ export const fillStep2 = async (user: any, data: Partial<FormData> = {}) => {
   }
 };
 
-export const fillStep3 = async (user: any, data: Partial<FormData> = {}) => {
-  const formData = { ...mockFormData, ...data };
+export const fillStep3 = async (formData: FormData) => {
+  const user = userEvent.setup();
   
   // Select urgency level
   const urgencyText = formData.urgencyLevel.replace('_', ' ').split(' ').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
-  await user.click(screen.getByText(urgencyText));
+  await user.click(screen.getByRole('button', { name: new RegExp(urgencyText, 'i') }));
   
   // Select assistance types
   for (const assistanceType of formData.assistanceTypes) {
@@ -159,38 +169,42 @@ export const fillStep3 = async (user: any, data: Partial<FormData> = {}) => {
 };
 
 export const fillCompleteForm = async (user: any, data: Partial<FormData> = {}) => {
+  const formData = { ...mockFormData, ...data };
+  
   // Step 1: Disaster Information
-  await fillStep1(user, data);
+  await fillStep1(user, formData);
   await user.click(screen.getByText('Next'));
   
   // Step 2: Location & Impact
-  await fillStep2(user, data);
+  await fillStep2(formData);
   await user.click(screen.getByText('Next'));
   
   // Step 3: Assistance & Contact
-  await fillStep3(user, data);
+  await fillStep3(formData);
   await user.click(screen.getByText('Next'));
   
   // Now on Step 4: Review & Submit
 };
 
 export const navigateToStep = async (user: any, stepNumber: number, data: Partial<FormData> = {}) => {
+  const formData = { ...mockFormData, ...data };
+  
   if (stepNumber < 1 || stepNumber > 4) {
     throw new Error('Step number must be between 1 and 4');
   }
   
   if (stepNumber >= 2) {
-    await fillStep1(user, data);
+    await fillStep1(user, formData);
     await user.click(screen.getByText('Next'));
   }
   
   if (stepNumber >= 3) {
-    await fillStep2(user, data);
+    await fillStep2(formData);
     await user.click(screen.getByText('Next'));
   }
   
   if (stepNumber >= 4) {
-    await fillStep3(user, data);
+    await fillStep3(formData);
     await user.click(screen.getByText('Next'));
   }
 };
