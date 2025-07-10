@@ -210,6 +210,13 @@ const ReportImpact: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
+  // Run validation when form data changes
+  React.useEffect(() => {
+    if (currentStep <= 3) {
+      validateStep(currentStep);
+    }
+  }, [formData, currentStep, validateStep]);
+
   const canProceed = useMemo(() => {
     return validateStep(currentStep);
   }, [currentStep, validateStep]);
@@ -498,6 +505,8 @@ const ReportImpact: React.FC = () => {
                           <button
                             key={key}
                             type="button"
+                            role="button"
+                            aria-label={category.label}
                             onClick={() => setFormData(prev => ({ ...prev, disasterType: key, disasterDetail: '' }))}
                             className={`p-4 border-2 rounded-xl transition-all duration-200 text-left ${
                               formData.disasterType === key
@@ -601,10 +610,11 @@ const ReportImpact: React.FC = () => {
 
                   {/* Date and Time */}
                   <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="dateTime" className="block text-sm font-medium text-gray-700 mb-2">
                       When did this occur? *
                     </label>
                     <input
+                      id="dateTime"
                       type="datetime-local"
                       value={formData.dateTime}
                       onChange={(e) => setFormData(prev => ({ ...prev, dateTime: e.target.value }))}
@@ -633,7 +643,7 @@ const ReportImpact: React.FC = () => {
                         <p className="text-sm text-red-600">{errors.description}</p>
                       ) : (
                         <p className="text-sm text-gray-500">
-                          {formData.description.length}/500 characters (minimum 20)
+                          {formData.description.length}/500 characters
                         </p>
                       )}
                     </div>
@@ -711,10 +721,11 @@ const ReportImpact: React.FC = () => {
                 {/* Affected People */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="affected-people" className="block text-sm font-medium text-gray-700 mb-2">
                       Number of People Affected *
                     </label>
                     <input
+                      id="affected-people"
                       type="number"
                       min="0"
                       value={formData.affectedPeople}

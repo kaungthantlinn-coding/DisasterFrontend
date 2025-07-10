@@ -95,8 +95,8 @@ describe('ReportImpact Integration Tests', () => {
 
   describe('Complete Form Flow - Happy Path', () => {
     it('successfully completes the entire form submission process', async () => {
-      const { ReportsAPI } = require('../apis/reports');
-      ReportsAPI.submitReport.mockResolvedValue({
+      const reportsModule = await import('../apis/reports');
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockResolvedValue({
         id: 'report-123',
         status: 'submitted',
         estimatedResponseTime: '24 hours',
@@ -123,7 +123,7 @@ describe('ReportImpact Integration Tests', () => {
 
       // Verify API call
       await waitFor(() => {
-        expect(ReportsAPI.submitReport).toHaveBeenCalledWith(
+        expect(reportsModule.ReportsAPI.submitReport).toHaveBeenCalledWith(
           expect.objectContaining({
             disasterType: 'flood',
             disasterDetail: 'Flood',
@@ -157,8 +157,8 @@ describe('ReportImpact Integration Tests', () => {
     });
 
     it('handles emergency situations correctly', async () => {
-      const { ReportsAPI } = require('../apis/reports');
-      ReportsAPI.submitReport.mockResolvedValue({ id: 'report-456' });
+      const reportsModule = await import('../apis/reports');
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockResolvedValue({ id: 'report-456' });
 
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
@@ -175,7 +175,7 @@ describe('ReportImpact Integration Tests', () => {
 
       // Verify emergency flag in submission
       await waitFor(() => {
-        expect(ReportsAPI.submitReport).toHaveBeenCalledWith(
+        expect(reportsModule.ReportsAPI.submitReport).toHaveBeenCalledWith(
           expect.objectContaining({
             isEmergency: true,
           })
@@ -419,8 +419,8 @@ describe('ReportImpact Integration Tests', () => {
 
   describe('Error Handling', () => {
     it('handles form submission errors gracefully', async () => {
-      const { ReportsAPI } = require('../apis/reports');
-      ReportsAPI.submitReport.mockRejectedValue(new Error('Network error'));
+      const reportsModule = await import('../apis/reports');
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockRejectedValue(new Error('Network error'));
 
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
@@ -434,13 +434,13 @@ describe('ReportImpact Integration Tests', () => {
     });
 
     it('shows loading state during submission', async () => {
-      const { ReportsAPI } = require('../apis/reports');
+      const reportsModule = await import('../apis/reports');
       // Create a promise that we can control
       let resolveSubmission: (value: any) => void;
       const submissionPromise = new Promise((resolve) => {
         resolveSubmission = resolve;
       });
-      ReportsAPI.submitReport.mockReturnValue(submissionPromise);
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockReturnValue(submissionPromise);
 
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
@@ -462,8 +462,8 @@ describe('ReportImpact Integration Tests', () => {
 
   describe('Authentication Integration', () => {
     it('shows login prompt for unauthenticated users', async () => {
-      const { useAuth } = require('../hooks/useAuth');
-      useAuth.mockReturnValue({
+      const useAuthModule = await import('../hooks/useAuth');
+      vi.mocked(useAuthModule.useAuth).mockReturnValue({
         user: null,
         isAuthenticated: false,
       });
@@ -496,7 +496,7 @@ describe('ReportImpact Integration Tests', () => {
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'Test description');
 
-      expect(screen.getByText(/Test description.length\/500 characters/)).toBeInTheDocument();
+      expect(screen.getByText(/16\/500 characters/)).toBeInTheDocument();
     });
 
     it('shows validation messages in real-time', async () => {

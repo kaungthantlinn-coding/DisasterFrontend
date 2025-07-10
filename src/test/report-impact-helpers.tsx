@@ -52,13 +52,16 @@ export const mockFormData: FormData = {
 export const fillStep1 = async (user: any, data: Partial<FormData> = {}) => {
   const formData = { ...mockFormData, ...data };
   
-  // Select disaster category
+  // Select disaster category - use aria-label since buttons have complex structure
   if (formData.disasterCategory === 'natural') {
-    await user.click(screen.getByText('Natural Disasters'));
+    const button = screen.getByRole('button', { name: /Natural Disasters/i });
+    await user.click(button);
   } else if (formData.disasterCategory === 'humanMade') {
-    await user.click(screen.getByText('Human-Made Disasters'));
+    const button = screen.getByRole('button', { name: /Human-Made Disasters/i });
+    await user.click(button);
   } else if (formData.disasterCategory === 'health') {
-    await user.click(screen.getByText('Health Emergencies'));
+    const button = screen.getByRole('button', { name: /Health Emergencies/i });
+    await user.click(button);
   }
   
   // Select specific disaster type
