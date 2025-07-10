@@ -136,7 +136,11 @@ const assistanceTypes = [
   'Volunteer Coordination'
 ];
 
-const ReportImpact: React.FC = () => {
+interface ReportImpactProps {
+  testMode?: boolean;
+}
+
+const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
