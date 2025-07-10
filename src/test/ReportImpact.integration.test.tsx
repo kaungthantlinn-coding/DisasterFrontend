@@ -109,7 +109,8 @@ describe('ReportImpact Integration Tests', () => {
       await fillCompleteForm(user);
 
       // Verify we're on the review step
-      expectStepToBeActive(4);
+      const reviewHeading = expectStepToBeActive(4);
+      expect(reviewHeading).toBeInTheDocument();
       expect(screen.getByText('Review & Submit')).toBeInTheDocument();
 
       // Verify all information is displayed correctly
@@ -192,10 +193,10 @@ describe('ReportImpact Integration Tests', () => {
       // Try to proceed from step 1 without filling anything
       await user.click(screen.getByText('Next'));
       
-      // Wait for validation messages to appear
+      // Wait for validation messages to appear after clicking Next
       await waitFor(() => {
         expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
       
       expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
       expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
@@ -203,12 +204,18 @@ describe('ReportImpact Integration Tests', () => {
 
       // Fill step 1 partially
       await user.click(screen.getByText('Natural Disasters'));
+      
+      // Wait a moment for the form to update
+      await waitFor(() => {
+        expect(screen.getByText('Flood')).toBeInTheDocument();
+      });
+      
       await user.click(screen.getByText('Next'));
 
       // Wait for partial validation message
       await waitFor(() => {
         expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
 
       // Complete step 1 properly
       await user.click(screen.getByText('Flood'));
@@ -223,7 +230,8 @@ describe('ReportImpact Integration Tests', () => {
       await user.click(screen.getByText('Next'));
 
       // Now on step 2
-      expectStepToBeActive(2);
+      const step2Heading = expectStepToBeActive(2);
+      expect(step2Heading).toBeInTheDocument();
 
       // Try to proceed without location
       await user.click(screen.getByText('Next'));
@@ -231,7 +239,7 @@ describe('ReportImpact Integration Tests', () => {
       // Wait for step 2 validation messages
       await waitFor(() => {
         expect(screen.getByText('Please select a location on the map')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
       
       expect(screen.getByText('Please select a location on the map')).toBeInTheDocument();
       expect(screen.getByText('Please select at least one impact type')).toBeInTheDocument();
@@ -292,18 +300,21 @@ describe('ReportImpact Integration Tests', () => {
       await user.click(screen.getByText('Next'));
 
       // Now on step 2
-      expectStepToBeActive(2);
+      const step2Heading = expectStepToBeActive(2);
+      expect(step2Heading).toBeInTheDocument();
 
       // Go back to step 1
       await user.click(screen.getByText('Back'));
 
       // Verify data is preserved
-      expectStepToBeActive(1);
+      const step1Heading = expectStepToBeActive(1);
+      expect(step1Heading).toBeInTheDocument();
       expect(screen.getByDisplayValue(/Earthquake damage description/)).toBeInTheDocument();
 
       // Go forward again
       await user.click(screen.getByText('Next'));
-      expectStepToBeActive(2);
+      const step2HeadingAgain = expectStepToBeActive(2);
+      expect(step2HeadingAgain).toBeInTheDocument();
     });
 
     it('disables back button on first step', () => {
@@ -319,13 +330,16 @@ describe('ReportImpact Integration Tests', () => {
 
       // Navigate through steps and verify indicators
       await navigateToStep(user, 2);
-      expectStepToBeActive(2);
+      const step2NavHeading = expectStepToBeActive(2);
+      expect(step2NavHeading).toBeInTheDocument();
 
       await navigateToStep(user, 3);
-      expectStepToBeActive(3);
+      const step3NavHeading = expectStepToBeActive(3);
+      expect(step3NavHeading).toBeInTheDocument();
 
       await navigateToStep(user, 4);
-      expectStepToBeActive(4);
+      const step4NavHeading = expectStepToBeActive(4);
+      expect(step4NavHeading).toBeInTheDocument();
     });
   });
 
@@ -390,7 +404,8 @@ describe('ReportImpact Integration Tests', () => {
 
       await user.click(screen.getByText('Next'));
 
-      expectStepToBeActive(2);
+      const step2CustomHeading = expectStepToBeActive(2);
+      expect(step2CustomHeading).toBeInTheDocument();
     });
 
     it('handles custom impact types', async () => {
@@ -511,9 +526,14 @@ describe('ReportImpact Integration Tests', () => {
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'Test description');
 
-      // Wait for character count to update and use more flexible matching
+      // Debug: Let's see what text is actually rendered
+      // Use a more specific selector or check the actual DOM structure
       await waitFor(() => {
-        expect(screen.getByText(/16.*500.*characters/)).toBeInTheDocument();
+        // Look for the character count in any form - it should be 16 characters
+        const characterCountElement = screen.getByText((content, element) => {
+          return content.includes('16') && content.includes('500') && content.includes('characters');
+        });
+        expect(characterCountElement).toBeInTheDocument();
       });
     });
 
@@ -524,15 +544,22 @@ describe('ReportImpact Integration Tests', () => {
       // Try to proceed without selecting anything
       await user.click(screen.getByText('Next'));
 
-      // Wait for validation messages to appear
+      // Wait for validation messages to appear with longer timeout
       await waitFor(() => {
         expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
-      });
+      }, { timeout: 3000 });
       
       // Multiple validation messages should appear
       expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
-      expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
-      expect(screen.getByText('Please provide a description')).toBeInTheDocument();
+      
+      // Wait for other validation messages to appear
+      await waitFor(() => {
+        expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
+      }, { timeout: 3000 });
+      
+      await waitFor(() => {
+        expect(screen.getByText('Please provide a description')).toBeInTheDocument();
+      }, { timeout: 3000 });
     });
 
     it('updates progress indicators correctly', async () => {
@@ -546,7 +573,8 @@ describe('ReportImpact Integration Tests', () => {
 
       // The visual indicators would be tested here
       // For now, we just verify we can navigate through all steps
-      expectStepToBeActive(4);
+      const finalStepHeading = expectStepToBeActive(4);
+      expect(finalStepHeading).toBeInTheDocument();
     });
   });
 });

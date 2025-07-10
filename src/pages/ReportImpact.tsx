@@ -210,16 +210,49 @@ const ReportImpact: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
-  // Run validation when form data changes
-  React.useEffect(() => {
-    if (currentStep <= 3) {
-      validateStep(currentStep);
+  // Check if current step can proceed without setting errors
+  const checkCanProceed = useCallback((step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(
+          formData.disasterType && 
+          formData.disasterDetail && 
+          formData.description.trim() && 
+          formData.description.length >= 20 &&
+          formData.severity && 
+          formData.dateTime &&
+          (formData.disasterDetail !== 'Other Natural' && 
+           formData.disasterDetail !== 'Other Human-Made' && 
+           formData.disasterDetail !== 'Other Health' || 
+           formData.customDisasterDetail)
+        );
+        
+      case 2:
+        return !!(
+          formData.location &&
+          formData.impactType.length > 0 &&
+          formData.affectedPeople !== '' &&
+          (!formData.impactType.includes('Other') || formData.customImpactType)
+        );
+        
+      case 3:
+        return !!(
+          formData.assistanceNeeded.length > 0 &&
+          formData.assistanceDescription.trim() &&
+          formData.urgencyLevel &&
+          formData.contactName.trim() &&
+          (formData.contactPhone.trim() || formData.contactEmail.trim())
+        );
+        
+      default:
+        return true;
     }
-  }, [formData, currentStep, validateStep]);
+  }, [formData]);
 
+  // Only run validation when explicitly needed, not on every form change
   const canProceed = useMemo(() => {
-    return validateStep(currentStep);
-  }, [currentStep, validateStep]);
+    return checkCanProceed(currentStep);
+  }, [currentStep, checkCanProceed]);
 
   const handleNext = useCallback(() => {
     if (validateStep(currentStep)) {

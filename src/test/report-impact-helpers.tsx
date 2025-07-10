@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event';
-import { screen } from '@testing-library/react';
+import { screen } from '@testing-library/dom';
 
 export interface FormData {
   disasterCategory: 'natural' | 'humanMade' | 'health';
@@ -201,13 +201,16 @@ export const navigateToStep = async (user: any, stepNumber: number, data: Partia
 export const expectStepToBeActive = (stepNumber: number) => {
   const stepTitles = [
     'Disaster Information',
-    'Location & Impact',
-    'Assistance & Contact',
+    'Location & Impact Assessment',
+    'Assistance Needed & Contact Information',
     'Review & Submit'
   ];
   
-  // Check that the correct step content is visible
-  expect(screen.getByText(stepTitles[stepNumber - 1])).toBeInTheDocument();
+  // Check that the correct step content is visible by looking for the step heading
+  const expectedTitle = stepTitles[stepNumber - 1];
+  
+  // Just return the screen element - let the test file handle expectations
+  return screen.getByRole('heading', { level: 2, name: expectedTitle });
 };
 
 export const mockPhotoFiles = [
