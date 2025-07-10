@@ -61,12 +61,12 @@ describe('ReportImpact Component', () => {
     email: 'john@example.com',
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     
     // Default to authenticated user
-    const { useAuth } = require('../../hooks/useAuth');
-    useAuth.mockReturnValue({
+    const useAuthModule = await import('../../hooks/useAuth');
+    vi.mocked(useAuthModule.useAuth).mockReturnValue({
       user: mockUser,
       isAuthenticated: true,
     });
@@ -439,8 +439,8 @@ describe('ReportImpact Component', () => {
 
   describe('Authentication', () => {
     it('shows login prompt for unauthenticated users when submitting', async () => {
-      const { useAuth } = require('../../hooks/useAuth');
-      useAuth.mockReturnValue({
+      const useAuthModule = await import('../../hooks/useAuth');
+      vi.mocked(useAuthModule.useAuth).mockReturnValue({
         user: null,
         isAuthenticated: false,
       });
@@ -505,8 +505,8 @@ describe('ReportImpact Component', () => {
 
   describe('Form Submission', () => {
     it('successfully submits a complete form', async () => {
-      const { ReportsAPI } = require('../../apis/reports');
-      ReportsAPI.submitReport.mockResolvedValue({ success: true });
+      const reportsModule = await import('../../apis/reports');
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockResolvedValue({ success: true });
 
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
@@ -522,8 +522,8 @@ describe('ReportImpact Component', () => {
     });
 
     it('handles submission errors', async () => {
-      const { ReportsAPI } = require('../../apis/reports');
-      ReportsAPI.submitReport.mockRejectedValue(new Error('Network error'));
+      const reportsModule = await import('../../apis/reports');
+      vi.mocked(reportsModule.ReportsAPI.submitReport).mockRejectedValue(new Error('Network error'));
 
       // Similar test for error handling
     });

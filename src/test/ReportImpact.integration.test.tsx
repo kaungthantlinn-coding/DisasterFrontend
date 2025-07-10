@@ -83,11 +83,11 @@ describe('ReportImpact Integration Tests', () => {
     email: 'john@example.com',
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     
-    const { useAuth } = require('../hooks/useAuth');
-    useAuth.mockReturnValue({
+    const useAuthModule = await import('../hooks/useAuth');
+    vi.mocked(useAuthModule.useAuth).mockReturnValue({
       user: mockUser,
       isAuthenticated: true,
     });
