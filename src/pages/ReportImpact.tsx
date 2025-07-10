@@ -178,8 +178,11 @@ const ReportImpact: React.FC = () => {
         if (formData.disasterDetail === 'Other Natural' || formData.disasterDetail === 'Other Human-Made' || formData.disasterDetail === 'Other Health') {
           if (!formData.customDisasterDetail) newErrors.customDisasterDetail = 'Please specify the disaster type';
         }
-        if (!formData.description.trim()) newErrors.description = 'Please provide a description';
-        if (formData.description.length < 20) newErrors.description = 'Description must be at least 20 characters';
+        if (!formData.description.trim()) {
+          newErrors.description = 'Please provide a description';
+        } else if (formData.description.length < 20) {
+          newErrors.description = 'Description must be at least 20 characters';
+        }
         if (!formData.severity) newErrors.severity = 'Please select severity level';
         if (!formData.dateTime) newErrors.dateTime = 'Please specify when the disaster occurred';
         break;
@@ -259,6 +262,7 @@ const ReportImpact: React.FC = () => {
       setCurrentStep(prev => Math.min(prev + 1, 4));
       setErrors({});
     }
+    // If validation fails, errors will be set by validateStep
   }, [currentStep, validateStep]);
 
   const handleBack = useCallback(() => {
@@ -671,13 +675,14 @@ const ReportImpact: React.FC = () => {
                       placeholder="Provide detailed information about what happened, current situation, and any immediate concerns..."
                     />
                     <div className="flex justify-between mt-2">
-                      {errors.description ? (
-                        <p className="text-sm text-red-600">{errors.description}</p>
-                      ) : (
-                        <p className="text-sm text-gray-500">
-                          {formData.description.length}/500 characters
-                        </p>
-                      )}
+                      <div>
+                        {errors.description && (
+                          <p className="text-sm text-red-600">{errors.description}</p>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        {formData.description.length}/500 characters
+                      </p>
                     </div>
                   </div>
                 </div>

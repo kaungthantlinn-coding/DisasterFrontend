@@ -4,18 +4,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import ReportImpact from '../pages/ReportImpact';
 import {
+  fillStep1,
+  fillStep2, 
+  fillStep3,
   fillCompleteForm,
   navigateToStep,
   expectStepToBeActive,
-  mockFormData,
-  mockSubmissionData,
+  setupTestOnStep,
   mockPhotoFiles,
   mockInvalidFiles,
-  disasterTypesByCategory,
-  impactTypes,
-  assistanceTypes,
-  severityLevels,
-  urgencyLevels,
+  mockFormData,
+  mockSubmissionData
 } from './report-impact-helpers';
 
 // Mock dependencies
@@ -345,15 +344,17 @@ describe('ReportImpact Integration Tests', () => {
 
   describe('Photo Upload Functionality', () => {
     beforeEach(async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-      await navigateToStep(user, 2);
+      // Don't auto-navigate to step 2, let each test control its own navigation
       // Reset the mock call count before each photo test
       vi.clearAllMocks();
     });
 
     it('handles multiple photo uploads', async () => {
       const user = userEvent.setup();
+      renderWithRouter(<ReportImpact />);
+      
+      // Navigate to step 2 manually for photo upload tests
+      await navigateToStep(user, 2);
 
       const fileInput = screen.getByLabelText(/Click to upload photos/);
       await user.upload(fileInput, mockPhotoFiles);
@@ -364,6 +365,10 @@ describe('ReportImpact Integration Tests', () => {
 
     it('rejects invalid file types and sizes', async () => {
       const user = userEvent.setup();
+      renderWithRouter(<ReportImpact />);
+      
+      // Navigate to step 2 manually 
+      await navigateToStep(user, 2);
 
       const fileInput = screen.getByLabelText(/Click to upload photos/);
       await user.upload(fileInput, mockInvalidFiles);
@@ -374,6 +379,10 @@ describe('ReportImpact Integration Tests', () => {
 
     it('allows removing uploaded photos', async () => {
       const user = userEvent.setup();
+      renderWithRouter(<ReportImpact />);
+      
+      // Navigate to step 2 manually
+      await navigateToStep(user, 2);
 
       const fileInput = screen.getByLabelText(/Click to upload photos/);
       await user.upload(fileInput, [mockPhotoFiles[0]]);
@@ -526,20 +535,19 @@ describe('ReportImpact Integration Tests', () => {
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'Test description');
 
-      // Debug: Let's see what text is actually rendered
-      // Use a more specific selector or check the actual DOM structure
+      // Wait for character count to appear and look for the exact pattern
       await waitFor(() => {
-        // Look for the character count in any form - it should be 16 characters
-        const characterCountElement = screen.getByText((content, element) => {
-          return content.includes('16') && content.includes('500') && content.includes('characters');
-        });
-        expect(characterCountElement).toBeInTheDocument();
+        // The text should be exactly "16/500 characters"
+        expect(screen.getByText('16/500 characters')).toBeInTheDocument();
       });
     });
 
     it('shows validation messages in real-time', async () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
+
+      // Ensure we're on step 1 using the robust helper
+      await setupTestOnStep(user, 1);
 
       // Try to proceed without selecting anything
       await user.click(screen.getByText('Next'));

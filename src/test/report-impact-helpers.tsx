@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event';
-import { screen } from '@testing-library/dom';
+import { screen, waitFor } from '@testing-library/dom';
+import { expect } from 'vitest';
 
 export interface FormData {
   disasterCategory: 'natural' | 'humanMade' | 'health';
@@ -182,19 +183,40 @@ export const navigateToStep = async (user: any, stepNumber: number, data: Partia
     throw new Error('Step number must be between 1 and 4');
   }
   
+  // Always start from step 1 - don't auto-fill unless specifically requested
+  if (stepNumber === 1) {
+    // Just ensure we're on step 1
+    return;
+  }
+  
   if (stepNumber >= 2) {
     await fillStep1(user, data);
     await user.click(screen.getByText('Next'));
+    
+    // Wait for step 2 to be active
+    await waitFor(() => {
+      screen.getByRole('heading', { level: 2, name: 'Location & Impact Assessment' });
+    });
   }
   
   if (stepNumber >= 3) {
     await fillStep2(user, data);
     await user.click(screen.getByText('Next'));
+    
+    // Wait for step 3 to be active
+    await waitFor(() => {
+      screen.getByRole('heading', { level: 2, name: 'Assistance Needed & Contact Information' });
+    });
   }
   
   if (stepNumber >= 4) {
     await fillStep3(user, data);
     await user.click(screen.getByText('Next'));
+    
+    // Wait for step 4 to be active
+    await waitFor(() => {
+      screen.getByRole('heading', { level: 2, name: 'Review & Submit' });
+    });
   }
 };
 
@@ -281,4 +303,55 @@ export const mockSubmissionData = {
   contactEmail: mockFormData.contactEmail,
   isEmergency: false,
   photos: []
+};
+
+// Test setup helper to ensure consistent state
+export const setupTestOnStep = async (user: any, stepNumber: number = 1) => {
+  // Check current step by looking for headings
+  const stepHeadings = [
+    'Disaster Information',
+    'Location & Impact Assessment', 
+    'Assistance Needed & Contact Information',
+    'Review & Submit'
+  ];
+  
+  let currentStep = 1;
+  for (let i = 0; i < stepHeadings.length; i++) {
+    if (screen.queryByRole('heading', { level: 2, name: stepHeadings[i] })) {
+      currentStep = i + 1;
+      break;
+    }
+  }
+  
+  // Navigate to desired step
+  if (currentStep > stepNumber) {
+    // Go back to desired step
+    while (currentStep > stepNumber) {
+      await user.click(screen.getByText('Back'));
+      await waitFor(() => {
+        screen.getByRole('heading', { level: 2, name: stepHeadings[stepNumber - 1] });
+      });
+      currentStep--;
+    }
+  } else if (currentStep < stepNumber) {
+    // Go forward to desired step (will need to fill forms)
+    while (currentStep < stepNumber) {
+      if (currentStep === 1) {
+        await fillStep1(user);
+      } else if (currentStep === 2) {
+        await fillStep2(user);
+      } else if (currentStep === 3) {
+        await fillStep3(user);
+      }
+      await user.click(screen.getByText('Next'));
+      currentStep++;
+      if (currentStep <= 4) {
+        await waitFor(() => {
+          screen.getByRole('heading', { level: 2, name: stepHeadings[currentStep - 1] });
+        });
+      }
+    }
+  }
+  
+  return currentStep;
 };
