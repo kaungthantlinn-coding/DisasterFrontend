@@ -557,13 +557,13 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-r ${category.color}`}>
                               <Icon size={24} className="text-white" />
                             </div>
-                            <h3 className="font-semibold text-gray-900">{category.label}</h3>
+                            <span className="font-semibold text-gray-900">{category.label}</span>
                           </button>
                         );
                       })}
                     </div>
                     {errors.disasterType && (
-                      <p className="mt-2 text-sm text-red-600">{errors.disasterType}</p>
+                      <p className="mt-2 text-sm text-red-600" data-testid="disasterType-error">{errors.disasterType}</p>
                     )}
                   </div>
 
@@ -590,7 +590,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                         ))}
                       </div>
                       {errors.disasterDetail && (
-                        <p className="mt-2 text-sm text-red-600">{errors.disasterDetail}</p>
+                        <p className="mt-2 text-sm text-red-600" data-testid="disasterDetail-error">{errors.disasterDetail}</p>
                       )}
                     </div>
                   )}
@@ -611,7 +611,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                         placeholder="Specify the type of disaster"
                       />
                       {errors.customDisasterDetail && (
-                        <p className="mt-2 text-sm text-red-600">{errors.customDisasterDetail}</p>
+                        <p className="mt-2 text-sm text-red-600" data-testid="customDisasterDetail-error">{errors.customDisasterDetail}</p>
                       )}
                     </div>
                   )}
@@ -644,7 +644,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                       ))}
                     </div>
                     {errors.severity && (
-                      <p className="mt-2 text-sm text-red-600">{errors.severity}</p>
+                      <p className="mt-2 text-sm text-red-600" data-testid="severity-error">{errors.severity}</p>
                     )}
                   </div>
 
@@ -662,7 +662,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     {errors.dateTime && (
-                      <p className="mt-2 text-sm text-red-600">{errors.dateTime}</p>
+                      <p className="mt-2 text-sm text-red-600" data-testid="dateTime-error">{errors.dateTime}</p>
                     )}
                   </div>
 
@@ -681,7 +681,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                     <div className="flex justify-between mt-2">
                       <div>
                         {errors.description && (
-                          <p className="text-sm text-red-600">{errors.description}</p>
+                          <p className="text-sm text-red-600" data-testid="description-error">{errors.description}</p>
                         )}
                       </div>
                       <p className="text-sm text-gray-500">
@@ -713,7 +713,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                     </div>
                   )}
                   {errors.location && (
-                    <p className="mt-2 text-sm text-red-600">{errors.location}</p>
+                    <p className="mt-2 text-sm text-red-600" data-testid="location-error">{errors.location}</p>
                   )}
                 </div>
 
@@ -736,7 +736,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                     ))}
                   </div>
                   {errors.impactType && (
-                    <p className="mt-2 text-sm text-red-600">{errors.impactType}</p>
+                    <p className="mt-2 text-sm text-red-600" data-testid="impactType-error">{errors.impactType}</p>
                   )}
                 </div>
 
@@ -754,7 +754,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                       placeholder="Specify the type of impact"
                     />
                     {errors.customImpactType && (
-                      <p className="mt-2 text-sm text-red-600">{errors.customImpactType}</p>
+                      <p className="mt-2 text-sm text-red-600" data-testid="customImpactType-error">{errors.customImpactType}</p>
                     )}
                   </div>
                 )}
@@ -775,7 +775,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                       placeholder="0"
                     />
                     {errors.affectedPeople && (
-                      <p className="mt-2 text-sm text-red-600">{errors.affectedPeople}</p>
+                      <p className="mt-2 text-sm text-red-600" data-testid="affectedPeople-error">{errors.affectedPeople}</p>
                     )}
                   </div>
 
@@ -882,7 +882,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                     })}
                   </div>
                   {errors.urgencyLevel && (
-                    <p className="mt-2 text-sm text-red-600">{errors.urgencyLevel}</p>
+                    <p className="mt-2 text-sm text-red-600" data-testid="urgencyLevel-error">{errors.urgencyLevel}</p>
                   )}
                 </div>
 
@@ -905,7 +905,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                     ))}
                   </div>
                   {errors.assistanceNeeded && (
-                    <p className="mt-2 text-sm text-red-600">{errors.assistanceNeeded}</p>
+                    <p className="mt-2 text-sm text-red-600" data-testid="assistanceNeeded-error">{errors.assistanceNeeded}</p>
                   )}
                 </div>
 
@@ -922,7 +922,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                     placeholder="Please provide specific details about what help is needed, how many people are affected, any special requirements, accessibility needs, etc."
                   />
                   {errors.assistanceDescription && (
-                    <p className="mt-2 text-sm text-red-600">{errors.assistanceDescription}</p>
+                    <p className="mt-2 text-sm text-red-600" data-testid="assistanceDescription-error">{errors.assistanceDescription}</p>
                   )}
                 </div>
 
@@ -946,7 +946,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                         />
                       </div>
                       {errors.contactName && (
-                        <p className="mt-2 text-sm text-red-600">{errors.contactName}</p>
+                        <p className="mt-2 text-sm text-red-600" data-testid="contactName-error">{errors.contactName}</p>
                       )}
                     </div>
 
@@ -984,7 +984,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                   </div>
                   
                   {errors.contact && (
-                    <p className="mt-2 text-sm text-red-600">{errors.contact}</p>
+                    <p className="mt-2 text-sm text-red-600" data-testid="contact-error">{errors.contact}</p>
                   )}
                   
                   <p className="mt-3 text-sm text-gray-600">

@@ -36,8 +36,8 @@ const GoogleLoginButton: React.FC = () => {
     };
 
     return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
       }
     };
   }, [clientIdData?.clientId]);
@@ -75,7 +75,7 @@ const GoogleLoginButton: React.FC = () => {
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full" data-testid="google-signin-button-container">
       <div id="google-signin-button" className="w-full"></div>
       {googleLoginMutation.error && (
         <div className="mt-2 text-red-600 text-sm text-center">

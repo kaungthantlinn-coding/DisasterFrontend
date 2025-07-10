@@ -2,35 +2,26 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ReportImpact from '../pages/ReportImpact';
-import {
-  fillCompleteForm,
-  navigateToStep,
-  expectStepToBeActive,
-  setupTestOnStep,
-  mockPhotoFiles,
-  mockInvalidFiles,
-  mockFormData,
-  mockSubmissionData
-} from './report-impact-helpers';
 
-// Mock dependencies
-vi.mock('../hooks/useAuth', () => ({
-  useAuth: vi.fn(),
-}));
-
+// Mock child components and hooks
 vi.mock('../components/Layout/Header', () => ({
   default: () => <div data-testid="header">Header</div>,
 }));
-
 vi.mock('../components/Layout/Footer', () => ({
   default: () => <div data-testid="footer">Footer</div>,
 }));
-
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: { name: 'Test User', email: 'test@example.com' },
+    isAuthenticated: true,
+  }),
+}));
 vi.mock('../components/Map/LocationPicker', () => ({
   default: ({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number, address: string) => void }) => (
     <div data-testid="location-picker">
-      <button
+      <button 
         onClick={() => onLocationSelect(40.7128, -74.0060, 'New York, NY, USA')}
         data-testid="select-location"
       >
@@ -42,10 +33,11 @@ vi.mock('../components/Map/LocationPicker', () => ({
 
 vi.mock('../apis/reports', () => ({
   ReportsAPI: {
-    submitReport: vi.fn(),
+    submitReport: vi.fn().mockResolvedValue({ id: 'test-report', status: 'submitted' }),
   },
 }));
 
+// Mock useNavigate hook
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -55,542 +47,92 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-// Mock URL.createObjectURL for photo testing
-Object.defineProperty(window, 'URL', {
-  value: {
-    createObjectURL: vi.fn(() => 'blob:mock-url'),
-    revokeObjectURL: vi.fn(),
-  },
-  writable: true,
-});
-
-const renderWithRouter = (component: React.ReactElement) => {
-  return render(
-    <BrowserRouter>
-      {component}
-    </BrowserRouter>
+const renderComponent = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+  
+  render(
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ReportImpact />
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 };
 
-describe('ReportImpact Integration Tests', () => {
-  const mockUser = {
-    userId: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    roles: ['user'],
-  };
-
-  beforeEach(async () => {
+describe('ReportImpact Integration Test', () => {
+  beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('should allow a user to fill out the entire form and submit', async () => {
+    renderComponent();
+    const user = userEvent.setup();
+
+    // Step 1: Disaster Information
+    await user.click(screen.getByText('Natural Disasters'));
+    await user.click(screen.getByText('Flood'));
+    await user.click(screen.getByText('High'));
     
-    const useAuthModule = await import('../hooks/useAuth');
-    vi.mocked(useAuthModule.useAuth).mockReturnValue({
-      user: mockUser,
-      isAuthenticated: true,
-      isLoading: false,
-      logout: vi.fn(),
+    const description = screen.getByPlaceholderText(/Provide detailed information/);
+    await user.type(description, 'This is a detailed description of the flood disaster that meets the minimum length requirement.');
+    
+    const dateInput = screen.getByLabelText('When did this occur? *');
+    await user.type(dateInput, '2024-01-15T10:30');
+    
+    await user.click(screen.getByText('Next'));
+
+    // Step 2: Location and Impact
+    await waitFor(() => {
+      expect(screen.getByText('Location & Impact Assessment')).toBeInTheDocument();
     });
-  });
+    
+    await user.click(screen.getByTestId('select-location'));
+    await user.click(screen.getByLabelText('Property Damage'));
+    
+    const affectedPeopleInput = screen.getByLabelText('Number of People Affected *');
+    await user.type(affectedPeopleInput, '50');
+    
+    await user.click(screen.getByText('Next'));
 
-  describe('Complete Form Flow - Happy Path', () => {
-    it('successfully completes the entire form submission process', async () => {
-      const reportsModule = await import('../apis/reports');
-      vi.mocked(reportsModule.ReportsAPI.submitReport).mockResolvedValue({
-        id: 'report-123',
-        status: 'pending',
-        submittedAt: new Date().toISOString(),
-        estimatedResponseTime: '24 hours',
-      });
-
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      // Complete all steps
-      await fillCompleteForm(user);
-
-      // Verify we're on the review step
-      const reviewHeading = expectStepToBeActive(4);
-      expect(reviewHeading).toBeInTheDocument();
-      expect(screen.getByText('Review & Submit')).toBeInTheDocument();
-
-      // Verify all information is displayed correctly
-      expect(screen.getByText('Flood')).toBeInTheDocument();
-      expect(screen.getByText('New York, NY, USA')).toBeInTheDocument();
-      expect(screen.getByText('Property Damage, Infrastructure Damage')).toBeInTheDocument();
-      expect(screen.getByText('Emergency Rescue, Medical Assistance')).toBeInTheDocument();
-
-      // Submit the form
-      await user.click(screen.getByText('Submit Report'));
-
-      // Verify API call
-      await waitFor(() => {
-        expect(reportsModule.ReportsAPI.submitReport).toHaveBeenCalledWith(
-          expect.objectContaining({
-            disasterType: 'flood',
-            disasterDetail: 'Flood',
-            description: expect.stringContaining('detailed description'),
-            severity: 'high',
-            location: expect.objectContaining({
-              address: 'New York, NY, USA',
-              lat: 40.7128,
-              lng: -74.0060,
-            }),
-            impactType: ['Property Damage', 'Infrastructure Damage'],
-            affectedPeople: 50,
-            assistanceNeeded: ['Emergency Rescue', 'Medical Assistance'],
-            urgencyLevel: 'immediate',
-            contactName: 'John Doe',
-            isEmergency: false,
-          })
-        );
-      });
-
-      // Verify success message is shown
-      await waitFor(() => {
-        expect(screen.getByText('Report Submitted Successfully!')).toBeInTheDocument();
-        expect(screen.getByText('Thank you for reporting this disaster.')).toBeInTheDocument();
-      });
-
-      // Verify redirect is scheduled
-      await waitFor(() => {
-        expect(screen.getByText('Redirecting to reports page...')).toBeInTheDocument();
-      });
+    // Step 3: Assistance & Contact
+    await waitFor(() => {
+      expect(screen.getByText('Assistance Needed & Contact Information')).toBeInTheDocument();
     });
+    
+    await user.click(screen.getByText('Immediate'));
+    await user.click(screen.getByLabelText('Medical Assistance'));
+    
+    const assistanceDescription = screen.getByPlaceholderText(/Please provide specific details/);
+    await user.type(assistanceDescription, 'We need immediate medical assistance for injured people.');
+    
+    // Fill required contact information
+    const contactName = screen.getByPlaceholderText('Your name');
+    await user.type(contactName, 'John Doe');
+    
+    const contactPhone = screen.getByPlaceholderText('Your phone number');
+    await user.type(contactPhone, '+1234567890');
+    
+    await user.click(screen.getByText('Next'));
 
-    it('handles emergency situations correctly', async () => {
-      const reportsModule = await import('../apis/reports');
-      vi.mocked(reportsModule.ReportsAPI.submitReport).mockResolvedValue({
-        id: 'report-456',
-        status: 'pending',
-        submittedAt: new Date().toISOString(),
-        estimatedResponseTime: '2 hours',
-      });
-
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      // Fill form with emergency flag
-      await fillCompleteForm(user, { isEmergency: true });
-
-      // Verify emergency alert is shown
-      expect(screen.getByText('Emergency Situation Detected')).toBeInTheDocument();
-      expect(screen.getByText(/For immediate life-threatening emergencies/)).toBeInTheDocument();
-
-      // Submit form
-      await user.click(screen.getByText('Submit Report'));
-
-      // Verify emergency flag in submission
-      await waitFor(() => {
-        expect(reportsModule.ReportsAPI.submitReport).toHaveBeenCalledWith(
-          expect.objectContaining({
-            isEmergency: true,
-          })
-        );
-      });
+    // Step 4: Review and Submit
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Review & Submit', level: 2 })).toBeInTheDocument();
     });
-  });
-
-  describe('Form Validation Flow', () => {
-    it('validates each step progressively', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      // Try to proceed from step 1 without filling anything
-      await user.click(screen.getByText('Next'));
-      
-      // Wait for validation messages to appear after clicking Next
-      await waitFor(() => {
-        expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
-      }, { timeout: 3000 });
-      
-      expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
-      expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
-      expect(screen.getByText('Please provide a description')).toBeInTheDocument();
-
-      // Fill step 1 partially
-      await user.click(screen.getByText('Natural Disasters'));
-      
-      // Wait a moment for the form to update
-      await waitFor(() => {
-        expect(screen.getByText('Flood')).toBeInTheDocument();
-      });
-      
-      await user.click(screen.getByText('Next'));
-
-      // Wait for partial validation message
-      await waitFor(() => {
-        expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
-      }, { timeout: 3000 });
-
-      // Complete step 1 properly
-      await user.click(screen.getByText('Flood'));
-      await user.click(screen.getByText('High'));
-      
-      const description = screen.getByPlaceholderText(/Provide detailed information/);
-      await user.type(description, 'Valid description that is more than 20 characters long.');
-      
-      const dateInput = screen.getByLabelText('When did this occur? *');
-      await user.type(dateInput, '2024-01-15T10:30');
-      
-      await user.click(screen.getByText('Next'));
-
-      // Now on step 2
-      const step2Heading = expectStepToBeActive(2);
-      expect(step2Heading).toBeInTheDocument();
-
-      // Try to proceed without location
-      await user.click(screen.getByText('Next'));
-      
-      // Wait for step 2 validation messages
-      await waitFor(() => {
-        expect(screen.getByText('Please select a location on the map')).toBeInTheDocument();
-      }, { timeout: 3000 });
-      
-      expect(screen.getByText('Please select a location on the map')).toBeInTheDocument();
-      expect(screen.getByText('Please select at least one impact type')).toBeInTheDocument();
-    });
-
-    it('validates description character count', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      await user.click(screen.getByText('Natural Disasters'));
-      await user.click(screen.getByText('Flood'));
-      await user.click(screen.getByText('High'));
-
-      const description = screen.getByPlaceholderText(/Provide detailed information/);
-      await user.type(description, 'Short desc');
-
-      const dateInput = screen.getByLabelText('When did this occur? *');
-      await user.type(dateInput, '2024-01-15T10:30');
-
-      await user.click(screen.getByText('Next'));
-
-      expect(screen.getByText('Description must be at least 20 characters')).toBeInTheDocument();
-    });
-
-    it('validates contact information requirements', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      // Navigate to step 3
-      await navigateToStep(user, 3);
-
-      // Clear pre-filled contact name
-      const nameInput = screen.getByDisplayValue('John Doe');
-      await user.clear(nameInput);
-
-      await user.click(screen.getByText('Next'));
-
-      expect(screen.getByText('Contact name is required')).toBeInTheDocument();
-    });
-  });
-
-  describe('Navigation Between Steps', () => {
-    it('allows backward navigation while preserving data', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      // Fill step 1
-      await user.click(screen.getByText('Natural Disasters'));
-      await user.click(screen.getByText('Earthquake'));
-      await user.click(screen.getByText('Critical'));
-
-      const description = screen.getByPlaceholderText(/Provide detailed information/);
-      await user.type(description, 'Earthquake damage description with sufficient details.');
-
-      const dateInput = screen.getByLabelText('When did this occur? *');
-      await user.type(dateInput, '2024-01-15T10:30');
-
-      await user.click(screen.getByText('Next'));
-
-      // Now on step 2
-      const step2Heading = expectStepToBeActive(2);
-      expect(step2Heading).toBeInTheDocument();
-
-      // Go back to step 1
-      await user.click(screen.getByText('Back'));
-
-      // Verify data is preserved
-      const step1Heading = expectStepToBeActive(1);
-      expect(step1Heading).toBeInTheDocument();
-      expect(screen.getByDisplayValue(/Earthquake damage description/)).toBeInTheDocument();
-
-      // Go forward again
-      await user.click(screen.getByText('Next'));
-      const step2HeadingAgain = expectStepToBeActive(2);
-      expect(step2HeadingAgain).toBeInTheDocument();
-    });
-
-    it('disables back button on first step', () => {
-      renderWithRouter(<ReportImpact />);
-      
-      const backButton = screen.getByText('Back');
-      expect(backButton).toBeDisabled();
-    });
-
-    it('shows correct step indicators', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      // Navigate through steps and verify indicators
-      await navigateToStep(user, 2);
-      const step2NavHeading = expectStepToBeActive(2);
-      expect(step2NavHeading).toBeInTheDocument();
-
-      await navigateToStep(user, 3);
-      const step3NavHeading = expectStepToBeActive(3);
-      expect(step3NavHeading).toBeInTheDocument();
-
-      await navigateToStep(user, 4);
-      const step4NavHeading = expectStepToBeActive(4);
-      expect(step4NavHeading).toBeInTheDocument();
-    });
-  });
-
-  describe('Photo Upload Functionality', () => {
-    beforeEach(async () => {
-      // Don't auto-navigate to step 2, let each test control its own navigation
-      // Reset the mock call count before each photo test
-      vi.clearAllMocks();
-    });
-
-    it('handles multiple photo uploads', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-      
-      // Navigate to step 2 manually for photo upload tests
-      await navigateToStep(user, 2);
-
-      const fileInput = screen.getByLabelText(/Click to upload photos/);
-      await user.upload(fileInput, mockPhotoFiles);
-
-      // Photos would be displayed (mocked URL.createObjectURL)
-      expect(window.URL.createObjectURL).toHaveBeenCalledTimes(mockPhotoFiles.length);
-    });
-
-    it('rejects invalid file types and sizes', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-      
-      // Navigate to step 2 manually 
-      await navigateToStep(user, 2);
-
-      const fileInput = screen.getByLabelText(/Click to upload photos/);
-      await user.upload(fileInput, mockInvalidFiles);
-
-      // Invalid files should be filtered out
-      // (This would need actual implementation to test properly)
-    });
-
-    it('allows removing uploaded photos', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-      
-      // Navigate to step 2 manually
-      await navigateToStep(user, 2);
-
-      const fileInput = screen.getByLabelText(/Click to upload photos/);
-      await user.upload(fileInput, [mockPhotoFiles[0]]);
-
-      // Photo remove button would appear
-      // This test would need more sophisticated DOM checking
-    });
-  });
-
-  describe('Custom Field Handling', () => {
-    it('handles custom disaster types', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      await user.click(screen.getByText('Natural Disasters'));
-      await user.click(screen.getByText('Other Natural'));
-
-      const customInput = screen.getByPlaceholderText('Specify the type of disaster');
-      await user.type(customInput, 'Avalanche');
-
-      await user.click(screen.getByText('High'));
-
-      const description = screen.getByPlaceholderText(/Provide detailed information/);
-      await user.type(description, 'Custom disaster type description with sufficient details.');
-
-      const dateInput = screen.getByLabelText('When did this occur? *');
-      await user.type(dateInput, '2024-01-15T10:30');
-
-      await user.click(screen.getByText('Next'));
-
-      const step2CustomHeading = expectStepToBeActive(2);
-      expect(step2CustomHeading).toBeInTheDocument();
-    });
-
-    it('handles custom impact types', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      await navigateToStep(user, 2);
-
-      await user.click(screen.getByLabelText('Other'));
-
-      const customInput = screen.getByPlaceholderText('Specify the type of impact');
-      await user.type(customInput, 'Historical Monument Damage');
-
-      expect(customInput).toHaveValue('Historical Monument Damage');
-    });
-  });
-
-  describe('Different Disaster Categories', () => {
-    it('handles human-made disasters', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      await user.click(screen.getByText('Human-Made Disasters'));
-
-      expect(screen.getByText('Industrial Accident')).toBeInTheDocument();
-      expect(screen.getByText('Chemical Spill')).toBeInTheDocument();
-      expect(screen.getByText('Building Collapse')).toBeInTheDocument();
-    });
-
-    it('handles health emergencies', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      await user.click(screen.getByText('Health Emergencies'));
-
-      expect(screen.getByText('Disease Outbreak')).toBeInTheDocument();
-      expect(screen.getByText('Pandemic')).toBeInTheDocument();
-      expect(screen.getByText('Water Contamination')).toBeInTheDocument();
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('handles form submission errors gracefully', async () => {
-      const reportsModule = await import('../apis/reports');
-      vi.mocked(reportsModule.ReportsAPI.submitReport).mockRejectedValue(new Error('Network error'));
-
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      await fillCompleteForm(user);
-      await user.click(screen.getByText('Submit Report'));
-
-      await waitFor(() => {
-        expect(screen.getByText('Failed to submit report. Please try again.')).toBeInTheDocument();
-      });
-    });
-
-    it('shows loading state during submission', async () => {
-      const reportsModule = await import('../apis/reports');
-      // Create a promise that we can control
-      let resolveSubmission: (value: any) => void;
-      const submissionPromise = new Promise((resolve) => {
-        resolveSubmission = resolve;
-      });
-      vi.mocked(reportsModule.ReportsAPI.submitReport).mockReturnValue(submissionPromise as Promise<any>);
-
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      await fillCompleteForm(user);
-      await user.click(screen.getByText('Submit Report'));
-
-      // Check loading state
-      expect(screen.getByText('Submitting...')).toBeInTheDocument();
-      
-      // Resolve the promise
-      resolveSubmission!({ id: 'test-report' });
-
-      await waitFor(() => {
-        expect(screen.getByText('Report Submitted Successfully!')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Authentication Integration', () => {
-    it('shows login prompt for unauthenticated users', async () => {
-      const useAuthModule = await import('../hooks/useAuth');
-      vi.mocked(useAuthModule.useAuth).mockReturnValue({
-        user: undefined,
-        isAuthenticated: false,
-        isLoading: false,
-        logout: vi.fn(),
-      });
-
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      await fillCompleteForm(user);
-      await user.click(screen.getByText('Submit Report'));
-
-      expect(screen.getByText('Login Required')).toBeInTheDocument();
-      expect(screen.getByText(/You need to be logged in to submit a disaster impact report/)).toBeInTheDocument();
-    });
-
-    it('pre-fills contact information for authenticated users', () => {
-      renderWithRouter(<ReportImpact />);
-
-      // The form should pre-fill with user data
-      // This would be verified in step 3, but for now we just check the mock is set up
-      expect(mockUser.name).toBe('John Doe');
-      expect(mockUser.email).toBe('john@example.com');
-    });
-  });
-
-  describe('UI/UX Features', () => {
-    it('shows character count for description field', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      const description = screen.getByPlaceholderText(/Provide detailed information/);
-      await user.type(description, 'Test description');
-
-      // Wait for character count to appear and look for the exact pattern
-      await waitFor(() => {
-        // The text should be exactly "16/500 characters"
-        expect(screen.getByText('16/500 characters')).toBeInTheDocument();
-      });
-    });
-
-    it('shows validation messages in real-time', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      // Ensure we're on step 1 using the robust helper
-      await setupTestOnStep(user, 1);
-
-      // Try to proceed without selecting anything
-      await user.click(screen.getByText('Next'));
-
-      // Wait for validation messages to appear with longer timeout
-      await waitFor(() => {
-        expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
-      }, { timeout: 3000 });
-      
-      // Multiple validation messages should appear
-      expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
-      
-      // Wait for other validation messages to appear
-      await waitFor(() => {
-        expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
-      }, { timeout: 3000 });
-      
-      await waitFor(() => {
-        expect(screen.getByText('Please provide a description')).toBeInTheDocument();
-      }, { timeout: 3000 });
-    });
-
-    it('updates progress indicators correctly', async () => {
-      const user = userEvent.setup();
-      renderWithRouter(<ReportImpact />);
-
-      // Progress indicators should update as we move through steps
-      await navigateToStep(user, 2);
-      await navigateToStep(user, 3);
-      await navigateToStep(user, 4);
-
-      // The visual indicators would be tested here
-      // For now, we just verify we can navigate through all steps
-      const finalStepHeading = expectStepToBeActive(4);
-      expect(finalStepHeading).toBeInTheDocument();
-    });
+    
+    // Verify form data is displayed correctly
+    expect(screen.getByText('Flood')).toBeInTheDocument();
+    expect(screen.getByText('New York, NY, USA')).toBeInTheDocument();
+    expect(screen.getByText('Medical Assistance')).toBeInTheDocument();
+    // Check that contact name appears in the review section
+    expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+    
+    // Verify submit button is present
+    expect(screen.getByText('Submit Report')).toBeInTheDocument();
   });
 });

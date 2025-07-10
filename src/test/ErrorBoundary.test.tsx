@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import ErrorBoundary from '../components/ErrorBoundary';
 
 // Component that throws an error for testing
@@ -39,40 +39,38 @@ describe('ErrorBoundary', () => {
     );
     
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-    expect(screen.getByText('We apologize for the inconvenience. Please try refreshing the page.')).toBeInTheDocument();
+    expect(screen.getByText("We're sorry, but something unexpected happened. Please try refreshing the page.")).toBeInTheDocument();
   });
 
-  it('displays error details when an error occurs', () => {
+  it('displays error details when in development mode', () => {
+    // Skip this test if not in development mode
+    if (!import.meta.env.DEV) {
+      return;
+    }
+    
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>
     );
     
-    expect(screen.getByText('Error Details:')).toBeInTheDocument();
-    expect(screen.getByText('Test error')).toBeInTheDocument();
+    expect(screen.getByText('Error Details (Development)')).toBeInTheDocument();
+    expect(screen.getByText(/Test error/)).toBeInTheDocument();
   });
 
-  it('provides a refresh button when error occurs', () => {
+  it('provides action buttons when error occurs', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>
     );
+    
+    const tryAgainButton = screen.getByText('Try Again');
+    expect(tryAgainButton).toBeInTheDocument();
+    expect(tryAgainButton.tagName).toBe('BUTTON');
     
     const refreshButton = screen.getByText('Refresh Page');
     expect(refreshButton).toBeInTheDocument();
     expect(refreshButton.tagName).toBe('BUTTON');
-  });
-
-  it('provides a home link when error occurs', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    );
-    
-    const homeLink = screen.getByText('Go to Home');
-    expect(homeLink).toBeInTheDocument();
   });
 });

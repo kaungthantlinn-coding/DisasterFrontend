@@ -74,7 +74,7 @@ describe('ReportImpact - Core Functionality', () => {
     it('shows the first step (Disaster Information)', () => {
       renderWithRouter(<ReportImpact />);
       
-      expect(screen.getByText('Disaster Information')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Disaster Information', level: 2 })).toBeInTheDocument();
       expect(screen.getByText('Natural Disasters')).toBeInTheDocument();
       expect(screen.getByText('Human-Made Disasters')).toBeInTheDocument();
       expect(screen.getByText('Health Emergencies')).toBeInTheDocument();
@@ -131,9 +131,9 @@ describe('ReportImpact - Core Functionality', () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
-      await user.click(screen.getByText('Next'));
-      
-      expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
+      // The Next button should be disabled when no disaster category is selected
+      const nextButton = screen.getByText('Next');
+      expect(nextButton).toBeDisabled();
     });
 
     it('validates description field is required', async () => {
@@ -144,9 +144,9 @@ describe('ReportImpact - Core Functionality', () => {
       await user.click(screen.getByText('Flood'));
       await user.click(screen.getByText('High'));
       
-      await user.click(screen.getByText('Next'));
-      
-      expect(screen.getByText('Please provide a description')).toBeInTheDocument();
+      // The Next button should be disabled when description is missing
+      const nextButton = screen.getByText('Next');
+      expect(nextButton).toBeDisabled();
     });
 
     it('validates description minimum length', async () => {
@@ -160,9 +160,9 @@ describe('ReportImpact - Core Functionality', () => {
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'Short desc');
       
-      await user.click(screen.getByText('Next'));
-      
-      expect(screen.getByText('Description must be at least 20 characters')).toBeInTheDocument();
+      // The Next button should be disabled when description is too short
+      const nextButton = screen.getByText('Next');
+      expect(nextButton).toBeDisabled();
     });
   });
 
@@ -171,8 +171,9 @@ describe('ReportImpact - Core Functionality', () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
-      const emergencyToggle = screen.getByLabelText('This is an emergency situation');
+      const emergencyToggle = screen.getByRole('checkbox');
       expect(emergencyToggle).toBeInTheDocument();
+      expect(screen.getByText('This is an emergency situation')).toBeInTheDocument();
       
       await user.click(emergencyToggle);
       
@@ -297,7 +298,7 @@ describe('ReportImpact - Core Functionality', () => {
       await user.click(screen.getByText('Next'));
       
       // Step 3: Assistance & Contact
-      expect(screen.getByText('Assistance & Contact Information')).toBeInTheDocument();
+      expect(screen.getByText('Assistance Needed & Contact Information')).toBeInTheDocument();
       
       await user.click(screen.getByText('Immediate'));
       await user.click(screen.getByLabelText('Emergency Rescue'));
@@ -305,10 +306,17 @@ describe('ReportImpact - Core Functionality', () => {
       const assistanceDescription = screen.getByPlaceholderText(/Please provide specific details/);
       await user.type(assistanceDescription, 'We need immediate rescue assistance for trapped people.');
       
+      // Fill required contact information
+      const contactName = screen.getByPlaceholderText('Your name');
+      await user.type(contactName, 'John Doe');
+      
+      const contactPhone = screen.getByPlaceholderText('Your phone number');
+      await user.type(contactPhone, '+1234567890');
+      
       await user.click(screen.getByText('Next'));
       
       // Step 4: Review & Submit
-      expect(screen.getByText('Review & Submit')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Review & Submit', level: 2 })).toBeInTheDocument();
       expect(screen.getByText('Submit Report')).toBeInTheDocument();
     });
   });
