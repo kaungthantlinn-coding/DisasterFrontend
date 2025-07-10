@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import GoogleLoginButton from '../GoogleLoginButton';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock Google API
 const mockGoogleAccounts = {
@@ -43,8 +44,17 @@ describe('GoogleLoginButton', () => {
     vi.clearAllMocks();
   });
 
+  const renderWithQueryClient = (ui: React.ReactElement) => {
+    const queryClient = new QueryClient();
+    return render(
+      <QueryClientProvider client={queryClient}>
+        {ui}
+      </QueryClientProvider>
+    );
+  };
+
   it('renders the google signin container', () => {
-    render(<GoogleLoginButton />);
+    renderWithQueryClient(<GoogleLoginButton />);
     
     const container = screen.getByTestId('google-signin-button') || 
                      document.getElementById('google-signin-button');
@@ -52,7 +62,7 @@ describe('GoogleLoginButton', () => {
   });
 
   it('renders a container with correct structure', () => {
-    const { container } = render(<GoogleLoginButton />);
+    const { container } = renderWithQueryClient(<GoogleLoginButton />);
     
     // Check that the component renders without crashing
     expect(container.firstChild).toBeTruthy();
@@ -63,7 +73,7 @@ describe('GoogleLoginButton', () => {
   });
 
   it('attempts to load Google API script', () => {
-    render(<GoogleLoginButton />);
+    renderWithQueryClient(<GoogleLoginButton />);
     
     // Verify that createElement was called to create a script tag
     expect(document.createElement).toHaveBeenCalledWith('script');
@@ -71,7 +81,7 @@ describe('GoogleLoginButton', () => {
   });
 
   it('initializes Google Sign-In when API loads successfully', () => {
-    render(<GoogleLoginButton />);
+    renderWithQueryClient(<GoogleLoginButton />);
     
     // Simulate script loading successfully
     if (mockScript.onload) {
@@ -86,7 +96,7 @@ describe('GoogleLoginButton', () => {
   it('handles script load error gracefully', () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     
-    render(<GoogleLoginButton />);
+    renderWithQueryClient(<GoogleLoginButton />);
     
     // Simulate script loading error
     if (mockScript.onerror) {

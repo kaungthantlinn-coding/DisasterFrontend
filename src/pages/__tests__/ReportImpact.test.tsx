@@ -367,14 +367,14 @@ describe('ReportImpact Component', () => {
     });
 
     it('displays review information correctly', () => {
-      expect(screen.getByText('Review & Submit')).toBeInTheDocument();
-      expect(screen.getByText('Disaster Information')).toBeInTheDocument();
-      expect(screen.getByText('Location & Impact')).toBeInTheDocument();
-      expect(screen.getByText('Assistance & Contact')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Review & Submit' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Disaster Information' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Location & Impact' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Assistance & Contact' })).toBeInTheDocument();
     });
 
     it('shows submit button', () => {
-      expect(screen.getByText('Submit Report')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Submit Report' })).toBeInTheDocument();
     });
 
     it('displays important notice', () => {
@@ -390,9 +390,9 @@ describe('ReportImpact Component', () => {
       
       await user.click(screen.getByText('Next'));
       
-      expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
-      expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
-      expect(screen.getByText('Please provide a description')).toBeInTheDocument();
+      expect(screen.getByText((content) => content.includes('Please select a disaster category'))).toBeInTheDocument();
+      expect(screen.getByText((content) => content.includes('Please specify the type of disaster'))).toBeInTheDocument();
+      expect(screen.getByText((content) => content.includes('Please provide a description'))).toBeInTheDocument();
     });
 
     it('validates description length', async () => {
@@ -429,7 +429,7 @@ describe('ReportImpact Component', () => {
       // Go back to step 1
       await user.click(screen.getByText('Back'));
       
-      expect(screen.getByText('Disaster Information')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Disaster Information' })).toBeInTheDocument();
     });
 
     it('disables back button on first step', () => {
@@ -455,7 +455,7 @@ describe('ReportImpact Component', () => {
       
       // Skip to step 4 somehow (this would need more setup in a real test)
       // For now, just test the submit attempt
-      const submitButton = screen.getByText('Submit Report');
+      const submitButton = screen.getByRole('button', { name: 'Submit Report' });
       await user.click(submitButton);
       
       // Would need to navigate through all steps first
