@@ -506,7 +506,6 @@ const ReportImpact: React.FC = () => {
                             key={key}
                             type="button"
                             role="button"
-                            aria-label={category.label}
                             onClick={() => setFormData(prev => ({ ...prev, disasterType: key, disasterDetail: '' }))}
                             className={`p-4 border-2 rounded-xl transition-all duration-200 text-left ${
                               formData.disasterType === key

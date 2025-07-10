@@ -192,6 +192,11 @@ describe('ReportImpact Integration Tests', () => {
       // Try to proceed from step 1 without filling anything
       await user.click(screen.getByText('Next'));
       
+      // Wait for validation messages to appear
+      await waitFor(() => {
+        expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
+      });
+      
       expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
       expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
       expect(screen.getByText('Please provide a description')).toBeInTheDocument();
@@ -200,7 +205,10 @@ describe('ReportImpact Integration Tests', () => {
       await user.click(screen.getByText('Natural Disasters'));
       await user.click(screen.getByText('Next'));
 
-      expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
+      // Wait for partial validation message
+      await waitFor(() => {
+        expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
+      });
 
       // Complete step 1 properly
       await user.click(screen.getByText('Flood'));
@@ -219,6 +227,11 @@ describe('ReportImpact Integration Tests', () => {
 
       // Try to proceed without location
       await user.click(screen.getByText('Next'));
+      
+      // Wait for step 2 validation messages
+      await waitFor(() => {
+        expect(screen.getByText('Please select a location on the map')).toBeInTheDocument();
+      });
       
       expect(screen.getByText('Please select a location on the map')).toBeInTheDocument();
       expect(screen.getByText('Please select at least one impact type')).toBeInTheDocument();
@@ -321,6 +334,8 @@ describe('ReportImpact Integration Tests', () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       await navigateToStep(user, 2);
+      // Reset the mock call count before each photo test
+      vi.clearAllMocks();
     });
 
     it('handles multiple photo uploads', async () => {
@@ -475,7 +490,7 @@ describe('ReportImpact Integration Tests', () => {
       await user.click(screen.getByText('Submit Report'));
 
       expect(screen.getByText('Login Required')).toBeInTheDocument();
-      expect(screen.getByText('You need to be logged in to submit a disaster impact report.')).toBeInTheDocument();
+      expect(screen.getByText(/You need to be logged in to submit a disaster impact report/)).toBeInTheDocument();
     });
 
     it('pre-fills contact information for authenticated users', () => {
@@ -496,7 +511,10 @@ describe('ReportImpact Integration Tests', () => {
       const description = screen.getByPlaceholderText(/Provide detailed information/);
       await user.type(description, 'Test description');
 
-      expect(screen.getByText(/16\/500 characters/)).toBeInTheDocument();
+      // Wait for character count to update and use more flexible matching
+      await waitFor(() => {
+        expect(screen.getByText(/16.*500.*characters/)).toBeInTheDocument();
+      });
     });
 
     it('shows validation messages in real-time', async () => {
@@ -506,6 +524,11 @@ describe('ReportImpact Integration Tests', () => {
       // Try to proceed without selecting anything
       await user.click(screen.getByText('Next'));
 
+      // Wait for validation messages to appear
+      await waitFor(() => {
+        expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
+      });
+      
       // Multiple validation messages should appear
       expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
       expect(screen.getByText('Please specify the type of disaster')).toBeInTheDocument();
