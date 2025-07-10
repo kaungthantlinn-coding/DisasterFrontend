@@ -8,7 +8,7 @@ const LoginPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (
@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
             Welcome to DisasterApp
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to access your disaster management dashboard
+            Sign in to access disaster management features
           </p>
         </div>
 

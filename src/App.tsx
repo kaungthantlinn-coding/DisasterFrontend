@@ -2,6 +2,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
+import Reports from './pages/Reports';
+import ReportDetail from './pages/ReportDetail';
+import ReportImpact from './pages/ReportImpact';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 
@@ -27,6 +31,7 @@ function App() {
         >
           <div className="min-h-screen bg-gray-50">
             <Routes>
+              <Route path="/" element={<Home />} />
               <Route path="/login" element={<LoginPage />} />
               <Route
                 path="/dashboard"
@@ -36,8 +41,12 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
+              {/* Placeholder routes for navigation links */}
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/reports/:id" element={<ReportDetail />} />
+              <Route path="/report/new" element={<ReportImpact />} />
+              <Route path="/volunteer" element={<div className="p-8 text-center">Volunteer page coming soon...</div>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </Router>

@@ -3,14 +3,64 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+
   html {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   }
-  
+
   body {
     margin: 0;
     min-height: 100vh;
-    background-color: #f9fafb;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  * {
+    border-color: hsl(var(--border));
   }
 }
 
@@ -29,5 +79,70 @@
   
   .card {
     @apply bg-white overflow-hidden shadow rounded-lg;
+  }
+
+  /* Leaflet map styles to ensure proper zoom functionality and z-index layering */
+  .leaflet-container {
+    touch-action: pan-x pan-y !important;
+    /* Ensure map container stays below header (z-50 = 50) */
+    z-index: 10 !important;
+  }
+
+  /* Control all Leaflet elements to stay below header */
+  .leaflet-control-container {
+    z-index: 15 !important;
+  }
+
+  .leaflet-control {
+    z-index: 15 !important;
+  }
+
+  .leaflet-popup-pane {
+    z-index: 20 !important;
+  }
+
+  .leaflet-tooltip-pane {
+    z-index: 25 !important;
+  }
+
+  .leaflet-marker-pane {
+    z-index: 12 !important;
+  }
+
+  .leaflet-tile-pane {
+    z-index: 5 !important;
+  }
+
+  .leaflet-container .leaflet-control-zoom {
+    border: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+    z-index: 15 !important;
+  }
+
+  .leaflet-container .leaflet-control-zoom a {
+    border-radius: 6px !important;
+    border: none !important;
+    background-color: white !important;
+    color: #374151 !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .leaflet-container .leaflet-control-zoom a:hover {
+    background-color: #f3f4f6 !important;
+    color: #1f2937 !important;
+  }
+
+  /* Ensure map sections don't interfere with header */
+  .map-section {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Ensure header always stays on top */
+  header {
+    position: sticky !important;
+    z-index: 50 !important;
   }
 }
