@@ -1,143 +1,427 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useRoles } from '../hooks/useRoles';
+import Header from '../components/Layout/Header';
+import RoleBasedDashboard from '../components/Dashboard/RoleBasedDashboard';
+import { 
+  Users, 
+  FileText, 
+  AlertTriangle, 
+  TrendingUp, 
+  Eye, 
+  ExternalLink, 
+  CheckCircle, 
+  Calendar, 
+  Clock,
+  Plus,
+  Heart,
+  MapPin
+} from 'lucide-react';
 
-const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+interface StatCardProps {
+  icon: React.ReactNode;
+  title: string;
+  value: string | number;
+  bgColor: string;
+  iconColor: string;
+}
 
-  const handleLogout = () => {
-    logout();
-    window.location.href = '/login';
+interface ReportCardProps {
+  title: string;
+  description: string;
+  status: 'Verified' | 'Pending' | 'Rejected';
+  date: string;
+  image?: string;
+  onView: () => void;
+  onEdit?: () => void;
+}
+
+interface AssistanceCardProps {
+  title: string;
+  description: string;
+  date: string;
+  status?: 'Endorsed' | 'Pending';
+  onView: () => void;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ icon, title, value, bgColor, iconColor }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
+        <p className="text-3xl font-bold text-gray-900">{value}</p>
+      </div>
+      <div className={`p-3 rounded-xl ${bgColor}`}>
+        <div className={iconColor}>
+          {icon}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const ReportCard: React.FC<ReportCardProps> = ({ title, description, status, date, image, onView, onEdit }) => {
+  const [imageError, setImageError] = useState(false);
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Verified': return 'bg-green-100 text-green-800';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 flex items-center">
-                <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h1 className="ml-3 text-xl font-semibold text-gray-900">DisasterApp</h1>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user?.photoUrl && (
-                <img
-                  className="h-8 w-8 rounded-full"
-                  src={user.photoUrl}
-                  alt={user.name}
-                />
-              )}
-              <span className="text-sm text-gray-700">Welcome, {user?.name}</span>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
-              >
-                Logout
-              </button>
-            </div>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{description}</p>
+          <div className="flex items-center justify-between">
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
+              <CheckCircle className="w-3 h-3 mr-1" />
+              {status}
+            </span>
+            <span className="text-xs text-gray-500 flex items-center">
+              <Calendar className="w-3 h-3 mr-1" />
+              {date}
+            </span>
           </div>
         </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Welcome Section */}
-          <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
-            <div className="px-4 py-5 sm:p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h2>
-              <p className="text-gray-600 mb-4">
-                Welcome to the DisasterApp dashboard! You have successfully logged in.
-              </p>
-              
-              {/* User Info Card */}
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <h3 className="text-lg font-medium text-blue-900 mb-2">Your Account Information</h3>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="font-medium text-blue-800">Name:</span>
-                    <span className="ml-2 text-blue-700">{user?.name}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-blue-800">Email:</span>
-                    <span className="ml-2 text-blue-700">{user?.email}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-blue-800">User ID:</span>
-                    <span className="ml-2 text-blue-700">{user?.userId}</span>
-                  </div>
-                  {user?.roles && user.roles.length > 0 && (
-                    <div>
-                      <span className="font-medium text-blue-800">Roles:</span>
-                      <span className="ml-2 text-blue-700">{user.roles.join(', ')}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+        {image && !imageError && (
+          <img 
+            src={image} 
+            alt={title} 
+            className="w-16 h-16 rounded-lg object-cover ml-4 border border-gray-200" 
+            onError={() => setImageError(true)}
+          />
+        )}
+        {image && imageError && (
+          <div className="w-16 h-16 rounded-lg bg-gray-100 ml-4 border border-gray-200 flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6 text-gray-400" />
           </div>
+        )}
+      </div>
+      <div className="flex space-x-2">
+        <button 
+          onClick={onView}
+          className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md font-medium transition-colors"
+        >
+          <Eye className="w-4 h-4 mr-1" />
+          View
+        </button>
+        {onEdit && (
+          <button 
+            onClick={onEdit}
+            className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-md font-medium transition-colors"
+          >
+            <ExternalLink className="w-4 h-4 mr-1" />
+            Edit
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
 
-          {/* Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Authentication</dt>
-                      <dd className="text-lg font-medium text-gray-900">Successful</dd>
-                    </dl>
+const AssistanceCard: React.FC<AssistanceCardProps> = ({ title, description, date, status, onView }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+    <div className="flex items-start justify-between mb-4">
+      <div className="flex-1">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+        <p className="text-gray-600 text-sm mb-3">{description}</p>
+        <div className="flex items-center justify-between">
+          {status && (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              status === 'Endorsed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {status === 'Endorsed' ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+              {status}
+            </span>
+          )}
+          <span className="text-xs text-gray-500 flex items-center">
+            <Calendar className="w-3 h-3 mr-1" />
+            {date}
+          </span>
+        </div>
+      </div>
+    </div>
+    <button 
+      onClick={onView}
+      className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md font-medium transition-colors"
+    >
+      <Eye className="w-4 h-4 mr-1" />
+      View Report
+    </button>
+  </div>
+);
+
+const Dashboard: React.FC = () => {
+  const { user } = useAuth();
+  const { hasAdminOrCjRole } = useRoles();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'reports' | 'assistance'>('reports');
+
+  // Mock data - replace with real data from API
+  const stats = {
+    reportsSubmitted: 2,
+    verifiedReports: 2,
+    assistanceProvided: 2
+  };
+
+  const myReports = [
+    {
+      id: 1,
+      title: 'Flooding in Downtown District',
+      description: 'Severe flooding has affected multiple residential areas after heavy rainfall. Water levels reached 3-4 feet in some streets, making them...',
+      status: 'Verified' as const,
+      date: 'Jan 15, 2024',
+      image: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center'
+    },
+    {
+      id: 2,
+      title: 'Wildfire Damage Assessment',
+      description: 'Fast-moving wildfire has damaged several residential properties and threatens surrounding forest areas.',
+      status: 'Verified' as const,
+      date: 'Jan 12, 2024',
+      image: 'https://images.unsplash.com/photo-1574482620881-2f235c4e6d9d?w=64&h=64&fit=crop&crop=center'
+    }
+  ];
+
+  const myAssistance = [
+    {
+      id: 1,
+      title: 'Flooding in Downtown District',
+      description: 'Provided emergency shelter coordination with Red Cross. Secured temporary housing for 8 families.',
+      date: 'Jan 16, 2024',
+      status: 'Endorsed' as const
+    },
+    {
+      id: 2,
+      title: 'Wildfire Damage Assessment',
+      description: 'Coordinated evacuation transportation for 5 elderly residents.',
+      date: 'Jan 13, 2024'
+    }
+  ];
+
+  const assistanceReceived = [
+    {
+      id: 1,
+      organization: 'Red Cross',
+      type: 'Emergency Supplies',
+      date: '16/01/2024',
+      status: 'Endorsed' as const
+    },
+    {
+      id: 2,
+      organization: 'Local Volunteers',
+      type: 'Cleanup Help',
+      date: '18/01/2024'
+    }
+  ];
+
+  // Show role-based dashboard for admin and CJ users
+  if (hasAdminOrCjRole()) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <RoleBasedDashboard />
+      </div>
+    );
+  }
+
+  // Show regular user dashboard
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}</h1>
+              <p className="text-gray-600 mt-1">Manage your reports and assistance activities</p>
+            </div>
+            <Link 
+              to="/report/new"
+              className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              New Report
+            </Link>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard
+            icon={<Eye className="w-6 h-6" />}
+            title="Reports Submitted"
+            value={stats.reportsSubmitted}
+            bgColor="bg-blue-50"
+            iconColor="text-blue-600"
+          />
+          <StatCard
+            icon={<CheckCircle className="w-6 h-6" />}
+            title="Verified Reports"
+            value={stats.verifiedReports}
+            bgColor="bg-green-50"
+            iconColor="text-green-600"
+          />
+          <StatCard
+            icon={<Heart className="w-6 h-6" />}
+            title="Assistance Provided"
+            value={stats.assistanceProvided}
+            bgColor="bg-red-50"
+            iconColor="text-red-600"
+          />
+        </div>
+
+        {/* Activity Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">My Activity</h2>
+              <p className="text-sm text-gray-600">Track your disaster reports and assistance provided to the community.</p>
+            </div>
+            
+            {/* Tab Navigation */}
+            <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-6">
+              <button
+                onClick={() => setActiveTab('reports')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'reports'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                My Reports
+              </button>
+              <button
+                onClick={() => setActiveTab('assistance')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'assistance'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                My Assistance
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'reports' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Reports I've Submitted</h3>
+                  <Link 
+                    to="/report/new"
+                    className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center"
+                  >
+                    Create New
+                    <ExternalLink className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
+                <div className="space-y-4">
+                  {myReports.map((report) => (
+                    <ReportCard
+                      key={report.id}
+                      title={report.title}
+                      description={report.description}
+                      status={report.status}
+                      date={report.date}
+                      image={report.image}
+                      onView={() => {
+                        // Navigate to report detail page
+                        navigate(`/reports/${report.id}`);
+                      }}
+                      onEdit={() => {
+                        // Navigate to edit report page
+                        navigate(`/report/edit/${report.id}`);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'assistance' && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Assistance I've Provided</h3>
+                  <button 
+                    onClick={() => navigate('/reports')}
+                    className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                  >
+                    Help Others
+                    <ExternalLink className="w-4 h-4 ml-1" />
+                  </button>
+                </div>
+                <div className="space-y-4 mb-8">
+                  {myAssistance.map((assistance) => (
+                    <AssistanceCard
+                      key={assistance.id}
+                      title={assistance.title}
+                      description={assistance.description}
+                      date={assistance.date}
+                      status={assistance.status}
+                      onView={() => {
+                        // Navigate to assistance detail page
+                        navigate(`/assistance/${assistance.id}`);
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Assistance Received Section */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Assistance Received - Flood in Sacramento County, CA</h3>
+                  <div className="space-y-3">
+                    {assistanceReceived.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3">
+                            <div className="font-medium text-gray-900">{item.organization}</div>
+                            <div className="text-sm text-gray-600">{item.type}</div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 flex items-center">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {item.date}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          {item.status && (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.status === 'Endorsed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {item.status === 'Endorsed' ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+                              {item.status}
+                            </span>
+                          )}
+                          <button 
+                            onClick={() => {
+                              if (item.status === 'Endorsed') {
+                                // Navigate to assistance received detail
+                                navigate(`/assistance/received/${item.id}`);
+                              } else {
+                                // Handle endorsement logic
+                                alert('Endorsement functionality will be implemented');
+                              }
+                            }}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1 hover:bg-blue-50 rounded transition-colors"
+                          >
+                            {item.status === 'Endorsed' ? 'View Report' : 'Endorse'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Google Integration</dt>
-                      <dd className="text-lg font-medium text-gray-900">Active</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <svg className="h-8 w-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">Disaster Management</dt>
-                      <dd className="text-lg font-medium text-gray-900">Ready</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </main>

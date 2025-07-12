@@ -173,18 +173,24 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
 
   // Enhanced validation with specific error messages
   const validateStep = useCallback((step: number): boolean => {
+    console.log('validateStep called for step:', step);
     const newErrors: Record<string, string> = {};
     
     switch (step) {
       case 1:
+        console.log('Validating step 1...');
         if (!formData.disasterType) newErrors.disasterType = 'Please select a disaster category';
         if (!formData.disasterDetail) newErrors.disasterDetail = 'Please specify the type of disaster';
         if (formData.disasterDetail === 'Other Natural' || formData.disasterDetail === 'Other Human-Made' || formData.disasterDetail === 'Other Health') {
           if (!formData.customDisasterDetail) newErrors.customDisasterDetail = 'Please specify the disaster type';
         }
+        console.log('Description validation - trim():', formData.description.trim());
+        console.log('Description validation - length:', formData.description.length);
         if (!formData.description.trim()) {
+          console.log('Setting description error: empty description');
           newErrors.description = 'Please provide a description';
         } else if (formData.description.length < 20) {
+          console.log('Setting description error: too short');
           newErrors.description = 'Description must be at least 20 characters';
         }
         if (!formData.severity) newErrors.severity = 'Please select severity level';
@@ -213,8 +219,12 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         break;
     }
     
+    console.log('newErrors object:', newErrors);
+    console.log('Setting errors with setErrors...');
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const isValid = Object.keys(newErrors).length === 0;
+    console.log('Validation result:', isValid);
+    return isValid;
   }, [formData]);
 
   // Check if current step can proceed without setting errors
@@ -262,12 +272,34 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
   }, [currentStep, checkCanProceed]);
 
   const handleNext = useCallback(() => {
-    if (validateStep(currentStep)) {
+    console.log('handleNext called, currentStep:', currentStep);
+    console.log('formData.description:', formData.description);
+    console.log('formData.description.length:', formData.description.length);
+    
+    const isValid = validateStep(currentStep);
+    console.log('validateStep result:', isValid);
+    
+    if (isValid) {
+      console.log('Validation passed, moving to next step');
       setCurrentStep(prev => Math.min(prev + 1, 4));
       setErrors({});
+    } else {
+      console.log('Validation failed, staying on current step');
     }
     // If validation fails, errors will be set by validateStep
-  }, [currentStep, validateStep]);
+  }, [currentStep, validateStep, formData.description]);
+
+  // Handle Next button click - always validate, even if button would be disabled
+  const handleNextClick = useCallback(() => {
+    console.log('handleNextClick called, canProceed:', canProceed);
+    if (canProceed) {
+      handleNext();
+    } else {
+      // Even if we can't proceed, run validation to show errors
+      console.log('Button disabled, but running validation to show errors');
+      validateStep(currentStep);
+    }
+  }, [canProceed, handleNext, validateStep, currentStep]);
 
   const handleBack = useCallback(() => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
@@ -1175,9 +1207,12 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
 
               {currentStep < 4 ? (
                 <button
-                  onClick={handleNext}
-                  disabled={!canProceed}
-                  className="flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  onClick={handleNextClick}
+                  className={`flex items-center px-6 py-3 rounded-xl transition-all duration-200 shadow-sm ${
+                    canProceed 
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700' 
+                      : 'bg-gray-300 text-gray-600 cursor-pointer'
+                  }`}
                 >
                   Next
                   <ChevronRight size={20} className="ml-2" />

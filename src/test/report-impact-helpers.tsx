@@ -1,4 +1,3 @@
-import userEvent from '@testing-library/user-event';
 import { screen, waitFor } from '@testing-library/react';
 
 export interface FormData {
@@ -99,8 +98,7 @@ export const fillStep1 = async (user: any, data: Partial<FormData> = {}) => {
   }
 };
 
-export const fillStep2 = async (formData: FormData) => {
-  const user = userEvent.setup();
+export const fillStep2 = async (user: any, formData: FormData) => {
   
   // Select location (using mock location picker)
   await user.click(screen.getByTestId('select-location'));
@@ -128,8 +126,7 @@ export const fillStep2 = async (formData: FormData) => {
   }
 };
 
-export const fillStep3 = async (formData: FormData) => {
-  const user = userEvent.setup();
+export const fillStep3 = async (user: any, formData: FormData) => {
   
   // Select urgency level
   const urgencyText = formData.urgencyLevel.replace('_', ' ').split(' ').map(word => 
@@ -167,7 +164,7 @@ export const fillStep3 = async (formData: FormData) => {
   }
 };
 
-export const fillCompleteForm = async (user: any, data: Partial<FormData> = {}) => {
+export const fillCompleteForm = async (user: any, screen: any, data: Partial<FormData> = {}) => {
   const formData = { ...mockFormData, ...data };
   
   // Step 1: Disaster Information
@@ -175,11 +172,11 @@ export const fillCompleteForm = async (user: any, data: Partial<FormData> = {}) 
   await user.click(screen.getByText('Next'));
   
   // Step 2: Location & Impact
-  await fillStep2(formData);
+  await fillStep2(user, formData);
   await user.click(screen.getByText('Next'));
   
   // Step 3: Assistance & Contact
-  await fillStep3(formData);
+  await fillStep3(user, formData);
   await user.click(screen.getByText('Next'));
   
   // Now on Step 4: Review & Submit
@@ -209,7 +206,7 @@ export const navigateToStep = async (user: any, stepNumber: number, data: Partia
   }
   
   if (stepNumber >= 3) {
-    await fillStep2(formData);
+    await fillStep2(user, formData);
     await user.click(screen.getByText('Next'));
     
     // Wait for step 3 to be active
@@ -219,7 +216,7 @@ export const navigateToStep = async (user: any, stepNumber: number, data: Partia
   }
   
   if (stepNumber >= 4) {
-    await fillStep3(formData);
+    await fillStep3(user, formData);
     await user.click(screen.getByText('Next'));
     
     // Wait for step 4 to be active
@@ -333,34 +330,34 @@ export const setupTestOnStep = async (user: any, stepNumber: number = 1) => {
   }
   
   // Navigate to desired step
-  if (currentStep > stepNumber) {
-    // Go back to desired step
-    while (currentStep > stepNumber) {
-      await user.click(screen.getByText('Back'));
-      await waitFor(() => {
-        screen.getByRole('heading', { level: 2, name: stepHeadings[stepNumber - 1] });
-      });
-      currentStep--;
-    }
-  } else if (currentStep < stepNumber) {
-    // Go forward to desired step (will need to fill forms)
-    while (currentStep < stepNumber) {
-      if (currentStep === 1) {
-        await fillStep1(user);
-      } else if (currentStep === 2) {
-        await fillStep2(user);
-      } else if (currentStep === 3) {
-        await fillStep3(user);
-      }
-      await user.click(screen.getByText('Next'));
-      currentStep++;
-      if (currentStep <= 4) {
+    if (currentStep > stepNumber) {
+      // Go back to desired step
+      while (currentStep > stepNumber) {
+        await user.click(screen.getByText('Back'));
         await waitFor(() => {
-          screen.getByRole('heading', { level: 2, name: stepHeadings[currentStep - 1] });
+          screen.getByRole('heading', { level: 2, name: stepHeadings[stepNumber - 1] });
         });
+        currentStep--;
+      }
+    } else if (currentStep < stepNumber) {
+      // Go forward to desired step (will need to fill forms)
+      while (currentStep < stepNumber) {
+        if (currentStep === 1) {
+          await fillStep1(user, mockFormData);
+        } else if (currentStep === 2) {
+          await fillStep2(user, mockFormData);
+        } else if (currentStep === 3) {
+          await fillStep3(user, mockFormData);
+        }
+        await user.click(screen.getByText('Next'));
+        currentStep++;
+        if (currentStep <= 4) {
+          await waitFor(() => {
+            screen.getByRole('heading', { level: 2, name: stepHeadings[currentStep - 1] });
+          });
+        }
       }
     }
-  }
   
   return currentStep;
 };

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldCheck, Menu, X, ChevronDown, User, LogOut } from 'lucide-react';
+import { ShieldCheck, Menu, X, ChevronDown, User, LogOut, Settings, Shield } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useRoles } from '../../hooks/useRoles';
 
 interface NavItem {
   name: string;
@@ -16,6 +17,7 @@ const Header: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useAuth();
+  const { isAdmin, isCj, hasAdminOrCjRole, isOnlyUser, formatRoleName } = useRoles();
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -50,19 +52,35 @@ const Header: React.FC = () => {
   ];
 
   const getNavItems = (): NavItem[] => {
-    // Navigation items consistent for both authenticated and non-authenticated users
+    // Base navigation items for all users
     const baseItems = [
       { name: 'Home', path: '/' },
       { name: 'View Reports', path: '/reports' },
-      { name: 'Report Impact', path: '/report/new' },
+      ...(!isOnlyUser() ? [{ name: 'Report Impact', path: '/report/new' }] : []),
     ];
 
-    // Add Dashboard for authenticated users
+    // Add role-based navigation items
     if (isAuthenticated) {
-      return [
-        ...baseItems,
-        { name: 'Dashboard', path: '/dashboard' },
+      const authItems = [
+        ...(!isOnlyUser() ? [{ name: 'Dashboard', path: '/dashboard' }] : []),
       ];
+
+      // Add CJ and Admin specific items
+      if (hasAdminOrCjRole()) {
+        authItems.push(
+          { name: 'Verify Reports', path: '/verify-reports' },
+          { name: 'Analytics', path: '/analytics' }
+        );
+      }
+
+      // Add Admin-only items
+      if (isAdmin()) {
+        authItems.push(
+          { name: 'Admin Panel', path: '/admin' }
+        );
+      }
+
+      return [...baseItems, ...authItems];
     }
 
     return baseItems;
@@ -163,7 +181,9 @@ const Header: React.FC = () => {
                     )}
                     <div className="text-left">
                       <div className="text-sm font-medium text-gray-900">{user?.name}</div>
-                      <div className="text-xs text-gray-500">User</div>
+                      <div className="text-xs text-gray-500">
+                        {user?.roles?.filter(role => role).map(role => formatRoleName(role)).join(', ') || 'User'}
+                      </div>
                     </div>
                   </div>
                   <ChevronDown
@@ -176,15 +196,59 @@ const Header: React.FC = () => {
 
                 {/* User Dropdown Menu */}
                 {isUserDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setIsUserDropdownOpen(false)}
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <User size={16} className="mr-3 text-gray-400" />
-                      Dashboard
-                    </Link>
+                  <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <div className="text-sm font-medium text-gray-900">{user?.name}</div>
+                      <div className="text-xs text-gray-500">{user?.email}</div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {user?.roles?.filter(role => role).map(role => (
+                          <span
+                            key={role}
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                              role === 'admin' ? 'bg-red-100 text-red-800' :
+                              role === 'cj' ? 'bg-blue-100 text-blue-800' :
+                              'bg-green-100 text-green-800'
+                            }`}
+                          >
+                            {formatRoleName(role)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {!isOnlyUser() && (
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <User size={16} className="mr-3 text-gray-400" />
+                        Dashboard
+                      </Link>
+                    )}
+                    
+                    {isAdmin() && (
+                      <Link
+                        to="/admin/roles"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Shield size={16} className="mr-3 text-gray-400" />
+                        Role Management
+                      </Link>
+                    )}
+                    
+                    {hasAdminOrCjRole() && (
+                      <Link
+                        to="/admin/settings"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Settings size={16} className="mr-3 text-gray-400" />
+                        Settings
+                      </Link>
+                    )}
+                    
                     <hr className="my-1 border-gray-200" />
                     <button
                       onClick={handleLogout}
@@ -284,14 +348,16 @@ const Header: React.FC = () => {
                     </div>
                   </div>
 
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors py-2"
-                  >
-                    <User size={20} />
-                    <span className="text-lg font-medium">Dashboard</span>
-                  </Link>
+                  {!isOnlyUser() && (
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="flex items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors py-2"
+                    >
+                      <User size={20} />
+                      <span className="text-lg font-medium">Dashboard</span>
+                    </Link>
+                  )}
 
                   <button
                     onClick={() => {

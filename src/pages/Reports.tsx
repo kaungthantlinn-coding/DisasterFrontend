@@ -356,7 +356,7 @@ const Reports: React.FC = () => {
 
                     {/* Severity Badge */}
                     <div className={`absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-white ${getSeverityColor(report.severity)}`}>
-                      {report.severity.toUpperCase()}
+                      {report.severity?.toUpperCase()}
                     </div>
 
                     {/* Status Badge */}
@@ -466,7 +466,7 @@ const Reports: React.FC = () => {
                           {/* Status and Severity Badges */}
                           <div className="flex items-center space-x-2 ml-4">
                             <span className={`px-2 py-1 rounded-full text-xs font-bold text-white ${getSeverityColor(report.severity)}`}>
-                              {report.severity.toUpperCase()}
+                              {report.severity?.toUpperCase()}
                             </span>
                             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                               report.status === 'verified' ? 'bg-green-100 text-green-800' :

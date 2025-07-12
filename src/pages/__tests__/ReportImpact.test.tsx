@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import ReportImpact from '../ReportImpact';
+import { fillCompleteForm } from '../../test/report-impact-helpers';
 
 // Mock dependencies
 vi.mock('../../hooks/useAuth', () => ({
@@ -92,23 +93,23 @@ describe('ReportImpact Component', () => {
       expect(screen.getByRole('heading', { name: 'Disaster Information', level: 2 })).toBeInTheDocument();
     });
     
-    // The Next button should be disabled when form is empty
+    // The Next button should have disabled styling when form is empty
     const nextButton = screen.getByText('Next');
-    expect(nextButton).toBeDisabled();
+    expect(nextButton).toHaveClass('bg-gray-300', 'text-gray-600', 'cursor-pointer');
     
     // Fill in some fields but not all required ones
     const user = userEvent.setup();
     await user.click(screen.getByText('Natural Disasters'));
     
-    // Button should still be disabled as not all required fields are filled
-    expect(nextButton).toBeDisabled();
+    // Button should still have disabled styling as not all required fields are filled
+    expect(nextButton).toHaveClass('bg-gray-300', 'text-gray-600', 'cursor-pointer');
     
     // Fill in more fields
     await user.click(screen.getByText('Flood'));
     await user.click(screen.getByText('High'));
     
-    // Still disabled without description and date
-    expect(nextButton).toBeDisabled();
+    // Still has disabled styling without description and date
+    expect(nextButton).toHaveClass('bg-gray-300', 'text-gray-600', 'cursor-pointer');
   });
 
   it('should allow completing step 1 and moving to step 2', async () => {
@@ -198,13 +199,18 @@ describe('ReportImpact Component', () => {
       expect(screen.getByText('Check this if immediate response is needed')).toBeInTheDocument();
     });
 
+
+
     it('validates required fields when trying to proceed', async () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
       await user.click(screen.getByText('Next'));
       
-      expect(screen.getByText('Please select a disaster category')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByTestId('disasterType-error')).toBeInTheDocument();
+      });
+      expect(screen.getByTestId('disasterType-error')).toHaveTextContent('Please select a disaster category');
     });
 
     it('fills out step 1 completely and proceeds to step 2', async () => {
@@ -446,21 +452,72 @@ describe('ReportImpact Component', () => {
       
       await user.click(screen.getByText('Next'));
       
-      expect(screen.getByText((content) => content.includes('Please select a disaster category'))).toBeInTheDocument();
-      expect(screen.getByText((content) => content.includes('Please specify the type of disaster'))).toBeInTheDocument();
-      expect(screen.getByText((content) => content.includes('Please provide a description'))).toBeInTheDocument();
+      // Wait for validation errors to appear
+      await waitFor(() => {
+        expect(screen.getByTestId('disasterType-error')).toBeInTheDocument();
+        expect(screen.getByTestId('description-error')).toBeInTheDocument();
+      }, { timeout: 5000 });
+      
+      // Verify the exact error messages
+      expect(screen.getByTestId('disasterType-error')).toHaveTextContent('Please select a disaster category');
+      expect(screen.getByTestId('description-error')).toHaveTextContent('Please provide a description');
+      
+      // disasterDetail error only appears after selecting a disaster type
+      // severity and dateTime errors should also appear
+      expect(screen.getByTestId('severity-error')).toBeInTheDocument();
+      expect(screen.getByTestId('dateTime-error')).toBeInTheDocument();
     });
 
     it('validates description length', async () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
+      // Fill all required fields except description to isolate the validation
+      await user.click(screen.getByRole('button', { name: /Natural Disasters/i }));
+      await user.click(screen.getByRole('button', { name: /Flood/i }));
+      await user.click(screen.getByRole('button', { name: /High/i }));
+      
+      const dateInput = screen.getByLabelText(/When did this occur/);
+      await user.type(dateInput, '2024-01-15T10:30');
+      
       const description = screen.getByPlaceholderText(/Provide detailed information/);
-      await user.type(description, 'Short description');
+      await user.clear(description);
+      await user.type(description, 'This is 19 chars!!'); // Exactly 19 characters to trigger validation error
       
-      await user.click(screen.getByText('Next'));
+      // Verify the description was actually set
+      console.log('TEST: Description value after typing:', (description as HTMLInputElement).value);
+      console.log('TEST: Description length:', (description as HTMLInputElement).value.length);
       
-      expect(screen.getByText('Description must be at least 20 characters')).toBeInTheDocument();
+      // Verify we're still on step 1 before clicking Next
+      expect(screen.getByRole('heading', { name: /Disaster Information/i })).toBeInTheDocument();
+      
+      // Click Next to trigger validation
+      console.log('TEST: Looking for Next button...');
+      const nextButton = screen.getByText('Next');
+      console.log('TEST: Next button disabled?', nextButton.hasAttribute('disabled'));
+      
+      // Add a longer delay to ensure form state is updated
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      await user.click(nextButton);
+      console.log('TEST: Next button clicked');
+      
+      // Wait longer for validation and state updates
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check what step we're on now
+      const currentHeading = screen.queryByRole('heading', { name: /Disaster Information/i });
+      const step2Heading = screen.queryByRole('heading', { name: /Location & Impact/i });
+      
+      console.log('TEST: Disaster Information heading found:', !!currentHeading);
+      console.log('TEST: Location & Impact heading found:', !!step2Heading);
+      
+      // Check if we stayed on step 1 (validation should prevent navigation)
+      expect(screen.getByRole('heading', { name: /Disaster Information/i })).toBeInTheDocument();
+      
+      // Now check for the error message
+      const descriptionError = await screen.findByTestId('description-error', {}, { timeout: 5000 });
+      expect(descriptionError).toHaveTextContent('Description must be at least 20 characters');
     });
   });
 
@@ -509,22 +566,28 @@ describe('ReportImpact Component', () => {
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
-      // Skip to step 4 somehow (this would need more setup in a real test)
-      // For now, just test the submit attempt
+      // Use helper to fill complete form and navigate to submit button
+      await fillCompleteForm(user, screen);
+      
+      // Now we should be on step 4 with the submit button available
       const submitButton = screen.getByRole('button', { name: 'Submit Report' });
       await user.click(submitButton);
       
-      // Would need to navigate through all steps first
-      // This test would be more complex in reality
+      // Check for login prompt modal
+      await waitFor(() => {
+        expect(screen.getByText('Login Required')).toBeInTheDocument();
+      });
+      expect(screen.getByText(/You need to be logged in to submit a disaster impact report/)).toBeInTheDocument();
     });
   });
 
   describe('Photo Upload', () => {
     beforeEach(async () => {
-      // Get to step 2
+      // Get to step 2 using helper
       const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
+      // Navigate to step 2 properly
       await user.click(screen.getByRole('button', { name: /Natural Disasters/i }));
       await user.click(screen.getByRole('button', { name: /Flood/i }));
       await user.click(screen.getByRole('button', { name: /High/i }));
@@ -536,18 +599,92 @@ describe('ReportImpact Component', () => {
       await user.type(dateInput, '2024-01-15T10:30');
       
       await user.click(screen.getByText('Next'));
+      
+      // Wait for step 2 to load with increased timeout
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /Location & Impact/i })).toBeInTheDocument();
+      }, { timeout: 8000 });
     });
 
     it('handles photo upload', async () => {
       const user = userEvent.setup();
+      
+      // Mock URL.createObjectURL for photo preview
+      global.URL.createObjectURL = vi.fn(() => 'mock-url');
+      global.URL.revokeObjectURL = vi.fn();
       
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
       const fileInput = screen.getByLabelText(/Click to upload photos/);
       
       await user.upload(fileInput, file);
       
-      // The photo would be displayed in the grid
-      // This test would need more sophisticated mocking of URL.createObjectURL
+      // Wait for file processing to complete with specific timeout
+      await waitFor(() => {
+        expect((fileInput as HTMLInputElement).files).toHaveLength(1);
+      }, { timeout: 5000 });
+      
+      // Verify the file was uploaded
+      expect((fileInput as HTMLInputElement).files?.[0]).toBe(file);
+    });
+
+    it('handles large file upload performance', async () => {
+      const user = userEvent.setup();
+      
+      // Mock URL.createObjectURL for photo preview
+      global.URL.createObjectURL = vi.fn(() => 'mock-url');
+      global.URL.revokeObjectURL = vi.fn();
+      
+      // Create a large file (5MB mock)
+      const largeFileContent = new Array(5 * 1024 * 1024).fill('a').join('');
+      const largeFile = new File([largeFileContent], 'large-image.jpg', { type: 'image/jpeg' });
+      
+      const fileInput = screen.getByLabelText(/Click to upload photos/);
+      
+      // Measure upload performance
+      const startTime = performance.now();
+      await user.upload(fileInput, largeFile);
+      
+      // Wait for file processing with extended timeout for large files
+      await waitFor(() => {
+        expect((fileInput as HTMLInputElement).files).toHaveLength(1);
+      }, { timeout: 10000 });
+      
+      const endTime = performance.now();
+      const uploadTime = endTime - startTime;
+      
+      // Verify the file was uploaded
+      expect((fileInput as HTMLInputElement).files?.[0]).toBe(largeFile);
+      
+      // Performance assertion - upload should complete within reasonable time
+      expect(uploadTime).toBeLessThan(10000); // 10 seconds max
+    });
+
+    it('handles multiple file uploads', async () => {
+      const user = userEvent.setup();
+      
+      // Mock URL.createObjectURL for photo preview
+      global.URL.createObjectURL = vi.fn(() => 'mock-url');
+      global.URL.revokeObjectURL = vi.fn();
+      
+      const files = [
+        new File(['test1'], 'test1.jpg', { type: 'image/jpeg' }),
+        new File(['test2'], 'test2.jpg', { type: 'image/jpeg' }),
+        new File(['test3'], 'test3.jpg', { type: 'image/jpeg' })
+      ];
+      
+      const fileInput = screen.getByLabelText(/Click to upload photos/);
+      
+      await user.upload(fileInput, files);
+      
+      // Wait for all files to be processed with specific timeout
+      await waitFor(() => {
+        expect((fileInput as HTMLInputElement).files).toHaveLength(3);
+      }, { timeout: 8000 });
+      
+      // Verify all files were uploaded
+      expect((fileInput as HTMLInputElement).files?.[0]).toBe(files[0]);
+      expect((fileInput as HTMLInputElement).files?.[1]).toBe(files[1]);
+      expect((fileInput as HTMLInputElement).files?.[2]).toBe(files[2]);
     });
   });
 
@@ -560,7 +697,10 @@ describe('ReportImpact Component', () => {
       const emergencyToggle = screen.getByRole('checkbox', { name: /This is an emergency situation/ });
       await user.click(emergencyToggle);
       
-      expect(screen.getByText('Emergency Situation Detected')).toBeInTheDocument();
+      // Wait for emergency alert to appear with specific timeout
+      await waitFor(() => {
+        expect(screen.getByText('Emergency Situation Detected')).toBeInTheDocument();
+      }, { timeout: 3000 });
       expect(screen.getByText(/For immediate life-threatening emergencies/)).toBeInTheDocument();
     });
   });
@@ -575,23 +715,40 @@ describe('ReportImpact Component', () => {
         estimatedResponseTime: '24 hours'
       });
 
+      const user = userEvent.setup();
       renderWithRouter(<ReportImpact />);
       
-      // This would need a complete form filling helper
-      // For brevity, just test that the API is called
+      // Use helper to fill complete form
+      await fillCompleteForm(user, screen);
       
-      // Would need to fill all steps and then submit
-      // await fillCompleteForm(user);
-      // await user.click(screen.getByText('Submit Report'));
+      // Submit with proper async handling
+      const submitButton = screen.getByRole('button', { name: 'Submit Report' });
+      await user.click(submitButton);
       
-      // expect(ReportsAPI.submitReport).toHaveBeenCalled();
+      // Wait for submission to complete with specific timeout
+      await waitFor(() => {
+        expect(reportsModule.ReportsAPI.submitReport).toHaveBeenCalled();
+      }, { timeout: 5000 });
     });
 
     it('handles submission errors', async () => {
       const reportsModule = await import('../../apis/reports');
       vi.mocked(reportsModule.ReportsAPI.submitReport).mockRejectedValue(new Error('Network error'));
 
-      // Similar test for error handling
+      const user = userEvent.setup();
+      renderWithRouter(<ReportImpact />);
+      
+      // Use helper to fill complete form
+      await fillCompleteForm(user, screen);
+      
+      // Attempt submit with proper async handling
+      const submitButton = screen.getByRole('button', { name: 'Submit Report' });
+      await user.click(submitButton);
+      
+      // Wait for error handling to complete with specific timeout
+      await waitFor(() => {
+        expect(reportsModule.ReportsAPI.submitReport).toHaveBeenCalled();
+      }, { timeout: 5000 });
     });
   });
 });

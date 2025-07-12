@@ -1,9 +1,15 @@
-import { expect, afterEach, vi } from 'vitest';
+import { expect, afterEach, beforeEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
 
 // Extend Vitest's expect with jest-dom matchers
 expect.extend(matchers);
+
+// Enhanced test setup with better async handling
+beforeEach(() => {
+  // Clear all mocks before each test
+  vi.clearAllMocks();
+});
 
 // Cleanup after each test case
 afterEach(() => {

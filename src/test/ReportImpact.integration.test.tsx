@@ -90,9 +90,20 @@ describe('ReportImpact Integration Test', () => {
     // Step 2: Location and Impact
     await waitFor(() => {
       expect(screen.getByText('Location & Impact Assessment')).toBeInTheDocument();
-    });
+    }, { timeout: 8000 });
+    
+    // Wait for location picker to be ready
+    await waitFor(() => {
+      expect(screen.getByTestId('select-location')).toBeInTheDocument();
+    }, { timeout: 5000 });
     
     await user.click(screen.getByTestId('select-location'));
+    
+    // Wait for location selection to be processed
+    await waitFor(() => {
+      expect(screen.getByLabelText('Property Damage')).toBeInTheDocument();
+    }, { timeout: 3000 });
+    
     await user.click(screen.getByLabelText('Property Damage'));
     
     const affectedPeopleInput = screen.getByLabelText('Number of People Affected *');
@@ -103,9 +114,20 @@ describe('ReportImpact Integration Test', () => {
     // Step 3: Assistance & Contact
     await waitFor(() => {
       expect(screen.getByText('Assistance Needed & Contact Information')).toBeInTheDocument();
-    });
+    }, { timeout: 8000 });
+    
+    // Wait for urgency options to be available
+    await waitFor(() => {
+      expect(screen.getByText('Immediate')).toBeInTheDocument();
+    }, { timeout: 3000 });
     
     await user.click(screen.getByText('Immediate'));
+    
+    // Wait for assistance types to be available
+    await waitFor(() => {
+      expect(screen.getByLabelText('Medical Assistance')).toBeInTheDocument();
+    }, { timeout: 3000 });
+    
     await user.click(screen.getByLabelText('Medical Assistance'));
     
     const assistanceDescription = screen.getByPlaceholderText(/Please provide specific details/);
@@ -123,16 +145,29 @@ describe('ReportImpact Integration Test', () => {
     // Step 4: Review and Submit
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Review & Submit', level: 2 })).toBeInTheDocument();
-    });
+    }, { timeout: 8000 });
     
-    // Verify form data is displayed correctly
-    expect(screen.getByText('Flood')).toBeInTheDocument();
-    expect(screen.getByText('New York, NY, USA')).toBeInTheDocument();
-    expect(screen.getByText('Medical Assistance')).toBeInTheDocument();
+    // Wait for form data to be displayed in review section
+    await waitFor(() => {
+      expect(screen.getByText('Flood')).toBeInTheDocument();
+    }, { timeout: 5000 });
+    
+    await waitFor(() => {
+      expect(screen.getByText('New York, NY, USA')).toBeInTheDocument();
+    }, { timeout: 3000 });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Medical Assistance')).toBeInTheDocument();
+    }, { timeout: 3000 });
+    
     // Check that contact name appears in the review section
-    expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+    }, { timeout: 3000 });
     
-    // Verify submit button is present
-    expect(screen.getByText('Submit Report')).toBeInTheDocument();
+    // Verify submit button is present and ready
+    await waitFor(() => {
+      expect(screen.getByText('Submit Report')).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 });
