@@ -7,9 +7,10 @@ import Home from './pages/Home';
 import Reports from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
 import ReportImpact from './pages/ReportImpact';
-import RoleManagement from './pages/admin/RoleManagement';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import AutoLogoutProvider from './components/AutoLogoutProvider';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -31,6 +32,7 @@ function App() {
             v7_relativeSplatPath: true,
           }}
         >
+          <AutoLogoutProvider>
           <div className="min-h-screen bg-gray-50">
             <Routes>
               <Route path="/" element={<Home />} />
@@ -53,14 +55,6 @@ function App() {
               <Route path="/volunteer" element={<div className="p-8 text-center">Volunteer page coming soon...</div>} />
               
               {/* Admin routes */}
-              <Route
-                path="/admin/roles"
-                element={
-                  <ProtectedRoute requiredRoles={['admin']}>
-                    <RoleManagement />
-                  </ProtectedRoute>
-                }
-              />
               
               {/* CJ and Admin routes */}
               <Route
@@ -98,6 +92,7 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
+          </AutoLogoutProvider>
         </Router>
         <Toaster
           position="top-right"

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useRoles } from '../hooks/useRoles';
 import Header from '../components/Layout/Header';
-import RoleBasedDashboard from '../components/Dashboard/RoleBasedDashboard';
 import { 
   Users, 
   FileText, 
@@ -160,7 +158,6 @@ const AssistanceCard: React.FC<AssistanceCardProps> = ({ title, description, dat
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { hasAdminOrCjRole } = useRoles();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'reports' | 'assistance'>('reports');
 
@@ -222,17 +219,7 @@ const Dashboard: React.FC = () => {
     }
   ];
 
-  // Show role-based dashboard for admin and CJ users
-  if (hasAdminOrCjRole()) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <RoleBasedDashboard />
-      </div>
-    );
-  }
-
-  // Show regular user dashboard
+  // Show user dashboard
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
