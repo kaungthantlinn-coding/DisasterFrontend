@@ -12,10 +12,8 @@ interface NavItem {
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isReportDropdownOpen, setIsReportDropdownOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const location = useLocation();
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useAuth();
   const { isAdmin, isCj, hasAdminOrCjRole, isOnlyUser, formatRoleName } = useRoles();
@@ -23,9 +21,6 @@ const Header: React.FC = () => {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsReportDropdownOpen(false);
-      }
       if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
         setIsUserDropdownOpen(false);
       }
@@ -37,44 +32,23 @@ const Header: React.FC = () => {
     };
   }, []);
 
-  const disasterMenuItems = [
-    {
-      name: 'Lists',
-      path: '/disasters/lists'
-    },
-    {
-      name: 'Statistic',
-      path: '/disasters/statistics'
-    },
-    {
-      name: 'Response',
-      path: '/disasters/response'
-    }
-  ];
-
   const getNavItems = (): NavItem[] => {
     // Base navigation items for all users
     const baseItems = [
       { name: 'Home', path: '/' },
       { name: 'View Reports', path: '/reports' },
-      ...(!isOnlyUser() ? [{ name: 'Report Impact', path: '/report/new' }] : []),
+      // Hide Report Impact for admin users
+      ...(!isOnlyUser() && !isAdmin() ? [{ name: 'Report Impact', path: '/report/new' }] : []),
     ];
 
     // Add role-based navigation items
     if (isAuthenticated) {
       const authItems = [
-        ...(!isOnlyUser() ? [{ name: 'Dashboard', path: '/dashboard' }] : []),
+        // Hide Dashboard for admin users
+        ...(!isOnlyUser() && !isAdmin() ? [{ name: 'Dashboard', path: '/dashboard' }] : []),
       ];
 
-      // Add CJ and Admin specific items
-      if (hasAdminOrCjRole()) {
-        authItems.push(
-          { name: 'Verify Reports', path: '/verify-reports' },
-          { name: 'Analytics', path: '/analytics' }
-        );
-      }
-
-      // Add Admin-only items
+      // Add Admin-only items (removed Verify Reports and Analytics)
       if (isAdmin()) {
         authItems.push(
           { name: 'Admin Panel', path: '/admin' }
@@ -126,37 +100,7 @@ const Header: React.FC = () => {
               </Link>
             ))}
 
-            {/* Disaster Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsReportDropdownOpen(!isReportDropdownOpen)}
-                className="flex items-center space-x-1 text-gray-600 hover:text-blue-600 font-medium transition-colors"
-              >
-                <span>Disaster</span>
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform duration-200 ${
-                    isReportDropdownOpen ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
 
-              {/* Dropdown Menu */}
-              {isReportDropdownOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  {disasterMenuItems.map((item, index) => (
-                    <Link
-                      key={index}
-                      to={item.path}
-                      onClick={() => setIsReportDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
           </nav>
 
           {/* Desktop Auth Section */}
@@ -212,7 +156,7 @@ const Header: React.FC = () => {
                       </div>
                     </div>
                     
-                    {!isOnlyUser() && (
+                    {!isOnlyUser() && !isAdmin() && (
                       <Link
                         to="/dashboard"
                         onClick={() => setIsUserDropdownOpen(false)}
@@ -296,30 +240,7 @@ const Header: React.FC = () => {
               </Link>
             ))}
 
-            {/* Mobile Disaster Section */}
-            <div className="pt-4 border-t border-gray-100">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Disaster</h3>
-              <div className="space-y-2">
-                {disasterMenuItems.map((item, index) => (
-                  <Link
-                    key={index}
-                    to={item.path}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block text-lg font-medium text-gray-600 hover:text-blue-600 transition-colors py-2"
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
 
-              <Link
-                to="/report/new"
-                className="block w-full bg-gradient-to-r from-red-500 to-orange-500 text-white px-6 py-3 rounded-lg hover:from-red-600 hover:to-orange-600 transition-all duration-200 font-semibold text-center mt-4"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Report Emergency
-              </Link>
-            </div>
 
             {/* Mobile Auth Section */}
             <div className="pt-4 border-t border-gray-100">
@@ -339,7 +260,7 @@ const Header: React.FC = () => {
                     </div>
                   </div>
 
-                  {!isOnlyUser() && (
+                  {!isOnlyUser() && !isAdmin() && (
                     <Link
                       to="/dashboard"
                       onClick={() => setIsMenuOpen(false)}

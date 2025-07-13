@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Reports from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
 import ReportImpact from './pages/ReportImpact';
+import AdminPanel from './pages/admin/AdminPanel';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -53,6 +54,14 @@ function App() {
               <Route path="/volunteer" element={<div className="p-8 text-center">Volunteer page coming soon...</div>} />
               
               {/* Admin routes */}
+              <Route
+                path="/admin/*"
+                element={
+                  <ProtectedRoute requiredRoles={['admin']}>
+                    <AdminPanel />
+                  </ProtectedRoute>
+                }
+              />
               
               {/* CJ and Admin routes */}
               <Route
@@ -68,22 +77,6 @@ function App() {
                 element={
                   <ProtectedRoute requiredRoles={['admin', 'cj']}>
                     <div className="p-8 text-center">Analytics page coming soon...</div>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute requiredRoles={['admin']}>
-                    <div className="p-8 text-center">Admin Panel coming soon...</div>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/settings"
-                element={
-                  <ProtectedRoute requiredRoles={['admin', 'cj']}>
-                    <div className="p-8 text-center">Admin Settings coming soon...</div>
                   </ProtectedRoute>
                 }
               />

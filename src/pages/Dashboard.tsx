@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useRoles } from '../hooks/useRoles';
 import Header from '../components/Layout/Header';
+import AdminDashboard from '../components/AdminDashboard';
 import { 
   Users, 
   FileText, 
@@ -158,8 +160,19 @@ const AssistanceCard: React.FC<AssistanceCardProps> = ({ title, description, dat
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const { isAdmin } = useRoles();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'reports' | 'assistance'>('reports');
+
+  // Render admin dashboard for admin users
+  if (isAdmin()) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <AdminDashboard />
+      </div>
+    );
+  }
 
   // Mock data - replace with real data from API
   const stats = {
