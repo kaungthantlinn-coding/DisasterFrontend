@@ -3,13 +3,22 @@ import { errorHandler, Result, ErrorTracker } from '../utils/errorHandler';
 import { User } from '../types';
 
 export interface ApiUser {
-  id: string;
+  userId?: string;    // Direct userId field from API
+  auth_id?: string;   // Backend primary key
+  user_id?: string;   // Backend user identifier
+  id?: string;        // Fallback for other endpoints
   email: string;
   name: string;
-  role: string;
-  avatar?: string;
-  createdAt: string;
-  updatedAt: string;
+  role?: string;
+  roles?: string[];   // Backend might return roles array
+  // Photo URL fields from various OAuth providers
+  photoUrl?: string;        // Direct photoUrl field from API
+  photo_url?: string;       // Backend uses photo_url
+  picture?: string;         // Google OAuth standard field
+  avatar?: string;          // Generic avatar field
+  profile_picture?: string; // Alternative profile picture field
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface LoginResponse {
@@ -25,20 +34,79 @@ export interface GoogleLoginResponse {
 }
 
 // Helper function to convert API user to app user
-const mapApiUserToUser = (apiUser: ApiUser): User => ({
-  userId: apiUser.id,
-  name: apiUser.name,
-  email: apiUser.email,
-  photoUrl: apiUser.avatar,
-  roles: [apiUser.role],
-});
+const mapApiUserToUser = (apiUser: ApiUser): User => {
+  // Extract userId from various possible fields (including direct userId)
+  const userId = apiUser.userId || apiUser.user_id || apiUser.auth_id || apiUser.id || '';
+  
+  // Extract roles from various possible formats
+  let roles: string[] = [];
+  if (apiUser.roles && Array.isArray(apiUser.roles)) {
+    roles = apiUser.roles;
+  } else if (apiUser.role) {
+    roles = [apiUser.role];
+  } else {
+    roles = ['user']; // Default role
+  }
+  
+  // Extract photoUrl from multiple possible fields
+  const extractPhotoUrl = (): string | undefined => {
+    // Try different possible photo URL fields from various OAuth providers
+    const possibleFields = [
+      apiUser.photoUrl,
+      apiUser.photo_url, 
+      apiUser.picture, // Google OAuth standard field
+      apiUser.avatar,
+      apiUser.profile_picture
+    ];
+    
+    const photoUrl = possibleFields.find(field => field && typeof field === 'string' && field.trim() !== '');
+    
+    if (photoUrl) {
+      // Ensure HTTPS and optimize image size for better performance
+      return photoUrl
+        .replace('http://', 'https://')
+        .replace('=s96-c', '=s128-c'); // Increase Google profile image size
+    }
+    
+    return undefined;
+  };
+  
+  const photoUrl = extractPhotoUrl();
+  
+  return {
+    userId,
+    name: apiUser.name,
+    email: apiUser.email,
+    photoUrl,
+    roles,
+  };
+};
 
 // Helper function to convert API response to app response
-const mapApiResponse = (apiResponse: { user: ApiUser; token: string; refreshToken: string }) => ({
-  user: mapApiUserToUser(apiResponse.user),
-  token: apiResponse.token,
-  refreshToken: apiResponse.refreshToken,
-});
+const mapApiResponse = (apiResponse: any) => {
+  // Handle different possible response structures
+  let user: ApiUser;
+  
+  if (apiResponse.user) {
+    // Standard response with user object
+    user = apiResponse.user;
+  } else if (apiResponse.auth_id || apiResponse.user_id || apiResponse.email) {
+    // Direct user data in response
+    user = apiResponse;
+  } else {
+    // Fallback - create empty user
+    user = {
+      email: '',
+      name: '',
+    };
+  }
+  
+  return {
+    user: mapApiUserToUser(user),
+    token: apiResponse.token || apiResponse.accessToken || '',
+    refreshToken: apiResponse.refreshToken || '',
+  };
+};
 
 export const authService = {
   async login(email: string, password: string): Promise<Result<LoginResponse>> {
@@ -83,6 +151,7 @@ export const authService = {
       );
       
       const data = mapApiResponse(apiData);
+      
       ErrorTracker.getInstance().trackUserAction('google_login_success', { userId: data.user.userId });
       return { success: true, data };
     } catch (error) {

@@ -18,6 +18,7 @@ export const useGoogleLogin = () => {
     },
     onSuccess: (data) => {
       useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken);
+      // Track successful login after auth store is updated
       ErrorTracker.getInstance().trackUserAction('google_login_success', { userId: data.user.userId });
     },
     onError: (error) => {

@@ -10,7 +10,6 @@ import ReportImpact from './pages/ReportImpact';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
-import AutoLogoutProvider from './components/AutoLogoutProvider';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -32,7 +31,6 @@ function App() {
             v7_relativeSplatPath: true,
           }}
         >
-          <AutoLogoutProvider>
           <div className="min-h-screen bg-gray-50">
             <Routes>
               <Route path="/" element={<Home />} />
@@ -92,7 +90,6 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
-          </AutoLogoutProvider>
         </Router>
         <Toaster
           position="top-right"

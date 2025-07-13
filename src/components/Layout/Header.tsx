@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { ShieldCheck, Menu, X, ChevronDown, User, LogOut, Settings, Shield } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
+import Avatar from '../Common/Avatar';
 
 interface NavItem {
   name: string;
@@ -168,17 +169,12 @@ const Header: React.FC = () => {
                   className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition-colors"
                 >
                   <div className="flex items-center space-x-2">
-                    {user?.photoUrl ? (
-                      <img
-                        src={user.photoUrl}
-                        alt={user.name}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User size={16} className="text-blue-600" />
-                      </div>
-                    )}
+                    <Avatar
+                      src={user?.photoUrl}
+                      alt={user?.name}
+                      name={user?.name}
+                      size="md"
+                    />
                     <div className="text-left">
                       <div className="text-sm font-medium text-gray-900">{user?.name}</div>
                       <div className="text-xs text-gray-500">
@@ -331,17 +327,12 @@ const Header: React.FC = () => {
                 /* Mobile User Profile */
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    {user?.photoUrl ? (
-                      <img
-                        src={user.photoUrl}
-                        alt={user.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User size={20} className="text-blue-600" />
-                      </div>
-                    )}
+                    <Avatar
+                      src={user?.photoUrl}
+                      alt={user?.name}
+                      name={user?.name}
+                      size="lg"
+                    />
                     <div>
                       <div className="font-medium text-gray-900">{user?.name}</div>
                       <div className="text-sm text-gray-500">{user?.email}</div>
