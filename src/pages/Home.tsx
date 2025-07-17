@@ -21,7 +21,12 @@ import {
   Globe,
   MapPin,
   RefreshCw,
-  Clock
+  Clock,
+  Home as HomeIcon,
+  Users,
+  Zap,
+  FileText,
+  Activity
 } from 'lucide-react';
 
 // Components
@@ -111,7 +116,103 @@ const Home: React.FC = () => {
     }
   ];
 
+  // Safety tips and emergency preparedness content
+  const safetyContent = [
+    {
+      id: 1,
+      title: "Emergency Kit Essentials",
+      description: "Prepare a comprehensive emergency kit with water, non-perishable food, flashlight, first aid supplies, and important documents. Keep enough supplies for at least 72 hours.",
+      icon: Shield,
+      image: "https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      gradient: "from-blue-500 to-cyan-500",
+      bgGradient: "from-blue-50 to-cyan-50",
+      tips: [
+        "1 gallon of water per person per day",
+        "Non-perishable food for 3+ days",
+        "Battery-powered radio and flashlight",
+        "First aid kit and medications"
+      ]
+    },
+    {
+      id: 2,
+      title: "Evacuation Planning",
+      description: "Create and practice evacuation routes with your family. Know multiple ways to exit your home and neighborhood, and establish meeting points.",
+      icon: MapPin,
+      image: "https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      gradient: "from-green-500 to-emerald-500",
+      bgGradient: "from-green-50 to-emerald-50",
+      tips: [
+        "Plan primary and alternate routes",
+        "Practice evacuation drills regularly",
+        "Identify safe meeting locations",
+        "Keep vehicle fuel tanks full"
+      ]
+    },
+    {
+      id: 3,
+      title: "Communication Strategy",
+      description: "Establish a family communication plan with out-of-state contacts. Ensure everyone knows how to reach each other during emergencies.",
+      icon: Phone,
+      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      gradient: "from-purple-500 to-pink-500",
+      bgGradient: "from-purple-50 to-pink-50",
+      tips: [
+        "Designate out-of-state contact person",
+        "Program emergency numbers in phones",
+        "Keep written contact information",
+        "Learn text messaging for emergencies"
+      ]
+    },
+    {
+      id: 4,
+      title: "Home Safety Measures",
+      description: "Secure your home against disasters by installing smoke detectors, securing heavy furniture, and knowing utility shut-off locations.",
+      icon: HomeIcon,
+      image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      gradient: "from-orange-500 to-red-500",
+      bgGradient: "from-orange-50 to-red-50",
+      tips: [
+        "Install smoke and carbon monoxide detectors",
+        "Secure heavy furniture and appliances",
+        "Know utility shut-off locations",
+        "Maintain fire extinguishers"
+      ]
+    },
+    {
+      id: 5,
+      title: "Community Preparedness",
+      description: "Connect with neighbors and local emergency services. Join community emergency response teams and stay informed about local hazards.",
+      icon: Users,
+      image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      gradient: "from-teal-500 to-blue-500",
+      bgGradient: "from-teal-50 to-blue-50",
+      tips: [
+        "Know your neighbors and their skills",
+        "Join local emergency response teams",
+        "Stay informed about local hazards",
+        "Participate in community drills"
+      ]
+    },
+    {
+      id: 6,
+      title: "Digital Preparedness",
+      description: "Back up important documents digitally, keep devices charged, and download emergency apps for real-time alerts and information.",
+      icon: Zap,
+      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+      gradient: "from-indigo-500 to-purple-500",
+      bgGradient: "from-indigo-50 to-purple-50",
+      tips: [
+        "Back up documents to cloud storage",
+        "Keep portable chargers ready",
+        "Download emergency alert apps",
+        "Store digital copies of IDs"
+      ]
+    }
+  ];
 
+  // Safety slider state
+  const [currentSafetySlide, setCurrentSafetySlide] = useState(0);
+  const [safetySliderPaused, setSafetySliderPaused] = useState(false);
 
   // Auto-advance slider
   useEffect(() => {
@@ -120,6 +221,45 @@ const Home: React.FC = () => {
     }, 6000);
     return () => clearInterval(timer);
   }, [heroImages.length]);
+
+  // Auto-advance safety slider
+  useEffect(() => {
+    if (safetySliderPaused) return;
+
+    const timer = setInterval(() => {
+      setCurrentSafetySlide((prev) => (prev + 1) % safetyContent.length);
+    }, 8000); // Slightly longer interval for safety content
+    return () => clearInterval(timer);
+  }, [safetyContent.length, safetySliderPaused]);
+
+  // Keyboard navigation for safety slider
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.target && (event.target as HTMLElement).closest('[role="region"][aria-label*="Safety"]')) {
+        switch (event.key) {
+          case 'ArrowLeft':
+            event.preventDefault();
+            prevSafetySlide();
+            break;
+          case 'ArrowRight':
+            event.preventDefault();
+            nextSafetySlide();
+            break;
+          case 'Home':
+            event.preventDefault();
+            goToSafetySlide(0);
+            break;
+          case 'End':
+            event.preventDefault();
+            goToSafetySlide(safetyContent.length - 1);
+            break;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [safetyContent.length]);
 
   // Scroll functionality
   useEffect(() => {
@@ -144,6 +284,19 @@ const Home: React.FC = () => {
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
+  };
+
+  // Safety slider navigation functions
+  const nextSafetySlide = () => {
+    setCurrentSafetySlide((prev) => (prev + 1) % safetyContent.length);
+  };
+
+  const prevSafetySlide = () => {
+    setCurrentSafetySlide((prev) => (prev - 1 + safetyContent.length) % safetyContent.length);
+  };
+
+  const goToSafetySlide = (index: number) => {
+    setCurrentSafetySlide(index);
   };
 
   return (
@@ -388,10 +541,13 @@ const Home: React.FC = () => {
                 </div>
               ))}
             </div>
-
-
           </div>
         </section>
+        
+
+
+
+
 
         {/* Making Real Impact Section with Live Map */}
         <section className="py-24 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
@@ -416,7 +572,7 @@ const Home: React.FC = () => {
                 </span>
               </h2>
               <p className="text-xl text-blue-100 max-w-4xl mx-auto leading-relaxed drop-shadow-lg">
-                Our platform coordinates real-time disaster response across the globe. See live incidents, 
+                Our platform coordinates real-time disaster response across the globe. See live incidents,
                 active response teams, and communities we're helping right now.
               </p>
             </div>
@@ -547,7 +703,7 @@ const Home: React.FC = () => {
               <div className="space-y-8">
                 <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
                   <h3 className="text-2xl font-bold text-white mb-6">Real-Time Impact</h3>
-                  
+
                   <div className="grid grid-cols-2 gap-6">
                     <div className="text-center">
                       <div className="text-4xl font-black text-red-400 mb-2">
@@ -577,7 +733,7 @@ const Home: React.FC = () => {
                 {/* Active Response Teams */}
                 <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
                   <h3 className="text-2xl font-bold text-white mb-6">Active Response Teams</h3>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl">
                       <div className="flex items-center space-x-3">
@@ -589,7 +745,7 @@ const Home: React.FC = () => {
                       </div>
                       <div className="text-green-400 text-sm font-medium">Active</div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl">
                       <div className="flex items-center space-x-3">
                         <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
@@ -600,7 +756,7 @@ const Home: React.FC = () => {
                       </div>
                       <div className="text-yellow-400 text-sm font-medium">Monitoring</div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl">
                       <div className="flex items-center space-x-3">
                         <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
@@ -981,7 +1137,175 @@ const Home: React.FC = () => {
           </div>
         </section>
 
+        {/* Safety Section with Interactive Slider */}
+        <section className="py-24 bg-gradient-to-br from-emerald-50 via-white to-blue-50/30 relative overflow-hidden">
+          {/* Background Elements */}
+          <div className="absolute inset-0">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-100/50 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-100/50 rounded-full blur-3xl"></div>
+            <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-green-100/30 rounded-full blur-2xl"></div>
+          </div>
 
+          <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+            {/* Section Header */}
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center px-6 py-3 rounded-full bg-emerald-100 border border-emerald-200 text-sm font-bold mb-8 text-emerald-700">
+                <Shield size={18} className="mr-2" />
+                Emergency Preparedness
+              </div>
+              <h2 className="text-4xl lg:text-6xl font-black text-gray-900 mb-8 leading-tight">
+                Stay Safe &
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-green-500 to-blue-600">
+                  Be Prepared
+                </span>
+              </h2>
+              <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                Essential safety tips and emergency preparedness guidelines to protect you and your loved ones during disasters. Knowledge saves lives.
+              </p>
+            </div>
+
+            {/* Safety Slider */}
+            <div
+              className="relative"
+              role="region"
+              aria-label="Safety tips and emergency preparedness"
+              onMouseEnter={() => setSafetySliderPaused(true)}
+              onMouseLeave={() => setSafetySliderPaused(false)}
+            >
+              {/* Slider Container */}
+              <div className="relative h-[600px] lg:h-[500px] overflow-hidden rounded-3xl shadow-2xl" role="img" aria-live="polite">
+                {safetyContent.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
+                      index === currentSafetySlide ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
+                    }`}
+                  >
+                    {/* Background Image */}
+                    <div className="absolute inset-0">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="relative h-full flex items-center">
+                      <div className="max-w-7xl mx-auto px-6 lg:px-8 w-full">
+                        <div className="grid lg:grid-cols-2 gap-12 items-center">
+                          {/* Left Side - Content */}
+                          <div className="text-white">
+                            <div className={`inline-flex p-4 rounded-2xl bg-gradient-to-br ${item.gradient} text-white shadow-xl mb-6`}>
+                              <item.icon size={32} />
+                            </div>
+
+                            <h3 className="text-4xl lg:text-5xl font-black mb-6 leading-tight drop-shadow-2xl">
+                              {item.title}
+                            </h3>
+
+                            <p className="text-xl text-white/90 mb-8 leading-relaxed drop-shadow-lg">
+                              {item.description}
+                            </p>
+
+                            {/* Tips List */}
+                            <div className="space-y-3">
+                              {item.tips.map((tip, tipIndex) => (
+                                <div key={tipIndex} className="flex items-start space-x-3">
+                                  <div className="flex-shrink-0 w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mt-1">
+                                    <CheckCircle size={14} className="text-white" />
+                                  </div>
+                                  <span className="text-white/90 font-medium">{tip}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Right Side - Visual Element */}
+                          <div className="hidden lg:block">
+                            <div className={`bg-gradient-to-br ${item.bgGradient} rounded-3xl p-8 shadow-2xl border border-white/20 backdrop-blur-sm`}>
+                              <div className="text-center">
+                                <div className={`inline-flex p-8 rounded-3xl bg-gradient-to-br ${item.gradient} text-white shadow-xl mb-6`}>
+                                  <item.icon size={48} />
+                                </div>
+                                <h4 className="text-2xl font-bold text-gray-900 mb-4">{item.title}</h4>
+                                <p className="text-gray-700 leading-relaxed">
+                                  Essential knowledge for emergency preparedness and disaster response.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Navigation Controls */}
+              <button
+                onClick={prevSafetySlide}
+                className="absolute left-6 top-1/2 transform -translate-y-1/2 z-20 group focus:outline-none focus:ring-4 focus:ring-white/50 rounded-full"
+                aria-label={`Previous safety tip. Currently showing ${safetyContent[currentSafetySlide]?.title}`}
+                tabIndex={0}
+              >
+                <div className="bg-white/10 backdrop-blur-xl border border-white/20 text-white p-4 rounded-full hover:bg-white/20 hover:border-white/40 focus:bg-white/20 transition-all duration-300 transform hover:scale-110 shadow-2xl">
+                  <ChevronLeft size={24} className="group-hover:-translate-x-1 transition-transform duration-300" />
+                </div>
+              </button>
+
+              <button
+                onClick={nextSafetySlide}
+                className="absolute right-6 top-1/2 transform -translate-y-1/2 z-20 group focus:outline-none focus:ring-4 focus:ring-white/50 rounded-full"
+                aria-label={`Next safety tip. Currently showing ${safetyContent[currentSafetySlide]?.title}`}
+                tabIndex={0}
+              >
+                <div className="bg-white/10 backdrop-blur-xl border border-white/20 text-white p-4 rounded-full hover:bg-white/20 hover:border-white/40 focus:bg-white/20 transition-all duration-300 transform hover:scale-110 shadow-2xl">
+                  <ChevronRight size={24} className="group-hover:translate-x-1 transition-transform duration-300" />
+                </div>
+              </button>
+
+              {/* Dot Indicators */}
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20" role="tablist" aria-label="Safety tips navigation">
+                <div className="flex justify-center space-x-3">
+                  {safetyContent.map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToSafetySlide(index)}
+                      className={`relative transition-all duration-500 focus:outline-none focus:ring-2 focus:ring-white/70 rounded-full ${
+                        index === currentSafetySlide
+                          ? 'w-12 h-3 bg-white rounded-full shadow-lg'
+                          : 'w-3 h-3 bg-white/40 rounded-full hover:bg-white/70'
+                      }`}
+                      aria-label={`Go to safety tip ${index + 1}: ${item.title}`}
+                      aria-selected={index === currentSafetySlide}
+                      role="tab"
+                      tabIndex={index === currentSafetySlide ? 0 : -1}
+                    >
+                      {index === currentSafetySlide && (
+                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full opacity-80 animate-pulse"></div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="absolute bottom-0 left-0 right-0 z-20">
+                <div className="h-1 bg-white/20">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-400 via-green-400 to-blue-400 transition-all duration-300 shadow-lg"
+                    style={{ width: `${((currentSafetySlide + 1) / safetyContent.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Stunning Call to Action */}
         <section className="py-24 bg-gradient-to-br from-blue-600 via-purple-700 to-indigo-800 relative overflow-hidden">
