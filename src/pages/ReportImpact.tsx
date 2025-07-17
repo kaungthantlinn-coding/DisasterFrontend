@@ -41,8 +41,6 @@ interface FormData {
   } | null;
   impactType: string[];
   customImpactType: string;
-  affectedPeople: number | '';
-  estimatedDamage: string;
   photos: File[];
   
   // Step 3: Assistance & Contact
@@ -55,12 +53,12 @@ interface FormData {
   isEmergency: boolean;
 }
 
-// Enhanced disaster types with more options
+// Enhanced disaster types with clean, real-world categories
 const disasterTypes = {
   natural: {
     label: 'Natural Disasters',
     icon: Target,
-    color: 'from-green-500 to-green-600',
+    color: 'from-green-500 to-emerald-600',
     options: [
       'Earthquake',
       'Flood',
@@ -76,10 +74,10 @@ const disasterTypes = {
       'Other Natural'
     ]
   },
-  humanMade: {
-    label: 'Human-Made Disasters',
+  nonNatural: {
+    label: 'Non-Natural Disasters',
     icon: AlertTriangle,
-    color: 'from-red-500 to-red-600',
+    color: 'from-red-500 to-orange-600',
     options: [
       'Industrial Accident',
       'Chemical Spill',
@@ -88,23 +86,9 @@ const disasterTypes = {
       'Building Collapse',
       'Transportation Accident',
       'Cyber Attack',
-      'Terrorism',
+      'Infrastructure Failure',
       'Civil Unrest',
-      'Other Human-Made'
-    ]
-  },
-  health: {
-    label: 'Health Emergencies',
-    icon: Users,
-    color: 'from-blue-500 to-blue-600',
-    options: [
-      'Disease Outbreak',
-      'Pandemic',
-      'Food Poisoning',
-      'Water Contamination',
-      'Air Quality Crisis',
-      'Medical Emergency',
-      'Other Health'
+      'Other Non-Natural'
     ]
   }
 };
@@ -159,8 +143,6 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
     location: null,
     impactType: [],
     customImpactType: '',
-    affectedPeople: '',
-    estimatedDamage: '',
     photos: [],
     assistanceNeeded: [],
     assistanceDescription: '',
@@ -181,7 +163,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         console.log('Validating step 1...');
         if (!formData.disasterType) newErrors.disasterType = 'Please select a disaster category';
         if (!formData.disasterDetail) newErrors.disasterDetail = 'Please specify the type of disaster';
-        if (formData.disasterDetail === 'Other Natural' || formData.disasterDetail === 'Other Human-Made' || formData.disasterDetail === 'Other Health') {
+        if (formData.disasterDetail === 'Other Natural' || formData.disasterDetail === 'Other Non-Natural') {
           if (!formData.customDisasterDetail) newErrors.customDisasterDetail = 'Please specify the disaster type';
         }
         console.log('Description validation - trim():', formData.description.trim());
@@ -202,9 +184,6 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         if (formData.impactType.length === 0) newErrors.impactType = 'Please select at least one impact type';
         if (formData.impactType.includes('Other') && !formData.customImpactType) {
           newErrors.customImpactType = 'Please specify the custom impact type';
-        }
-        if (formData.affectedPeople === '' || (typeof formData.affectedPeople === 'number' && formData.affectedPeople < 0)) {
-          newErrors.affectedPeople = 'Please enter the number of affected people';
         }
         break;
         
@@ -239,8 +218,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
           formData.severity && 
           formData.dateTime &&
           (formData.disasterDetail !== 'Other Natural' && 
-           formData.disasterDetail !== 'Other Human-Made' && 
-           formData.disasterDetail !== 'Other Health' || 
+           formData.disasterDetail !== 'Other Non-Natural' || 
            formData.customDisasterDetail)
         );
         
@@ -248,7 +226,6 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         return !!(
           formData.location &&
           formData.impactType.length > 0 &&
-          formData.affectedPeople !== '' &&
           (!formData.impactType.includes('Other') || formData.customImpactType)
         );
         
@@ -423,8 +400,6 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         },
         impactType: formData.impactType,
         customImpactType: formData.customImpactType,
-        affectedPeople: Number(formData.affectedPeople) || 0,
-        estimatedDamage: formData.estimatedDamage,
         assistanceNeeded: formData.assistanceNeeded,
         assistanceDescription: formData.assistanceDescription,
         urgencyLevel: formData.urgencyLevel as 'immediate' | 'within_24h' | 'within_week' | 'non_urgent',
@@ -481,46 +456,50 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gray-50">
       <Header />
       
       <main className="pt-20 pb-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Progress Header */}
-          <div className="mb-8">
-            <div className="text-center mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Report Disaster Impact</h1>
-              <p className="text-gray-600">Help us coordinate emergency response and assistance</p>
-            </div>
-            
-            {/* Progress Steps */}
-            <div className="flex items-center justify-between mb-8">
+        <div className="max-w-4xl mx-auto px-6 lg:px-8">
+          {/* Clean Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4">
+              Report a Disaster Impact
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Help your community by reporting disaster impacts and requesting assistance
+            </p>
+          </div>
+          
+          {/* Beautiful Progress Steps */}
+          <div className="flex items-center justify-center mb-16">
+            <div className="flex items-center space-x-8">
               {stepTitles.map((title, index) => {
                 const stepNumber = index + 1;
                 const isActive = currentStep === stepNumber;
                 const isCompleted = currentStep > stepNumber;
                 
                 return (
-                  <div key={stepNumber} className="flex items-center flex-1">
+                  <div key={stepNumber} className="flex items-center">
                     <div className="flex flex-col items-center">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200 ${
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
                         isCompleted
-                          ? 'bg-green-500 text-white'
+                          ? 'bg-blue-600 text-white shadow-lg'
                           : isActive
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-600'
+                          ? 'bg-blue-600 text-white shadow-lg scale-110'
+                          : 'bg-gray-200 text-gray-500'
                       }`}>
                         {isCompleted ? <CheckCircle size={20} /> : stepNumber}
                       </div>
-                      <span className={`mt-2 text-xs font-medium text-center ${
-                        isActive ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-gray-500'
+                      <span className={`mt-3 text-sm font-medium text-center ${
+                        isActive ? 'text-blue-600' : isCompleted ? 'text-blue-600' : 'text-gray-400'
                       }`}>
                         {title}
                       </span>
                     </div>
                     {index < stepTitles.length - 1 && (
-                      <div className={`flex-1 h-0.5 mx-4 ${
-                        isCompleted ? 'bg-green-500' : 'bg-gray-200'
+                      <div className={`w-16 h-0.5 mx-6 transition-colors duration-300 ${
+                        isCompleted ? 'bg-blue-600' : 'bg-gray-200'
                       }`} />
                     )}
                   </div>
@@ -529,8 +508,8 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
             </div>
           </div>
 
-          {/* Form Content */}
-          <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Clean Form Container */}
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 lg:p-12">
             {/* Emergency Alert */}
             {formData.isEmergency && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start">
@@ -566,36 +545,50 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                     </label>
                   </div>
 
-                  {/* Disaster Category */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-4">
-                      Disaster Category *
+                  {/* Refined Disaster Type Selection */}
+                  <div className="mb-8">
+                    <label className="block text-lg font-semibold text-gray-900 mb-6">
+                      Disaster Type
                     </label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {Object.entries(disasterTypes).map(([key, category]) => {
-                        const Icon = category.icon;
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            role="button"
-                            onClick={() => setFormData(prev => ({ ...prev, disasterType: key, disasterDetail: '' }))}
-                            className={`p-4 border-2 rounded-xl transition-all duration-200 text-left ${
-                              formData.disasterType === key
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 bg-gradient-to-r ${category.color}`}>
-                              <Icon size={24} className="text-white" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(disasterTypes).map(([key, category]) => (
+                        <label
+                          key={key}
+                          className={`group relative flex items-center p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                            formData.disasterType === key
+                              ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md'
+                              : 'border-gray-200 hover:border-blue-300 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="disasterType"
+                            value={key}
+                            checked={formData.disasterType === key}
+                            onChange={(e) => setFormData(prev => ({ ...prev, disasterType: e.target.value, disasterDetail: '' }))}
+                            className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 mr-4"
+                          />
+                          <div className="flex-1">
+                            <span className={`text-lg font-semibold transition-colors duration-200 ${
+                              formData.disasterType === key ? 'text-blue-900' : 'text-gray-900 group-hover:text-blue-800'
+                            }`}>
+                              {category.label}
+                            </span>
+                          </div>
+                          {/* Selection indicator */}
+                          {formData.disasterType === key && (
+                            <div className="absolute top-3 right-3 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                              <CheckCircle size={16} className="text-white" />
                             </div>
-                            <span className="font-semibold text-gray-900">{category.label}</span>
-                          </button>
-                        );
-                      })}
+                          )}
+                        </label>
+                      ))}
                     </div>
                     {errors.disasterType && (
-                      <p className="mt-2 text-sm text-red-600" data-testid="disasterType-error">{errors.disasterType}</p>
+                      <p className="mt-3 text-sm text-red-600 flex items-center" data-testid="disasterType-error">
+                        <AlertTriangle size={16} className="mr-2" />
+                        {errors.disasterType}
+                      </p>
                     )}
                   </div>
 
@@ -629,8 +622,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
 
                   {/* Custom Disaster Detail */}
                   {(formData.disasterDetail === 'Other Natural' || 
-                    formData.disasterDetail === 'Other Human-Made' || 
-                    formData.disasterDetail === 'Other Health') && (
+                    formData.disasterDetail === 'Other Non-Natural') && (
                     <div className="mb-6">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Please specify *
@@ -791,45 +783,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                   </div>
                 )}
 
-                {/* Affected People */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="affected-people" className="block text-sm font-medium text-gray-700 mb-2">
-                      Number of People Affected *
-                    </label>
-                    <input
-                      id="affected-people"
-                      type="number"
-                      min="0"
-                      value={formData.affectedPeople}
-                      onChange={(e) => setFormData(prev => ({ ...prev, affectedPeople: e.target.value ? parseInt(e.target.value) : '' }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="0"
-                    />
-                    {errors.affectedPeople && (
-                      <p className="mt-2 text-sm text-red-600" data-testid="affectedPeople-error">{errors.affectedPeople}</p>
-                    )}
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Estimated Damage (Optional)
-                    </label>
-                    <select
-                      value={formData.estimatedDamage}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estimatedDamage: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select range</option>
-                      <option value="minimal">Minimal (&lt; $1,000)</option>
-                      <option value="low">Low ($1,000 - $10,000)</option>
-                      <option value="moderate">Moderate ($10,000 - $100,000)</option>
-                      <option value="high">High ($100,000 - $1M)</option>
-                      <option value="severe">Severe (&gt; $1M)</option>
-                      <option value="unknown">Unknown</option>
-                    </select>
-                  </div>
-                </div>
 
                 {/* Photo Upload */}
                 <div>
@@ -958,71 +912,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                   )}
                 </div>
 
-                {/* Contact Information */}
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Contact Name *
-                      </label>
-                      <div className="relative">
-                        <Users size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          value={formData.contactName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, contactName: e.target.value }))}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Your name"
-                        />
-                      </div>
-                      {errors.contactName && (
-                        <p className="mt-2 text-sm text-red-600" data-testid="contactName-error">{errors.contactName}</p>
-                      )}
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number
-                      </label>
-                      <div className="relative">
-                        <Phone size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="tel"
-                          value={formData.contactPhone}
-                          onChange={(e) => setFormData(prev => ({ ...prev, contactPhone: e.target.value }))}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Your phone number"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email Address
-                      </label>
-                      <div className="relative">
-                        <Mail size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="email"
-                          value={formData.contactEmail}
-                          onChange={(e) => setFormData(prev => ({ ...prev, contactEmail: e.target.value }))}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Your email address"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {errors.contact && (
-                    <p className="mt-2 text-sm text-red-600" data-testid="contact-error">{errors.contact}</p>
-                  )}
-                  
-                  <p className="mt-3 text-sm text-gray-600">
-                    * Please provide at least one contact method (phone or email)
-                  </p>
-                </div>
               </div>
             )}
 

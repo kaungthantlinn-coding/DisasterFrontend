@@ -9,6 +9,7 @@ import ReportDetail from './pages/ReportDetail';
 import ReportImpact from './pages/ReportImpact';
 import AdminPanel from './pages/admin/AdminPanel';
 
+
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 

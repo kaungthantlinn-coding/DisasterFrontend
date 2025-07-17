@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { Report } from '../../types';
+import { Report, RealWorldDisaster } from '../../types';
 import { format } from 'date-fns';
 import { Crosshair, Plus, Minus } from 'lucide-react';
 
@@ -18,6 +18,8 @@ interface ReportMapProps {
   onReportSelect?: (report: Report) => void;
   onLoad?: () => void;
   height?: string;
+  realWorldDisasters?: RealWorldDisaster[];
+  showRealWorldData?: boolean;
 }
 
 const ReportMap: React.FC<ReportMapProps> = ({

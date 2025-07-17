@@ -114,6 +114,80 @@ export interface Partner {
   website?: string;
 }
 
+// Real-world disaster data interfaces
+export interface RealWorldDisaster {
+  id: string;
+  title: string;
+  description: string;
+  location: {
+    coordinates: { lat: number; lng: number };
+    place: string;
+  };
+  disasterType: 'earthquake' | 'flood' | 'hurricane' | 'wildfire' | 'storm' | 'tsunami' | 'volcano' | 'other';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  magnitude?: number;
+  time: Date;
+  updatedAt: Date;
+  source: string;
+  url?: string;
+  alertLevel?: 'green' | 'yellow' | 'orange' | 'red';
+  depth?: number;
+  felt?: number;
+  tsunami?: boolean;
+  significance?: number;
+}
+
+export interface USGSEarthquake {
+  type: 'Feature';
+  properties: {
+    mag: number;
+    place: string;
+    time: number;
+    updated: number;
+    tz?: number;
+    url: string;
+    detail: string;
+    felt?: number;
+    cdi?: number;
+    mmi?: number;
+    alert?: 'green' | 'yellow' | 'orange' | 'red';
+    status: string;
+    tsunami: number;
+    sig: number;
+    net: string;
+    code: string;
+    ids: string;
+    sources: string;
+    types: string;
+    nst?: number;
+    dmin?: number;
+    rms?: number;
+    gap?: number;
+    magType: string;
+    type: string;
+    title: string;
+  };
+  geometry: {
+    type: 'Point';
+    coordinates: [number, number, number]; // [longitude, latitude, depth]
+  };
+  id: string;
+}
+
+export interface USGSEarthquakeResponse {
+  type: 'FeatureCollection';
+  metadata: {
+    generated: number;
+    url: string;
+    title: string;
+    status: number;
+    api: string;
+    count: number;
+  };
+  features: USGSEarthquake[];
+  bbox: [number, number, number, number, number, number];
+}
+
 // Google types
 declare global {
   interface Window {

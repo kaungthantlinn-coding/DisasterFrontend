@@ -17,7 +17,15 @@ import {
   Clock,
   AlertTriangle,
   Grid3X3,
-  List
+  List,
+  TrendingUp,
+  Eye,
+  Zap,
+  Shield,
+  Activity,
+  Star,
+  Download,
+  Share2
 } from 'lucide-react';
 
 // Components
@@ -146,72 +154,127 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Disaster Reports</h1>
-          <p className="text-xl text-gray-600 max-w-3xl">
-            Browse all verified and unverified disaster reports from across the region. 
-            Use filters to find specific types of incidents or search by location.
+      <main className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+        {/* Beautiful Page Header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center px-6 py-3 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-8 hover:bg-blue-200 transition-colors duration-300">
+            <Activity size={18} className="mr-2" />
+            Live Disaster Reports
+          </div>
+          <h1 className="text-5xl lg:text-7xl font-black text-gray-900 mb-8 leading-tight">
+            Emergency
+            <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500">
+              Reports Hub
+            </span>
+          </h1>
+          <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-8">
+            Real-time disaster reports from communities worldwide. Browse verified incidents, 
+            track emergency responses, and stay informed about ongoing situations in your area.
           </p>
+          
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:scale-105 transition-transform duration-300">
+              <div className="text-3xl font-black text-red-600 mb-2">{filteredAndSortedReports.length}</div>
+              <div className="text-gray-600 text-sm font-medium">Total Reports</div>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:scale-105 transition-transform duration-300">
+              <div className="text-3xl font-black text-green-600 mb-2">
+                {filteredAndSortedReports.filter(r => r.status === 'verified').length}
+              </div>
+              <div className="text-gray-600 text-sm font-medium">Verified</div>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:scale-105 transition-transform duration-300">
+              <div className="text-3xl font-black text-orange-600 mb-2">
+                {filteredAndSortedReports.filter(r => r.severity === 'critical' || r.severity === 'high').length}
+              </div>
+              <div className="text-gray-600 text-sm font-medium">High Priority</div>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 hover:scale-105 transition-transform duration-300">
+              <div className="text-3xl font-black text-blue-600 mb-2">24/7</div>
+              <div className="text-gray-600 text-sm font-medium">Monitoring</div>
+            </div>
+          </div>
         </div>
 
-        {/* Search and Filter Controls */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4 mb-6">
-            {/* Search Bar */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+        {/* Beautiful Search and Filter Controls */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 mb-12">
+          <div className="flex flex-col lg:flex-row gap-6 mb-8">
+            {/* Enhanced Search Bar */}
+            <div className="flex-1 relative group">
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                <Search size={22} />
+              </div>
               <input
                 type="text"
-                placeholder="Search by title, location, or description..."
+                placeholder="Search disasters by location, type, or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full pl-12 pr-6 py-4 bg-gray-50/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-gray-800 placeholder-gray-500 font-medium"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              )}
             </div>
 
-            {/* View Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-xl p-1">
+            {/* Premium View Toggle */}
+            <div className="flex items-center bg-gradient-to-r from-gray-100 to-gray-50 rounded-2xl p-2 shadow-inner">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`flex items-center px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
                   viewMode === 'grid'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'bg-white text-blue-600 shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
                 }`}
               >
-                <Grid3X3 size={18} className="mr-2" />
-                Grid
+                <Grid3X3 size={20} className="mr-2" />
+                Grid View
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                className={`flex items-center px-6 py-3 rounded-xl font-bold transition-all duration-300 ${
                   viewMode === 'list'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
+                    ? 'bg-white text-blue-600 shadow-lg transform scale-105'
+                    : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
                 }`}
               >
-                <List size={18} className="mr-2" />
-                List
+                <List size={20} className="mr-2" />
+                List View
               </button>
             </div>
 
-            {/* Filter Toggle */}
+            {/* Beautiful Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center px-6 py-3 rounded-xl font-medium transition-colors ${
+              className={`flex items-center px-8 py-4 rounded-2xl font-bold transition-all duration-300 transform hover:scale-105 ${
                 showFilters
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl'
+                  : 'bg-gradient-to-r from-gray-100 to-gray-50 text-gray-700 hover:from-gray-200 hover:to-gray-100 shadow-lg'
               }`}
             >
-              <SlidersHorizontal size={20} className="mr-2" />
-              Filters
+              <SlidersHorizontal size={22} className="mr-3" />
+              Advanced Filters
+              {showFilters && <div className="ml-2 w-2 h-2 bg-white rounded-full animate-pulse"></div>}
             </button>
+
+            {/* Quick Actions */}
+            <div className="flex items-center space-x-3">
+              <button className="p-4 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-2xl hover:from-green-200 hover:to-emerald-200 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                <Download size={20} />
+              </button>
+              <button className="p-4 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-2xl hover:from-purple-200 hover:to-pink-200 transition-all duration-300 transform hover:scale-105 shadow-lg">
+                <Share2 size={20} />
+              </button>
+            </div>
           </div>
 
           {/* Filter Controls */}
@@ -337,13 +400,13 @@ const Reports: React.FC = () => {
         {/* Reports Display */}
         {paginatedReports.length > 0 ? (
           viewMode === 'grid' ? (
-            /* Grid View */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+            /* Beautiful Grid View */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
               {paginatedReports.map((report, index) => (
                 <div
                   key={report.id}
-                  className="group bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all duration-300 flex flex-col h-full"
-                  style={{ animationDelay: `${index * 50}ms` }}
+                  className="group bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-white/50 overflow-hidden hover:shadow-2xl hover:scale-105 hover:-translate-y-2 transition-all duration-500 flex flex-col h-full animate-fade-in-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
                 >
                   {/* Image Section */}
                   <div className="relative h-48 overflow-hidden">

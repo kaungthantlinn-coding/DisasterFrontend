@@ -1,626 +1,634 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
-  Users,
   CheckCircle,
-  Clock,
   ArrowRight,
-  ChevronUp,
   Shield,
-  MapPin,
-  MessageSquare,
-  Zap,
-  Heart,
-  Globe,
-  Navigation,
-  ZoomIn,
-  ZoomOut,
-  Crosshair,
-  TrendingUp,
-  Activity,
-  Eye,
   Star,
   Award,
   Sparkles,
   Play,
-
-  ImageIcon
+  ChevronLeft,
+  ChevronRight,
+  Phone,
+  Mail,
+  Headphones,
+  Eye,
+  TrendingUp,
+  Heart,
+  Target,
+  Globe,
+  MapPin,
+  RefreshCw,
+  Clock
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 // Components
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 import ChatWidget from '../components/Chat/ChatWidget';
-import ViewReportsButton from '../components/Common/ViewReportsButton';
-import LoadingSpinner from '../components/Common/LoadingSpinner';
+import SimpleLeafletMap from '../components/Map/SimpleLeafletMap';
 
-// Data
-import { mockReports, mockStatistics } from '../data/mockData';
-
-// Lazy load the map component
-const ReportMap = React.lazy(() => import('../components/Map/ReportMap'));
+import { useDisasterData } from '../hooks/useDisasterData';
 
 const Home: React.FC = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapKey, setMapKey] = useState(0);
-  const [mapZoom, setMapZoom] = useState(4);
-  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const [reportsLoading, setReportsLoading] = useState(false);
+  // Real-world disaster data
+  const { disasters, loading: disastersLoading, error: disastersError, statistics, refresh } = useDisasterData({
+    autoRefresh: true,
+    refreshInterval: 5 * 60 * 1000, // 5 minutes
+    includeSignificantOnly: true,
+  });
 
-  // Reset map state when component mounts to ensure fresh map instance
-  useEffect(() => {
-    setMapLoaded(false);
-    setMapKey(prev => prev + 1); // Force remount of map component
-    
-    // Fallback timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      setMapLoaded(true);
-    }, 5000); // 5 seconds timeout
-    
-    return () => clearTimeout(timeout);
-  }, []);
-
-
-
-  // Statistics data
-  const stats = [
+  // Beautiful hero images with enhanced data
+  const heroImages = [
     {
-      label: "Reports Submitted",
-      value: "2,847",
-      icon: AlertTriangle,
-      color: "text-red-600",
+      url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'Emergency Response',
+      description: 'Rapid coordination when every second counts',
+      category: 'Response',
+      stats: { primary: '15K', secondary: 'Lives Saved', tertiary: '48hrs', quaternary: 'Response Time' }
     },
     {
-      label: "Lives Helped",
-      value: "12,450",
-      icon: Users,
-      color: "text-blue-600",
+      url: 'https://images.unsplash.com/photo-1504609813442-a8924e83f76e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'Community Unity',
+      description: 'Bringing people together in times of crisis',
+      category: 'Community',
+      stats: { primary: '50K', secondary: 'Communities', tertiary: '24/7', quaternary: 'Support' }
     },
     {
-      label: "Verified Reports",
-      value: "2,189",
-      icon: CheckCircle,
-      color: "text-green-600",
+      url: 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2072&q=80',
+      title: 'Weather Monitoring',
+      description: 'Advanced early warning systems',
+      category: 'Prevention',
+      stats: { primary: '99.8%', secondary: 'Accuracy', tertiary: '12min', quaternary: 'Alert Time' }
     },
     {
-      label: "Response Time",
-      value: "< 2hrs",
-      icon: Clock,
-      color: "text-purple-600",
-    },
+      url: 'https://images.unsplash.com/photo-1574482620811-1aa16ffe3c82?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'Recovery & Rebuild',
+      description: 'Supporting communities through recovery',
+      category: 'Recovery',
+      stats: { primary: '2.4M', secondary: 'People Helped', tertiary: '89', quaternary: 'Countries' }
+    }
   ];
 
-  // Scroll to top functionality
+  // Beautiful statistics with enhanced styling - now using real data
+  const stats = [
+    {
+      label: "Active Disasters",
+      value: statistics ? statistics.totalActive.toLocaleString() : (disastersLoading ? "..." : "0"),
+      icon: AlertTriangle,
+      gradient: "from-red-500 to-pink-500",
+      bgGradient: "from-red-50 to-pink-50",
+      description: "Real-time incidents"
+    },
+    {
+      label: "Critical Events",
+      value: statistics ? statistics.critical.toLocaleString() : (disastersLoading ? "..." : "0"),
+      icon: Heart,
+      gradient: "from-red-600 to-red-500",
+      bgGradient: "from-red-50 to-red-50",
+      description: "Urgent situations"
+    },
+    {
+      label: "High Severity",
+      value: statistics ? statistics.high.toLocaleString() : (disastersLoading ? "..." : "0"),
+      icon: CheckCircle,
+      gradient: "from-orange-500 to-orange-600",
+      bgGradient: "from-orange-50 to-orange-50",
+      description: "Major incidents"
+    },
+    {
+      label: "Data Sources",
+      value: "USGS",
+      icon: Globe,
+      gradient: "from-blue-500 to-cyan-500",
+      bgGradient: "from-blue-50 to-cyan-50",
+      description: "Live monitoring"
+    }
+  ];
+
+
+
+  // Auto-advance slider
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroImages.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [heroImages.length]);
+
+  // Scroll functionality
   useEffect(() => {
     const handleScroll = () => {
       setShowScrollTop(window.scrollY > 300);
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth',
-    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Get current location with improved error handling
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      console.warn('Geolocation is not supported by this browser.');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setCurrentLocation({ lat: latitude, lng: longitude });
-      },
-      (error) => {
-        // Silently handle geolocation errors to avoid console spam
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            console.warn('Geolocation permission denied by user.');
-            break;
-          case error.POSITION_UNAVAILABLE:
-            console.warn('Geolocation position unavailable.');
-            break;
-          case error.TIMEOUT:
-            console.warn('Geolocation request timed out.');
-            break;
-          default:
-            console.warn('An unknown geolocation error occurred.');
-            break;
-        }
-      },
-      {
-        timeout: 10000, // 10 seconds timeout
-        enableHighAccuracy: false, // Use less accurate but faster positioning
-        maximumAge: 300000 // Accept cached position up to 5 minutes old
-      }
-    );
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % heroImages.length);
   };
 
-  // Get recent reports for the map
-  const recentReports = mockReports.slice(0, 4);
-
-
-
-  // Simulate loading more reports
-  const loadMoreReports = () => {
-    setReportsLoading(true);
-    setTimeout(() => {
-      setReportsLoading(false);
-      // In a real app, this would fetch more reports
-    }, 2000);
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + heroImages.length) % heroImages.length);
   };
 
-  // Get color classes for statistics
-  const getStatColor = (color: string) => {
-    switch (color) {
-      case 'text-red-600':
-        return 'from-red-500 to-red-600';
-      case 'text-blue-600':
-        return 'from-blue-500 to-blue-600';
-      case 'text-green-600':
-        return 'from-green-500 to-green-600';
-      case 'text-purple-600':
-        return 'from-purple-500 to-purple-600';
-      default:
-        return 'from-gray-500 to-gray-600';
-    }
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
   };
-
-  // Get severity color classes
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return 'bg-red-500';
-      case 'high':
-        return 'bg-orange-500';
-      case 'medium':
-        return 'bg-yellow-500';
-      case 'low':
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  // Get default image for report type
-  const getDefaultImage = (type: string) => {
-    const defaultImages = {
-      flood: 'https://images.pexels.com/photos/1118873/pexels-photo-1118873.jpeg',
-      fire: 'https://images.pexels.com/photos/1112080/pexels-photo-1112080.jpeg',
-      earthquake: 'https://images.pexels.com/photos/2166711/pexels-photo-2166711.jpeg',
-      storm: 'https://images.pexels.com/photos/1446076/pexels-photo-1446076.jpeg',
-      default: 'https://images.pexels.com/photos/1446076/pexels-photo-1446076.jpeg'
-    };
-    return defaultImages[type as keyof typeof defaultImages] || defaultImages.default;
-  };
-
-
 
   return (
     <div className="min-h-screen bg-white">
       <Header />
 
       <main>
-        {/* Enhanced Hero Section */}
-        <section className="relative min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white overflow-hidden flex items-center">
-          {/* Animated Background Elements */}
+        {/* Stunning Hero Section */}
+        <section className="relative h-screen overflow-hidden">
+          {/* Dynamic Background with Smooth Transitions */}
           <div className="absolute inset-0">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl animate-pulse delay-500"></div>
+            {heroImages.map((image, index) => (
+              <div
+                key={index}
+                className={`absolute inset-0 transition-all duration-[2000ms] ease-in-out ${
+                  index === currentSlide ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
+                }`}
+              >
+                <img
+                  src={image.url}
+                  alt={image.title}
+                  className="w-full h-full object-cover"
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/60"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+              </div>
+            ))}
           </div>
 
-          {/* Grid Pattern Overlay */}
-          <div className="absolute inset-0 opacity-40" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}></div>
+          {/* Floating Animated Elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl animate-pulse delay-1000"></div>
+            <div className="absolute top-1/2 right-1/3 w-32 h-32 bg-pink-500/10 rounded-full blur-xl animate-pulse delay-500"></div>
+          </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              {/* Left Column - Content */}
-              <div className="text-left">
-                {/* Badge */}
-                <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-sm font-medium mb-8">
-                  <Sparkles size={16} className="mr-2 text-yellow-300" />
-                  Trusted by 50,000+ communities worldwide
+          {/* Hero Content */}
+          <div className="relative z-10 h-full flex items-center">
+            <div className="max-w-7xl mx-auto px-6 lg:px-8 w-full">
+              <div className="grid lg:grid-cols-12 gap-12 items-center">
+                {/* Left Content - 7 columns */}
+                <div className="lg:col-span-7 text-white">
+                  {/* Trust Badge */}
+                  <div className="inline-flex items-center px-6 py-3 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-sm font-medium mb-8 hover:bg-white/15 transition-all duration-300 group">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mr-3 animate-pulse"></div>
+                    <Sparkles size={16} className="mr-2 text-yellow-400 group-hover:rotate-12 transition-transform duration-300" />
+                    <span className="text-white/90">Trusted by 50,000+ communities worldwide</span>
+                  </div>
+
+                  {/* Main Heading */}
+                  <h1 className="text-5xl lg:text-8xl font-black leading-[0.9] mb-8 tracking-tight">
+                    <span className="block text-white drop-shadow-2xl">Unite</span>
+                    <span className="block text-white drop-shadow-2xl">Communities</span>
+                    <span className="block">
+                      <span className="text-white drop-shadow-2xl">in </span>
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 drop-shadow-2xl animate-pulse">
+                        Crisis
+                      </span>
+                    </span>
+                  </h1>
+
+                  {/* Description */}
+                  <p className="text-xl lg:text-2xl text-white/90 mb-12 leading-relaxed max-w-2xl font-light drop-shadow-lg">
+                    The world's most advanced disaster management platform. Connect communities, 
+                    coordinate responses, and save lives through intelligent technology.
+                  </p>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-col sm:flex-row gap-6 mb-16">
+                    <Link
+                      to="/report/new"
+                      className="group relative bg-gradient-to-r from-red-500 via-red-600 to-orange-500 text-white px-10 py-5 rounded-2xl text-lg font-bold hover:from-red-600 hover:via-red-700 hover:to-orange-600 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl flex items-center justify-center overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-400 via-red-500 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      <AlertTriangle size={22} className="mr-3 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
+                      <span className="relative z-10">Report Emergency</span>
+                      <ArrowRight size={22} className="ml-3 group-hover:translate-x-2 transition-transform duration-300 relative z-10" />
+                    </Link>
+
+                    <button className="group bg-white/10 backdrop-blur-xl border-2 border-white/30 text-white px-10 py-5 rounded-2xl text-lg font-bold hover:bg-white/20 hover:border-white/50 transition-all duration-300 flex items-center justify-center transform hover:-translate-y-1">
+                      <Play size={22} className="mr-3 group-hover:scale-125 transition-transform duration-300" />
+                      <span>Watch Demo</span>
+                    </button>
+                  </div>
+
+                  {/* Trust Indicators */}
+                  <div className="flex flex-wrap items-center gap-8 text-sm text-white/80">
+                    <div className="flex items-center space-x-2 hover:text-white transition-colors duration-300 group">
+                      <Star className="text-yellow-400 fill-current group-hover:rotate-12 transition-transform duration-300" size={18} />
+                      <span className="font-medium">4.9/5 Rating</span>
+                    </div>
+                    <div className="flex items-center space-x-2 hover:text-white transition-colors duration-300 group">
+                      <Award className="text-blue-400 group-hover:rotate-12 transition-transform duration-300" size={18} />
+                      <span className="font-medium">Award Winning</span>
+                    </div>
+                    <div className="flex items-center space-x-2 hover:text-white transition-colors duration-300 group">
+                      <Shield className="text-green-400 group-hover:rotate-12 transition-transform duration-300" size={18} />
+                      <span className="font-medium">ISO Certified</span>
+                    </div>
+                  </div>
                 </div>
 
-                <h1 className="text-5xl lg:text-7xl font-bold leading-tight mb-8">
-                  <span className="block">Unite Communities</span>
-                  <span className="block">in</span>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300">
-                    Times of Crisis
-                  </span>
-                </h1>
+                {/* Right Content - Elegant Info Card - 5 columns */}
+                <div className="lg:col-span-5 relative">
+                  <div className="bg-white/10 backdrop-blur-2xl rounded-3xl p-8 border border-white/20 shadow-2xl hover:bg-white/15 transition-all duration-500 transform hover:scale-105">
+                    {/* Category Badge */}
+                    <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/30 to-purple-500/30 border border-white/30 text-sm font-bold mb-6 backdrop-blur-sm">
+                      <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
+                      <span className="text-white">{heroImages[currentSlide].category}</span>
+                    </div>
 
-                <p className="text-xl text-blue-100 mb-10 leading-relaxed max-w-xl">
-                  The world's most trusted disaster management platform. Connect with your community,
-                  report incidents instantly, and coordinate relief efforts with real-time intelligence.
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-4 mb-12">
-                  <Link
-                    to="/report/new"
-                    className="group bg-gradient-to-r from-red-500 to-orange-500 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:from-red-600 hover:to-orange-600 transition-all transform hover:-translate-y-1 hover:shadow-2xl flex items-center justify-center"
-                  >
-                    <AlertTriangle size={20} className="mr-2" />
-                    Report Emergency
-                    <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-
-                  <button className="group bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:bg-white/20 transition-all flex items-center justify-center">
-                    <Play size={20} className="mr-2" />
-                    Watch Demo
-                  </button>
-                </div>
-
-                {/* Trust Indicators */}
-                <div className="flex items-center space-x-8 text-sm text-blue-200">
-                  <div className="flex items-center space-x-2">
-                    <Star className="text-yellow-400 fill-current" size={16} />
-                    <span>4.9/5 Rating</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Award className="text-blue-300" size={16} />
-                    <span>Award Winning</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Shield className="text-green-300" size={16} />
-                    <span>ISO Certified</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column - Visual Element */}
-              <div className="relative lg:block hidden">
-                <div className="relative">
-                  {/* Main Dashboard Mockup */}
-                  <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-8 border border-white/20 shadow-2xl">
-                    <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 mb-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-white font-semibold">Live Dashboard</h3>
-                        <div className="flex space-x-2">
-                          <div className="w-3 h-3 bg-red-400 rounded-full animate-pulse"></div>
-                          <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                    {/* Slide Content */}
+                    <div className="text-center mb-8">
+                      <h3 className="text-3xl font-black text-white mb-4 leading-tight">
+                        {heroImages[currentSlide].title}
+                      </h3>
+                      <p className="text-white/80 text-lg leading-relaxed">
+                        {heroImages[currentSlide].description}
+                      </p>
+                    </div>
+                    
+                    {/* Beautiful Stats */}
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white/30 transition-all duration-300 transform hover:scale-105">
+                        <div className="text-3xl font-black text-white mb-1">
+                          {heroImages[currentSlide].stats.primary}
+                        </div>
+                        <div className="text-white/70 text-sm font-medium">
+                          {heroImages[currentSlide].stats.secondary}
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white/20 rounded-lg p-4">
-                          <div className="text-2xl font-bold text-white">2,847</div>
-                          <div className="text-blue-100 text-sm">Active Reports</div>
+                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white/30 transition-all duration-300 transform hover:scale-105">
+                        <div className="text-3xl font-black text-white mb-1">
+                          {heroImages[currentSlide].stats.tertiary}
                         </div>
-                        <div className="bg-white/20 rounded-lg p-4">
-                          <div className="text-2xl font-bold text-white">&lt; 2hrs</div>
-                          <div className="text-blue-100 text-sm">Response Time</div>
+                        <div className="text-white/70 text-sm font-medium">
+                          {heroImages[currentSlide].stats.quaternary}
                         </div>
                       </div>
                     </div>
 
-                    {/* Mini Map Preview */}
-                    <div className="bg-gray-800 rounded-2xl h-32 flex items-center justify-center">
-                      <div className="text-gray-400 text-sm">Interactive Map Preview</div>
+                    {/* Elegant Slider Dots */}
+                    <div className="flex justify-center space-x-3">
+                      {heroImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => goToSlide(index)}
+                          className={`relative transition-all duration-500 ${
+                            index === currentSlide 
+                              ? 'w-10 h-3 bg-white rounded-full shadow-lg' 
+                              : 'w-3 h-3 bg-white/40 rounded-full hover:bg-white/70'
+                          }`}
+                          aria-label={`Go to slide ${index + 1}`}
+                        >
+                          {index === currentSlide && (
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full opacity-80 animate-pulse"></div>
+                          )}
+                        </button>
+                      ))}
                     </div>
-                  </div>
-
-                  {/* Floating Elements */}
-                  <div className="absolute -top-4 -right-4 bg-green-500 text-white p-3 rounded-full shadow-lg animate-bounce">
-                    <CheckCircle size={20} />
-                  </div>
-                  <div className="absolute -bottom-4 -left-4 bg-blue-500 text-white p-3 rounded-full shadow-lg animate-pulse">
-                    <Activity size={20} />
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Enhanced Stats Grid */}
-            <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center group">
-                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 group-hover:scale-105">
-                    <div className="text-3xl md:text-4xl font-bold text-white mb-2 group-hover:scale-110 transition-transform">
-                      {stat.value}
-                    </div>
-                    <div className="text-blue-200 text-sm font-medium">{stat.label}</div>
-                  </div>
-                </div>
-              ))}
+          {/* Elegant Navigation */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-8 top-1/2 transform -translate-y-1/2 z-20 group"
+            aria-label="Previous slide"
+          >
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 text-white p-4 rounded-full hover:bg-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-110 shadow-2xl">
+              <ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform duration-300" />
+            </div>
+          </button>
+
+          <button
+            onClick={nextSlide}
+            className="absolute right-8 top-1/2 transform -translate-y-1/2 z-20 group"
+            aria-label="Next slide"
+          >
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 text-white p-4 rounded-full hover:bg-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-110 shadow-2xl">
+              <ChevronRight size={28} className="group-hover:translate-x-1 transition-transform duration-300" />
+            </div>
+          </button>
+
+          {/* Beautiful Progress Bar */}
+          <div className="absolute bottom-0 left-0 right-0 z-20">
+            <div className="h-1 bg-white/20">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 transition-all duration-300 shadow-lg"
+                style={{ width: `${((currentSlide + 1) / heroImages.length) * 100}%` }}
+              />
             </div>
           </div>
         </section>
 
-        {/* Enhanced Statistics Section */}
-        <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50/30" aria-label="Statistics">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
-                <TrendingUp size={16} className="mr-2" />
-                Real-time Impact Metrics
+        {/* Beautiful Statistics Section */}
+        <section className="py-24 bg-gradient-to-br from-gray-50 via-white to-blue-50/30 relative overflow-hidden">
+          {/* Background Elements */}
+          <div className="absolute inset-0">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-100/50 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-100/50 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="text-center mb-20">
+              <div className="inline-flex items-center px-6 py-3 rounded-full bg-blue-100 text-blue-700 text-sm font-bold mb-8 hover:bg-blue-200 transition-colors duration-300">
+                <TrendingUp size={18} className="mr-2" />
+                Real-Time Impact Metrics
               </div>
-              <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+              <h2 className="text-4xl lg:text-7xl font-black text-gray-900 mb-8 leading-tight">
                 Making a
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"> Real Impact</span>
+                <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
+                  Real Impact
+                </span>
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Our community-driven platform has transformed disaster response across the globe,
-                connecting communities and saving lives through technology and collaboration.
+              <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                Our platform transforms disaster response globally, connecting communities and saving lives through advanced technology and seamless coordination.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {stats.map((stat, index) => (
                 <div
                   key={index}
-                  className="group bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-white/50 hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                  className={`group bg-gradient-to-br ${stat.bgGradient} rounded-3xl p-8 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-500 border border-white/50`}
                 >
                   <div className="text-center">
-                    <div
-                      className={`inline-flex p-4 rounded-2xl bg-gradient-to-br ${getStatColor(
-                        stat.color
-                      )} text-white shadow-lg mb-6 group-hover:scale-110 transition-transform duration-300`}
-                    >
-                      <stat.icon size={32} />
+                    <div className={`inline-flex p-5 rounded-3xl bg-gradient-to-br ${stat.gradient} text-white shadow-xl mb-6 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
+                      <stat.icon size={36} />
                     </div>
-                    <div className="text-4xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                    <div className="text-5xl font-black text-gray-900 mb-2 group-hover:scale-110 transition-transform duration-300">
                       {stat.value}
                     </div>
-                    <div className="text-gray-600 font-medium">{stat.label}</div>
+                    <div className="text-gray-800 font-bold text-lg mb-1">{stat.label}</div>
+                    <div className="text-gray-600 text-sm">{stat.description}</div>
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Additional Metrics Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 border border-white/50">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl text-white">
-                    <Eye size={24} />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">99.9%</div>
-                    <div className="text-gray-600">Uptime Reliability</div>
-                  </div>
-                </div>
-              </div>
 
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 border border-white/50">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl text-white">
-                    <Globe size={24} />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">150+</div>
-                    <div className="text-gray-600">Countries Served</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-8 border border-white/50">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl text-white">
-                    <Zap size={24} />
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-gray-900">24/7</div>
-                    <div className="text-gray-600">Emergency Support</div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
-
-
-        {/* Enhanced Interactive Map Section */}
-        <section className="py-24 bg-white relative overflow-hidden">
-          {/* Background Elements */}
+        {/* Making Real Impact Section with Live Map */}
+        <section className="py-24 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+          {/* Animated Background Elements */}
           <div className="absolute inset-0">
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-30"></div>
-            <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-100 rounded-full blur-3xl opacity-30"></div>
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-indigo-500/5 rounded-full blur-2xl animate-pulse delay-500"></div>
           </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-red-100 text-red-700 text-sm font-medium mb-6">
-                <Activity size={16} className="mr-2" />
-                Live Monitoring System
+              <div className="inline-flex items-center px-6 py-3 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-sm font-bold mb-8 text-white">
+                <Globe size={18} className="mr-2" />
+                Live Global Impact
               </div>
-              <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                Real-Time Disaster
+              <h2 className="text-4xl lg:text-7xl font-black text-white mb-8 leading-tight drop-shadow-2xl">
+                Making Real
                 <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-orange-500 to-yellow-500">
-                  Intelligence Hub
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-blue-400 to-purple-400">
+                  Impact Worldwide
                 </span>
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Advanced geospatial analytics and real-time data visualization to track disasters,
-                coordinate response efforts, and protect communities worldwide.
+              <p className="text-xl text-blue-100 max-w-4xl mx-auto leading-relaxed drop-shadow-lg">
+                Our platform coordinates real-time disaster response across the globe. See live incidents, 
+                active response teams, and communities we're helping right now.
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-white to-gray-50/50 rounded-3xl shadow-2xl border border-gray-200/50 overflow-hidden backdrop-blur-sm">
-              <div className="p-8 lg:p-12">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-10">
-                  <div>
-                    <h3 className="text-3xl font-bold text-gray-900 mb-3">Global Disaster Dashboard</h3>
-                    <p className="text-gray-600 text-lg">Interactive map with real-time incident tracking and response coordination</p>
-                  </div>
-                  <div className="mt-6 lg:mt-0">
-                    <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-red-600">47</div>
-                          <div className="text-xs text-gray-500">Active</div>
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              {/* Left Side - Live Map Interface */}
+              <div className="relative">
+                <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+                  {/* Map Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-white">Live Disaster Map</h3>
+                    <div className="flex items-center space-x-3">
+                      {!disastersLoading && !disastersError && (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                          <span className="text-green-300 text-sm font-medium">Live Updates</span>
                         </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">189</div>
-                          <div className="text-xs text-gray-500">Resolved</div>
+                      )}
+                      {disastersLoading && (
+                        <div className="flex items-center space-x-2">
+                          <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />
+                          <span className="text-blue-300 text-sm font-medium">Loading...</span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Enhanced Status Indicators */}
-                <div className="flex flex-wrap gap-4 mb-8">
-                  <div className="flex items-center space-x-3 bg-white rounded-full px-4 py-2 shadow-md border border-gray-100">
-                    <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium text-gray-700">Critical Alerts</span>
-                    <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-semibold">12</span>
-                  </div>
-                  <div className="flex items-center space-x-3 bg-white rounded-full px-4 py-2 shadow-md border border-gray-100">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-gray-700">Verified Reports</span>
-                    <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-semibold">2,189</span>
-                  </div>
-                  <div className="flex items-center space-x-3 bg-white rounded-full px-4 py-2 shadow-md border border-gray-100">
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-gray-700">Under Review</span>
-                    <span className="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded-full font-semibold">658</span>
-                  </div>
-                  <div className="flex items-center space-x-3 bg-white rounded-full px-4 py-2 shadow-md border border-gray-100">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium text-gray-700">Response Teams</span>
-                    <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-semibold">24</span>
-                  </div>
-                </div>
-
-                {/* Enhanced Map Container with Controls */}
-                <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-lg">
-                  {/* Map Loading Placeholder */}
-                  {!mapLoaded && (
-                    <div className="absolute inset-0 bg-gray-100 flex items-center justify-center z-10">
-                      <div className="text-center">
-                        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                        <p className="text-gray-600 font-medium">Loading interactive map...</p>
-                        <div className="w-32 h-2 bg-gray-200 rounded-full mx-auto mt-2 overflow-hidden">
-                          <div className="h-full bg-blue-500 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+                      )}
+                      {disastersError && (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                          <span className="text-red-300 text-sm font-medium">Error</span>
                         </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Map Controls */}
-                  <div className="absolute top-4 right-4 z-20 flex flex-col space-y-2">
-                    {/* Current Location Button */}
-                    <button
-                      onClick={getCurrentLocation}
-                      className="group bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-gray-200 hover:bg-white hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      aria-label="Get current location"
-                      style={{ minWidth: '44px', minHeight: '44px' }}
-                    >
-                      <Navigation size={18} className="text-blue-600 group-hover:text-blue-700 transition-colors" />
-                    </button>
-
-                    {/* Zoom Controls */}
-                    <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                      )}
                       <button
-                        onClick={() => setMapZoom(prev => Math.min(prev + 1, 18))}
-                        className="block w-full p-3 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        aria-label="Zoom in"
-                        style={{ minWidth: '44px', minHeight: '44px' }}
+                        onClick={refresh}
+                        className="bg-white/20 backdrop-blur-sm text-white p-2 rounded-lg hover:bg-white/30 transition-colors"
+                        title="Refresh data"
                       >
-                        <ZoomIn size={18} className="text-gray-600 hover:text-gray-800 transition-colors mx-auto" />
-                      </button>
-                      <div className="border-t border-gray-200"></div>
-                      <button
-                        onClick={() => setMapZoom(prev => Math.max(prev - 1, 1))}
-                        className="block w-full p-3 hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        aria-label="Zoom out"
-                        style={{ minWidth: '44px', minHeight: '44px' }}
-                      >
-                        <ZoomOut size={18} className="text-gray-600 hover:text-gray-800 transition-colors mx-auto" />
+                        <RefreshCw className="w-4 h-4" />
                       </button>
                     </div>
-
-                    {/* Map Type Toggle */}
-                    <button
-                      className="bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg border border-gray-200 hover:bg-white hover:shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      aria-label="Toggle map view"
-                      style={{ minWidth: '44px', minHeight: '44px' }}
-                    >
-                      <Globe size={18} className="text-gray-600 hover:text-gray-800 transition-colors" />
-                    </button>
                   </div>
 
-                  {/* Map Legend */}
-                  <div className="absolute bottom-4 left-4 z-20 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 p-4">
-                    <h4 className="font-semibold text-gray-900 mb-2 text-sm">Map Legend</h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-xs text-gray-600">Critical</span>
+                  {/* Real-World Disaster Map */}
+                  <div className="relative">
+                    {disastersError ? (
+                      <div className="bg-slate-800 rounded-2xl h-80 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+                          <p className="text-lg font-semibold mb-2">Unable to load disaster data</p>
+                          <p className="text-sm text-gray-300 mb-4">{disastersError}</p>
+                          <button
+                            onClick={refresh}
+                            className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Try Again
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                        <span className="text-xs text-gray-600">High Priority</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span className="text-xs text-gray-600">Medium</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-xs text-gray-600">Resolved</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Current Location Indicator */}
-                  {currentLocation && (
-                    <div className="absolute top-4 left-4 z-20 bg-blue-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <Crosshair size={14} />
-                        <span>Your Location</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Main Map */}
-                  <div
-                    className="transition-opacity duration-500"
-                    style={{ opacity: mapLoaded ? 1 : 0 }}
-                  >
-                    <Suspense fallback={<LoadingSpinner size={32} />}>
-                      <ReportMap
-                        key={mapKey}
-                        reports={recentReports}
-                        height="500px"
-                        onLoad={() => setMapLoaded(true)}
-                        onReportSelect={(report) => {
-                          console.log('Selected report:', report);
-                        }}
+                    ) : (
+                      <SimpleLeafletMap
+                        disasters={disasters}
+                        height="320px"
+                        className="rounded-2xl overflow-hidden"
+                        loading={disastersLoading}
                       />
-                    </Suspense>
+                    )}
+
+                    {/* Map Legend */}
+                    <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm rounded-lg p-3 z-10">
+                      <div className="space-y-2 text-xs">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-red-600 rounded-full"></div>
+                          <span className="text-white">Critical</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
+                          <span className="text-white">High</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-amber-600 rounded-full"></div>
+                          <span className="text-white">Medium</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-lime-600 rounded-full"></div>
+                          <span className="text-white">Low</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Live Activity Feed */}
+                  <div className="mt-6 space-y-3 max-h-32 overflow-y-auto">
+                    {disastersLoading ? (
+                      <div className="flex items-center space-x-3 text-sm">
+                        <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />
+                        <span className="text-white/80">Loading recent disasters...</span>
+                      </div>
+                    ) : disasters.length > 0 ? (
+                      disasters.slice(0, 5).map((disaster, index) => {
+                        const getSeverityColor = (severity: string) => {
+                          switch (severity) {
+                            case 'critical': return 'bg-red-500';
+                            case 'high': return 'bg-orange-500';
+                            case 'medium': return 'bg-yellow-500';
+                            case 'low': return 'bg-green-500';
+                            default: return 'bg-gray-500';
+                          }
+                        };
+
+                        return (
+                          <div key={disaster.id} className="flex items-center space-x-3 text-sm">
+                            <div className={`w-2 h-2 ${getSeverityColor(disaster.severity)} rounded-full animate-pulse`}></div>
+                            <span className="text-white truncate">
+                              {disaster.location.place} - {disaster.disasterType === 'earthquake' && disaster.magnitude ? `M${disaster.magnitude}` : disaster.disasterType} - {new Date(disaster.time).toLocaleDateString()}
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="flex items-center space-x-3 text-sm">
+                        <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                        <span className="text-white/60">No recent disasters</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Side - Impact Statistics */}
+              <div className="space-y-8">
+                <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+                  <h3 className="text-2xl font-bold text-white mb-6">Real-Time Impact</h3>
+                  
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="text-center">
+                      <div className="text-4xl font-black text-red-400 mb-2">
+                        {statistics ? statistics.critical : (disastersLoading ? "..." : "0")}
+                      </div>
+                      <div className="text-white/80 text-sm">Critical Events</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-black text-orange-400 mb-2">
+                        {statistics ? statistics.high : (disastersLoading ? "..." : "0")}
+                      </div>
+                      <div className="text-white/80 text-sm">High Priority</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-black text-blue-400 mb-2">
+                        {statistics ? statistics.totalActive : (disastersLoading ? "..." : "0")}
+                      </div>
+                      <div className="text-white/80 text-sm">Active Disasters</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-4xl font-black text-green-400 mb-2">USGS</div>
+                      <div className="text-white/80 text-sm">Data Source</div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-                  <ViewReportsButton
-                    size="lg"
-                    className="flex-1 sm:flex-none transform hover:scale-105 transition-transform duration-200"
-                  />
+                {/* Active Response Teams */}
+                <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+                  <h3 className="text-2xl font-bold text-white mb-6">Active Response Teams</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <div>
+                          <div className="text-white font-medium">Thailand Emergency Team</div>
+                          <div className="text-white/60 text-sm">Flood Response - Chiang Rai</div>
+                        </div>
+                      </div>
+                      <div className="text-green-400 text-sm font-medium">Active</div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 bg-orange-500 rounded-full animate-pulse"></div>
+                        <div>
+                          <div className="text-white font-medium">Indonesia Seismic Unit</div>
+                          <div className="text-white/60 text-sm">Earthquake Assessment - Sulawesi</div>
+                        </div>
+                      </div>
+                      <div className="text-yellow-400 text-sm font-medium">Monitoring</div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                        <div>
+                          <div className="text-white font-medium">Regional Coordination</div>
+                          <div className="text-white/60 text-sm">Multi-site Response - Southeast Asia</div>
+                        </div>
+                      </div>
+                      <div className="text-blue-400 text-sm font-medium">Coordinating</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex space-x-4">
+                  <Link
+                    to="/reports"
+                    className="flex-1 bg-white/10 backdrop-blur-xl border border-white/20 text-white px-6 py-4 rounded-2xl font-bold hover:bg-white/20 transition-all duration-300 flex items-center justify-center group"
+                  >
+                    <Eye size={20} className="mr-2 group-hover:scale-110 transition-transform" />
+                    View All Reports
+                  </Link>
                   <Link
                     to="/report/new"
-                    className="flex-1 sm:flex-none bg-gradient-to-r from-red-500 to-orange-500 text-white px-8 py-4 rounded-xl hover:from-red-600 hover:to-orange-600 transition-all duration-200 font-semibold flex items-center justify-center transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className="flex-1 bg-gradient-to-r from-red-500 to-orange-500 text-white px-6 py-4 rounded-2xl font-bold hover:from-red-600 hover:to-orange-600 transition-all duration-300 flex items-center justify-center group"
                   >
-                    <AlertTriangle size={20} className="mr-2" />
-                    Report New Incident
+                    <AlertTriangle size={20} className="mr-2 group-hover:rotate-12 transition-transform" />
+                    Report Now
                   </Link>
                 </div>
               </div>
@@ -628,209 +636,344 @@ const Home: React.FC = () => {
           </div>
         </section>
 
-        {/* Enhanced Recent Reports Section */}
-        <section className="py-24 bg-gradient-to-br from-gray-50 to-blue-50/20" aria-label="Recent Reports">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-                <div className="inline-flex items-center px-4 py-2 rounded-full bg-orange-100 text-orange-700 text-sm font-medium">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse mr-2"></div>
-                  <MessageSquare size={16} className="mr-2" />
-                  Live Community Updates
-                </div>
-                <div className="inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-700 text-sm font-medium">
-                  <CheckCircle size={16} className="mr-2" />
-                  {mockReports.filter(r => r.verified).length} Verified Today
-                </div>
+        {/* Recent Verified Reports Section */}
+        <section className="py-24 bg-white relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            {/* Section Header */}
+            <div className="flex items-center justify-between mb-16">
+              <div>
+                <h2 className="text-4xl lg:text-6xl font-black text-gray-900 mb-4">
+                  Recent Verified Reports
+                </h2>
+                <p className="text-xl text-gray-600 max-w-2xl">
+                  Stay informed about recent disasters and community needs in your area
+                </p>
               </div>
-
-              <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                Latest Community
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-red-500 to-pink-500"> Reports</span>
-              </h2>
-
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
-                Real-time updates from community members on the ground. Every report helps build
-                a safer, more informed community response network.
-              </p>
-
-              {/* Real-time Stats */}
-              <div className="flex flex-wrap justify-center gap-6 text-sm">
-                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/50">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="text-gray-700 font-medium">3 Critical Alerts</span>
-                </div>
-                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/50">
-                  <Clock size={14} className="text-blue-600" />
-                  <span className="text-gray-700 font-medium">Updated 2 min ago</span>
-                </div>
-                <div className="flex items-center space-x-2 bg-white/60 backdrop-blur-sm px-4 py-2 rounded-full border border-white/50">
-                  <Users size={14} className="text-purple-600" />
-                  <span className="text-gray-700 font-medium">1,247 Active Responders</span>
-                </div>
-              </div>
+              <Link
+                to="/reports"
+                className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center"
+              >
+                View Reports
+                <ArrowRight size={20} className="ml-2" />
+              </Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-              {mockReports.slice(0, 3).map((report, index) => (
-                <div
-                  key={report.id}
-                  className="group bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-white/60 overflow-hidden hover:shadow-2xl hover:scale-[1.02] transition-all duration-500"
-                  style={{ animationDelay: `${index * 150}ms` }}
-                >
-                  {/* Enhanced Image Section */}
-                  <div className="relative overflow-hidden h-64">
-                    <img
-                      src={report.photos?.[0] || getDefaultImage(report.disasterType)}
-                      alt={report.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10"></div>
-
-                    {/* Enhanced Severity Badge */}
-                    <div className={`absolute top-4 left-4 px-4 py-2 rounded-full text-xs font-bold text-white shadow-lg ${getSeverityColor(report.severity)} backdrop-blur-sm`}>
-                      <div className="flex items-center space-x-1">
-                        <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                        <span>{report.severity?.toUpperCase()}</span>
-                      </div>
-                    </div>
-
-                    {/* Verification Badge */}
-                    {report.verified && (
-                      <div className="absolute top-4 right-4 bg-green-500/90 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center shadow-lg">
+            {/* Disaster Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {/* Flash Flood Card */}
+              <div className="group relative bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
+                <div className="absolute inset-0">
+                  <img
+                    src="https://images.unsplash.com/photo-1547036967-23d11aacaee0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    alt="Flash Flood"
+                    className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                </div>
+                
+                <div className="relative p-8 h-80 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                        Flash Flood
+                      </span>
+                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
                         <CheckCircle size={12} className="mr-1" />
                         Verified
-                      </div>
-                    )}
-
-                    {/* Image Overlay with Type */}
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <div className="bg-white/20 backdrop-blur-md rounded-xl p-3 border border-white/30">
-                        <div className="flex items-center justify-between text-white">
-                          <span className="text-sm font-semibold capitalize">{report.disasterType} Alert</span>
-                          <span className="text-xs opacity-90">
-                            {format(report.createdAt, 'MMM d, HH:mm')}
-                          </span>
-                        </div>
-                      </div>
+                      </span>
                     </div>
+                    <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
+                      Flooding in Downtown District
+                    </h3>
+                    <p className="text-blue-100 text-sm leading-relaxed mb-4">
+                      Severe flooding has affected multiple residential areas after heavy rainfall. Water levels reached 3-4 feet in some streets.
+                    </p>
                   </div>
-
-                  {/* Enhanced Content Section */}
-                  <div className="p-6">
-                    <div className="mb-4">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2 leading-tight">
-                        {report.title}
-                      </h3>
-                      <p className="text-gray-600 text-sm line-clamp-3 leading-relaxed">
-                        {report.description}
-                      </p>
-                    </div>
-
-                    {/* Location and Status */}
-                    <div className="flex items-center justify-between mb-6 pt-4 border-t border-gray-100">
-                      <div className="flex items-center space-x-2">
-                        <div className="p-1 bg-blue-100 rounded-lg">
-                          <MapPin size={14} className="text-blue-600" />
-                        </div>
-                        <span className="text-sm text-gray-700 font-medium">{report.location.address}</span>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center text-blue-200">
+                        <MapPin size={14} className="mr-2" />
+                        Manhattan
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        report.status === 'verified' ? 'bg-green-100 text-green-700' :
-                        report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                      <div className="flex items-center text-blue-200">
+                        <Clock size={14} className="mr-2" />
+                        Jan 15
                       </div>
                     </div>
-
-                    {/* Enhanced Action Button */}
                     <Link
-                      to={`/reports/${report.id}`}
-                      className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl flex items-center justify-center group"
+                      to="/reports/1"
+                      className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 flex items-center justify-center group"
                     >
-                      <span>View Details</span>
+                      <Eye size={16} className="mr-2" />
+                      View Details
                       <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            {/* Load More Reports Section */}
-            <div className="text-center mb-16">
-              <button
-                onClick={loadMoreReports}
-                disabled={reportsLoading}
-                className="bg-white/80 backdrop-blur-sm border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-2xl font-semibold hover:bg-white hover:border-blue-300 hover:text-blue-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center mx-auto"
-              >
-                {reportsLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
-                    Loading More Reports...
-                  </>
-                ) : (
-                  <>
-                    <Eye size={20} className="mr-3" />
-                    Load More Reports
-                    <ArrowRight size={18} className="ml-3" />
-                  </>
-                )}
-              </button>
-              <p className="text-sm text-gray-500 mt-4">
-                Showing 3 of {mockReports.length} recent reports
-              </p>
-            </div>
-
-            {/* Enhanced CTA Section */}
-            <div className="bg-gradient-to-br from-white/80 to-blue-50/80 backdrop-blur-sm rounded-3xl p-8 lg:p-12 border border-white/60 shadow-xl">
-              <div className="text-center">
-                <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
-                  <Users size={16} className="mr-2" />
-                  Community Engagement
-                </div>
-                <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                  Stay Connected with Your
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"> Community</span>
-                </h3>
-                <p className="text-xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
-                  Join over 50,000 community members who are making a real difference. View comprehensive reports,
-                  contribute to ongoing discussions, and help build more resilient communities together.
-                </p>
-
-                {/* Enhanced Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-6 justify-center mb-8">
-                  <ViewReportsButton
-                    size="lg"
-                    className="transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+              {/* Wildfire Card */}
+              <div className="group relative bg-gradient-to-br from-red-900 via-orange-800 to-yellow-700 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
+                <div className="absolute inset-0">
+                  <img
+                    src="https://images.unsplash.com/photo-1574482620881-b5eb0eeae10e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    alt="Wildfire"
+                    className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700"
                   />
-                  <Link
-                    to="/community"
-                    className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-10 py-4 rounded-2xl text-lg font-bold hover:from-purple-600 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-xl hover:shadow-2xl flex items-center justify-center border border-purple-400/20"
-                  >
-                    <Users size={22} className="mr-3" />
-                    Join Community
-                    <ArrowRight size={20} className="ml-3" />
-                  </Link>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                 </div>
+                
+                <div className="relative p-8 h-80 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                        Wildfire
+                      </span>
+                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                        <CheckCircle size={12} className="mr-1" />
+                        Verified
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
+                      Wildfire Damage Assessment
+                    </h3>
+                    <p className="text-orange-100 text-sm leading-relaxed mb-4">
+                      Fast-moving wildfire has damaged several residential properties and threatens surrounding forest areas.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center text-orange-200">
+                        <MapPin size={14} className="mr-2" />
+                        Los Angeles
+                      </div>
+                      <div className="flex items-center text-orange-200">
+                        <Clock size={14} className="mr-2" />
+                        Jan 12
+                      </div>
+                    </div>
+                    <Link
+                      to="/reports/3"
+                      className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 flex items-center justify-center group"
+                    >
+                      <Eye size={16} className="mr-2" />
+                      View Details
+                      <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
 
-                {/* Community Stats */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-gray-200">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600 mb-1">2.8M+</div>
-                    <div className="text-sm text-gray-600">Lives Helped</div>
+              {/* Tornado Card */}
+              <div className="group relative bg-gradient-to-br from-purple-900 via-pink-800 to-red-800 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
+                <div className="absolute inset-0">
+                  <img
+                    src="https://images.unsplash.com/photo-1446776877081-d282a0f896e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    alt="Tornado"
+                    className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                </div>
+                
+                <div className="relative p-8 h-80 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-purple-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                        Tornado
+                      </span>
+                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                        <CheckCircle size={12} className="mr-1" />
+                        Verified
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
+                      Tornado Aftermath Cleanup
+                    </h3>
+                    <p className="text-purple-100 text-sm leading-relaxed mb-4">
+                      EF2 tornado caused significant damage to residential area. Multiple homes damaged, debris scattered throughout neighborhood.
+                    </p>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600 mb-1">50K+</div>
-                    <div className="text-sm text-gray-600">Active Members</div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center text-purple-200">
+                        <MapPin size={14} className="mr-2" />
+                        Denver
+                      </div>
+                      <div className="flex items-center text-purple-200">
+                        <Clock size={14} className="mr-2" />
+                        Jan 10
+                      </div>
+                    </div>
+                    <Link
+                      to="/reports/6"
+                      className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 flex items-center justify-center group"
+                    >
+                      <Eye size={16} className="mr-2" />
+                      View Details
+                      <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Link>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600 mb-1">24/7</div>
-                    <div className="text-sm text-gray-600">Support Available</div>
+                </div>
+              </div>
+
+              {/* Earthquake Card */}
+              <div className="group relative bg-gradient-to-br from-gray-900 via-slate-800 to-stone-800 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
+                <div className="absolute inset-0">
+                  <img
+                    src="https://images.unsplash.com/photo-1504609813442-a8924e83f76e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    alt="Earthquake"
+                    className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                </div>
+                
+                <div className="relative p-8 h-80 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-gray-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                        Earthquake
+                      </span>
+                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                        <CheckCircle size={12} className="mr-1" />
+                        Verified
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
+                      M5.2 Earthquake Response
+                    </h3>
+                    <p className="text-gray-100 text-sm leading-relaxed mb-4">
+                      Moderate earthquake shook the region. Infrastructure assessment ongoing, minor structural damage reported in older buildings.
+                    </p>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600 mb-1">150+</div>
-                    <div className="text-sm text-gray-600">Countries</div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center text-gray-200">
+                        <MapPin size={14} className="mr-2" />
+                        San Francisco
+                      </div>
+                      <div className="flex items-center text-gray-200">
+                        <Clock size={14} className="mr-2" />
+                        Jan 8
+                      </div>
+                    </div>
+                    <Link
+                      to="/reports/2"
+                      className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 flex items-center justify-center group"
+                    >
+                      <Eye size={16} className="mr-2" />
+                      View Details
+                      <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hurricane Card */}
+              <div className="group relative bg-gradient-to-br from-teal-900 via-cyan-800 to-blue-800 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
+                <div className="absolute inset-0">
+                  <img
+                    src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    alt="Hurricane"
+                    className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                </div>
+                
+                <div className="relative p-8 h-80 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-teal-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                        Hurricane
+                      </span>
+                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                        <CheckCircle size={12} className="mr-1" />
+                        Verified
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
+                      Hurricane Recovery Efforts
+                    </h3>
+                    <p className="text-teal-100 text-sm leading-relaxed mb-4">
+                      Category 3 hurricane made landfall. Emergency shelters activated, power restoration in progress across affected areas.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center text-teal-200">
+                        <MapPin size={14} className="mr-2" />
+                        Miami
+                      </div>
+                      <div className="flex items-center text-teal-200">
+                        <Clock size={14} className="mr-2" />
+                        Jan 5
+                      </div>
+                    </div>
+                    <Link
+                      to="/reports/4"
+                      className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 flex items-center justify-center group"
+                    >
+                      <Eye size={16} className="mr-2" />
+                      View Details
+                      <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+
+              {/* Industrial Accident Card */}
+              <div className="group relative bg-gradient-to-br from-amber-900 via-orange-800 to-red-800 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
+                <div className="absolute inset-0">
+                  <img
+                    src="https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                    alt="Industrial Accident"
+                    className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                </div>
+                
+                <div className="relative p-8 h-80 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="bg-amber-500 text-white px-4 py-2 rounded-full text-sm font-bold">
+                        Industrial
+                      </span>
+                      <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                        <CheckCircle size={12} className="mr-1" />
+                        Verified
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
+                      Chemical Plant Incident
+                    </h3>
+                    <p className="text-amber-100 text-sm leading-relaxed mb-4">
+                      Minor chemical leak contained at industrial facility. Evacuation zone established, air quality monitoring in progress.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center text-amber-200">
+                        <MapPin size={14} className="mr-2" />
+                        Houston
+                      </div>
+                      <div className="flex items-center text-amber-200">
+                        <Clock size={14} className="mr-2" />
+                        Jan 3
+                      </div>
+                    </div>
+                    <Link
+                      to="/reports/5"
+                      className="w-full bg-white/20 backdrop-blur-sm text-white py-3 rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 flex items-center justify-center group"
+                    >
+                      <Eye size={16} className="mr-2" />
+                      View Details
+                      <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -838,200 +981,72 @@ const Home: React.FC = () => {
           </div>
         </section>
 
-        {/* Enhanced Partners Section */}
-        <section className="py-24 bg-white relative overflow-hidden" aria-label="Partners">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10zm10 0c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10z'/%3E%3C/g%3E%3C/svg%3E")`
-            }}></div>
-          </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-20">
-              <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
-                <Award size={16} className="mr-2" />
-                Global Partnerships
-              </div>
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-                Trusted by
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600"> World Leaders</span>
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Partnering with the world's most respected humanitarian organizations to deliver
-                life-saving technology and coordinate global disaster response efforts.
-              </p>
-              <div className="w-32 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 mx-auto rounded-full mt-8"></div>
-            </div>
 
-            {/* Enhanced Partner Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 lg:gap-12 mb-16">
-              {[
-                {
-                  name: "American Red Cross",
-                  logo: "https://images.pexels.com/photos/6647049/pexels-photo-6647049.jpeg?auto=compress&cs=tinysrgb&w=150&h=80&dpr=1",
-                  description: "Humanitarian Relief"
-                },
-                {
-                  name: "FEMA",
-                  logo: "https://images.pexels.com/photos/8728562/pexels-photo-8728562.jpeg?auto=compress&cs=tinysrgb&w=150&h=80&dpr=1",
-                  description: "Emergency Management"
-                },
-                {
-                  name: "Salvation Army",
-                  logo: "https://images.pexels.com/photos/6995122/pexels-photo-6995122.jpeg?auto=compress&cs=tinysrgb&w=150&h=80&dpr=1",
-                  description: "Community Support"
-                },
-                {
-                  name: "United Way",
-                  logo: "https://images.pexels.com/photos/6646917/pexels-photo-6646917.jpeg?auto=compress&cs=tinysrgb&w=150&h=80&dpr=1",
-                  description: "Social Services"
-                },
-                {
-                  name: "Doctors Without Borders",
-                  logo: "https://images.pexels.com/photos/4386467/pexels-photo-4386467.jpeg?auto=compress&cs=tinysrgb&w=150&h=80&dpr=1",
-                  description: "Medical Aid"
-                },
-                {
-                  name: "World Health Organization",
-                  logo: "https://images.pexels.com/photos/3786157/pexels-photo-3786157.jpeg?auto=compress&cs=tinysrgb&w=150&h=80&dpr=1",
-                  description: "Global Health"
-                },
-              ].map((partner, index) => (
-                <div
-                  key={index}
-                  className="group text-center"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-500 group-hover:scale-105 mb-4 aspect-square overflow-hidden">
-                    <img
-                      src={partner.logo}
-                      alt={`${partner.name} logo`}
-                      className="w-full h-full object-cover rounded-2xl grayscale group-hover:grayscale-0 transition-all duration-500 group-hover:scale-110"
-                    />
-                  </div>
-                  <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-1">
-                    {partner.name}
-                  </h3>
-                  <p className="text-xs text-gray-500 font-medium">
-                    {partner.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Partnership Stats */}
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl p-8 lg:p-12">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-                <div>
-                  <div className="text-3xl font-bold text-blue-600 mb-2">500+</div>
-                  <div className="text-gray-600 font-medium">Global Partners</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-purple-600 mb-2">150+</div>
-                  <div className="text-gray-600 font-medium">Countries</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-green-600 mb-2">24/7</div>
-                  <div className="text-gray-600 font-medium">Support Network</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-orange-600 mb-2">99.9%</div>
-                  <div className="text-gray-600 font-medium">Uptime SLA</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Enhanced Call-to-Action Section */}
-        <section className="py-24 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white relative overflow-hidden">
-          {/* Animated Background Elements */}
+        {/* Stunning Call to Action */}
+        <section className="py-24 bg-gradient-to-br from-blue-600 via-purple-700 to-indigo-800 relative overflow-hidden">
+          {/* Animated Background */}
           <div className="absolute inset-0">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-500/10 rounded-full blur-2xl animate-pulse delay-500"></div>
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+            <div className="absolute top-1/2 right-1/3 w-64 h-64 bg-yellow-500/10 rounded-full blur-2xl animate-pulse delay-500"></div>
           </div>
 
-          {/* Grid Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0" style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-            }}></div>
-          </div>
-
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-sm font-medium mb-8">
-                <Sparkles size={16} className="mr-2 text-yellow-300" />
-                Join the Movement
-              </div>
-
-              <h2 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
-                Ready to
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300"> Transform Lives?</span>
-              </h2>
-
-              <p className="text-xl text-blue-100 mb-12 max-w-3xl mx-auto leading-relaxed">
-                Join over 50,000 community heroes who are building safer, more resilient communities.
-                Your voice matters, your actions save lives, and together we can make a lasting impact.
-              </p>
-
-              {/* Enhanced Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-                <Link
-                  to="/report/new"
-                  className="group bg-gradient-to-r from-red-500 to-orange-500 text-white px-12 py-6 rounded-2xl text-xl font-bold hover:from-red-600 hover:to-orange-600 transition-all transform hover:-translate-y-2 hover:shadow-2xl flex items-center justify-center border border-red-400/20"
-                >
-                  <AlertTriangle size={24} className="mr-3" />
-                  Report Emergency
-                  <ArrowRight size={24} className="ml-3 group-hover:translate-x-1 transition-transform" />
-                </Link>
-
-                <Link
-                  to="/volunteer"
-                  className="group bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white px-12 py-6 rounded-2xl text-xl font-bold hover:bg-white/20 transition-all transform hover:-translate-y-2 hover:shadow-2xl flex items-center justify-center"
-                >
-                  <Heart size={24} className="mr-3 group-hover:text-red-300 transition-colors" />
-                  Become a Hero
-                  <ArrowRight size={24} className="ml-3 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-
-              {/* Social Proof */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <div className="text-3xl font-bold text-white mb-2">50,000+</div>
-                  <div className="text-blue-200 text-sm font-medium">Active Community Members</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <div className="text-3xl font-bold text-white mb-2">2.8M+</div>
-                  <div className="text-blue-200 text-sm font-medium">Lives Impacted</div>
-                </div>
-                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                  <div className="text-3xl font-bold text-white mb-2">150+</div>
-                  <div className="text-blue-200 text-sm font-medium">Countries Served</div>
-                </div>
-              </div>
+          <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center">
+            <div className="inline-flex items-center px-6 py-3 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-sm font-bold mb-8 text-white">
+              <Target size={18} className="mr-2" />
+              Join the Movement
             </div>
 
-            {/* Trust Indicators */}
-            <div className="flex flex-wrap justify-center items-center gap-8 text-sm text-blue-200">
-              <div className="flex items-center space-x-2">
-                <Shield className="text-green-300" size={20} />
-                <span>ISO 27001 Certified</span>
+            <h2 className="text-4xl lg:text-7xl font-black text-white mb-8 leading-tight drop-shadow-2xl">
+              Ready to Make a
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400">
+                Difference?
+              </span>
+            </h2>
+            
+            <p className="text-xl text-blue-100 mb-16 max-w-4xl mx-auto leading-relaxed drop-shadow-lg">
+              Join thousands of communities worldwide in building a safer, more connected world. Every second counts in disaster response.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-8 justify-center mb-20">
+              <Link
+                to="/report/new"
+                className="group bg-white text-blue-600 px-12 py-6 rounded-2xl text-xl font-black hover:bg-gray-100 transition-all duration-300 transform hover:-translate-y-2 hover:shadow-2xl flex items-center justify-center"
+              >
+                <AlertTriangle size={24} className="mr-3 group-hover:rotate-12 transition-transform duration-300" />
+                Report Emergency
+                <ArrowRight size={24} className="ml-3 group-hover:translate-x-2 transition-transform duration-300" />
+              </Link>
+              
+              <Link
+                to="/reports"
+                className="group bg-white/10 backdrop-blur-xl border-2 border-white/30 text-white px-12 py-6 rounded-2xl text-xl font-black hover:bg-white/20 hover:border-white/50 transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center"
+              >
+                <Eye size={24} className="mr-3 group-hover:scale-125 transition-transform duration-300" />
+                View Reports
+              </Link>
+            </div>
+
+            {/* Contact Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="group bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105">
+                <Phone className="mx-auto mb-4 text-blue-200 group-hover:text-white group-hover:scale-110 transition-all duration-300" size={36} />
+                <h3 className="text-xl font-bold text-white mb-2">24/7 Emergency Line</h3>
+                <p className="text-blue-200 text-lg font-medium">+1 (555) 123-4567</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <Star className="text-yellow-400 fill-current" size={20} />
-                <span>4.9/5 User Rating</span>
+              
+              <div className="group bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105">
+                <Mail className="mx-auto mb-4 text-blue-200 group-hover:text-white group-hover:scale-110 transition-all duration-300" size={36} />
+                <h3 className="text-xl font-bold text-white mb-2">Email Support</h3>
+                <p className="text-blue-200 text-lg font-medium">emergency@disasterwatch.com</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <Award className="text-blue-300" size={20} />
-                <span>UN Partnership</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Globe className="text-purple-300" size={20} />
-                <span>Global Coverage</span>
+              
+              <div className="group bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 hover:bg-white/20 transition-all duration-300 transform hover:scale-105">
+                <Headphones className="mx-auto mb-4 text-blue-200 group-hover:text-white group-hover:scale-110 transition-all duration-300" size={36} />
+                <h3 className="text-xl font-bold text-white mb-2">Live Chat</h3>
+                <p className="text-blue-200 text-lg font-medium">Available 24/7</p>
               </div>
             </div>
           </div>
@@ -1041,21 +1056,18 @@ const Home: React.FC = () => {
       <Footer />
       <ChatWidget />
 
-      {/* Scroll to Top Button */}
+      {/* Floating Scroll to Top */}
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-24 right-6 z-50 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-110"
+          className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-110 z-50 group"
           aria-label="Scroll to top"
         >
-          <ChevronUp size={20} />
+          <ArrowRight size={24} className="rotate-[-90deg] group-hover:scale-110 transition-transform duration-300" />
         </button>
       )}
-
-
     </div>
   );
 };
 
 export default Home;
-// Enhanced map section with improved design
