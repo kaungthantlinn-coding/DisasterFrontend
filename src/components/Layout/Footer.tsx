@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
+  const { t } = useTranslation();
 
   const footerSections = [
     {
@@ -42,7 +44,7 @@ const Footer: React.FC = () => {
           {/* Brand Section */}
           <div className="lg:col-span-1">
             <Link to="/" className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-red-600 text-white rounded-lg">
+              <div className="p-3 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white rounded-xl shadow-lg">
                 <ShieldCheck size={24} />
               </div>
               <div>
@@ -51,8 +53,7 @@ const Footer: React.FC = () => {
               </div>
             </Link>
             <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-              Connecting communities during emergencies. Report incidents, offer help, 
-              and stay informed about local disasters and relief efforts.
+              {t('footer.description')}
             </p>
             
             {/* Contact Information */}

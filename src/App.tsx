@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import './i18n'; // Initialize i18n
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
@@ -8,6 +9,15 @@ import Reports from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
 import ReportImpact from './pages/ReportImpact';
 import AdminPanel from './pages/admin/AdminPanel';
+import About from './pages/About';
+import WhatWeDo from './pages/WhatWeDo';
+import GetInvolved from './pages/GetInvolved';
+import News from './pages/News';
+import Resources from './pages/Resources';
+import Contact from './pages/Contact';
+import Donate from './pages/Donate';
+import Leadership from './pages/Leadership';
+import Partnership from './pages/Partnership';
 
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -46,10 +56,49 @@ function App() {
                 }
               />
               {/* Public routes */}
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/reports/:id" element={<ReportDetail />} />
-              <Route path="/report/new" element={<ReportImpact />} />
-              <Route path="/report/edit/:id" element={<ReportImpact />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/what-we-do" element={<WhatWeDo />} />
+              <Route path="/get-involved" element={<GetInvolved />} />
+              <Route path="/news" element={<News />} />
+              <Route path="/resources" element={<Resources />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/donate" element={<Donate />} />
+              <Route path="/leadership" element={<Leadership />} />
+              <Route path="/partnership" element={<Partnership />} />
+              {/* Reports routes - accessible to all authenticated users */}
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports/:id"
+                element={
+                  <ProtectedRoute>
+                    <ReportDetail />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Report creation - hide from regular users */}
+              <Route
+                path="/report/new"
+                element={
+                  <ProtectedRoute excludeRoles={['user']}>
+                    <ReportImpact />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/report/edit/:id"
+                element={
+                  <ProtectedRoute excludeRoles={['user']}>
+                    <ReportImpact />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/assistance/:id" element={<ReportDetail />} />
               <Route path="/assistance/received/:id" element={<ReportDetail />} />
               <Route path="/volunteer" element={<div className="p-8 text-center">Volunteer page coming soon...</div>} />

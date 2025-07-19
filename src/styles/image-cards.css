@@ -1,0 +1,205 @@
+/* Professional Image Card Enhancements */
+
+/* Shimmer loading animation */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Professional image card hover effects */
+.image-card-hover {
+  transition: all 0.5s ease-out;
+}
+
+.image-card-hover:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.25);
+}
+
+/* Enhanced image scaling */
+.image-scale-hover {
+  transition: transform 0.7s ease-out;
+}
+
+.image-scale-hover:hover {
+  transform: scale(1.15);
+}
+
+/* Professional badge styles */
+.badge-professional {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+}
+
+.badge-professional:hover {
+  transform: scale(1.05);
+}
+
+/* Gradient overlays */
+.overlay-gradient-primary {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+}
+
+.overlay-gradient-secondary {
+  background: linear-gradient(to bottom right, rgba(30, 58, 138, 0.3) 0%, transparent 50%, rgba(67, 56, 202, 0.4) 100%);
+}
+
+.overlay-gradient-hover {
+  background: linear-gradient(to top, rgba(59, 130, 246, 0.4) 0%, rgba(67, 56, 202, 0.2) 50%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+
+.overlay-gradient-hover:hover {
+  opacity: 1;
+}
+
+/* Texture overlay */
+.texture-overlay {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+  opacity: 0.3;
+}
+
+/* Professional shadows */
+.shadow-professional {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-professional-hover {
+  box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.25);
+}
+
+/* Loading skeleton */
+.skeleton-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Enhanced border radius */
+.rounded-professional {
+  border-radius: 1.5rem;
+}
+
+/* Professional spacing */
+.spacing-professional {
+  padding: 2rem;
+}
+
+/* Enhanced transitions */
+.transition-professional {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Professional typography */
+.text-professional {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* Enhanced focus states */
+.focus-professional:focus {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+/* Professional color scheme */
+.bg-professional-primary {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95) 0%, rgba(67, 56, 202, 0.95) 100%);
+}
+
+.bg-professional-success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.95) 100%);
+}
+
+.bg-professional-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.95) 0%, rgba(217, 119, 6, 0.95) 100%);
+}
+
+.bg-professional-error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.95) 0%, rgba(220, 38, 38, 0.95) 100%);
+}
+
+/* Professional animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Professional responsive design */
+@media (max-width: 640px) {
+  .spacing-professional {
+    padding: 1rem;
+  }
+  
+  .image-card-hover:hover {
+    transform: translateY(-4px) scale(1.02);
+  }
+}
+
+@media (max-width: 768px) {
+  .badge-professional {
+    font-size: 0.75rem;
+    padding: 0.5rem 1rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .overlay-gradient-primary {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 50%, transparent 100%);
+  }
+  
+  .badge-professional {
+    border: 2px solid rgba(255, 255, 255, 0.8);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .image-card-hover,
+  .image-scale-hover,
+  .badge-professional,
+  .overlay-gradient-hover,
+  .transition-professional {
+    transition: none;
+  }
+  
+  .animate-shimmer,
+  .animate-fade-in-up,
+  .animate-pulse-glow {
+    animation: none;
+  }
+}

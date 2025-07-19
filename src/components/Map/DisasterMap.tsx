@@ -101,7 +101,6 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
   // Initialize map
   useEffect(() => {
     if (!mapRef.current) {
-      console.log('Map ref not available');
       return;
     }
 
@@ -110,8 +109,6 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
     }
-
-    console.log('Initializing map...');
 
     // Add a small delay to ensure DOM is ready
     const initializeMap = () => {
@@ -135,7 +132,6 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
         }).addTo(map);
 
         // Set map as ready immediately after tile layer is added
-        console.log('Map initialized successfully');
         setIsMapReady(true);
 
         // Force resize after a short delay
@@ -146,7 +142,6 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
         }, 100);
 
       } catch (error) {
-        console.error('Error initializing map:', error);
         setIsMapReady(false);
       }
     };
@@ -157,7 +152,6 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
     return () => {
       clearTimeout(timeoutId);
       if (mapInstanceRef.current) {
-        console.log('Cleaning up map');
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         setIsMapReady(false);

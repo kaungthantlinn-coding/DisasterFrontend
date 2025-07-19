@@ -1,10 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { useAuthStore } from '../stores/authStore';
 import { useErrorHandler, ErrorTracker } from '../utils/errorHandler';
+import { getRoleBasedRedirectPath, logRoleBasedRedirection } from '../utils/roleRedirection';
 
 export const useLogin = () => {
   const { handleError, getErrorMessage } = useErrorHandler();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
@@ -19,6 +22,11 @@ export const useLogin = () => {
     onSuccess: (data) => {
       useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken);
       ErrorTracker.getInstance().trackUserAction('login_success', { userId: data.user.userId });
+
+      // Implement role-based redirection
+      const redirectPath = getRoleBasedRedirectPath(data.user);
+      logRoleBasedRedirection(data.user, redirectPath);
+      navigate(redirectPath, { replace: true });
     },
     onError: (error) => {
       handleError(error as Error, {

@@ -41,10 +41,12 @@ interface FormData {
   } | null;
   impactType: string[];
   customImpactType: string;
+  impactDescription: string;
   photos: File[];
   
   // Step 3: Assistance & Contact
   assistanceNeeded: string[];
+  customAssistanceType: string;
   assistanceDescription: string;
   urgencyLevel: 'immediate' | 'within_24h' | 'within_week' | 'non_urgent' | '';
   contactName: string;
@@ -117,7 +119,8 @@ const assistanceTypes = [
   'Psychological Support',
   'Legal Assistance',
   'Technical Expertise',
-  'Volunteer Coordination'
+  'Volunteer Coordination',
+  'Other'
 ];
 
 interface ReportImpactProps {
@@ -143,8 +146,10 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
     location: null,
     impactType: [],
     customImpactType: '',
+    impactDescription: '',
     photos: [],
     assistanceNeeded: [],
+    customAssistanceType: '',
     assistanceDescription: '',
     urgencyLevel: '',
     contactName: user?.name || '',
@@ -155,24 +160,18 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
 
   // Enhanced validation with specific error messages
   const validateStep = useCallback((step: number): boolean => {
-    console.log('validateStep called for step:', step);
     const newErrors: Record<string, string> = {};
-    
+
     switch (step) {
       case 1:
-        console.log('Validating step 1...');
         if (!formData.disasterType) newErrors.disasterType = 'Please select a disaster category';
         if (!formData.disasterDetail) newErrors.disasterDetail = 'Please specify the type of disaster';
         if (formData.disasterDetail === 'Other Natural' || formData.disasterDetail === 'Other Non-Natural') {
           if (!formData.customDisasterDetail) newErrors.customDisasterDetail = 'Please specify the disaster type';
         }
-        console.log('Description validation - trim():', formData.description.trim());
-        console.log('Description validation - length:', formData.description.length);
         if (!formData.description.trim()) {
-          console.log('Setting description error: empty description');
           newErrors.description = 'Please provide a description';
         } else if (formData.description.length < 20) {
-          console.log('Setting description error: too short');
           newErrors.description = 'Description must be at least 20 characters';
         }
         if (!formData.severity) newErrors.severity = 'Please select severity level';
@@ -185,10 +184,18 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         if (formData.impactType.includes('Other') && !formData.customImpactType) {
           newErrors.customImpactType = 'Please specify the custom impact type';
         }
+        if (!formData.impactDescription.trim()) {
+          newErrors.impactDescription = 'Please provide a detailed description of the impact';
+        } else if (formData.impactDescription.length < 20) {
+          newErrors.impactDescription = 'Impact description must be at least 20 characters';
+        }
         break;
         
       case 3:
         if (formData.assistanceNeeded.length === 0) newErrors.assistanceNeeded = 'Please select at least one type of assistance needed';
+        if (formData.assistanceNeeded.includes('Other') && !formData.customAssistanceType) {
+          newErrors.customAssistanceType = 'Please specify the custom assistance type';
+        }
         if (!formData.assistanceDescription.trim()) newErrors.assistanceDescription = 'Please describe the assistance needed';
         if (!formData.urgencyLevel) newErrors.urgencyLevel = 'Please select urgency level';
         if (!formData.contactName.trim()) newErrors.contactName = 'Contact name is required';
@@ -197,12 +204,9 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         }
         break;
     }
-    
-    console.log('newErrors object:', newErrors);
-    console.log('Setting errors with setErrors...');
+
     setErrors(newErrors);
     const isValid = Object.keys(newErrors).length === 0;
-    console.log('Validation result:', isValid);
     return isValid;
   }, [formData]);
 
@@ -226,12 +230,15 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         return !!(
           formData.location &&
           formData.impactType.length > 0 &&
-          (!formData.impactType.includes('Other') || formData.customImpactType)
+          (!formData.impactType.includes('Other') || formData.customImpactType) &&
+          formData.impactDescription.trim() &&
+          formData.impactDescription.length >= 20
         );
         
       case 3:
         return !!(
           formData.assistanceNeeded.length > 0 &&
+          (!formData.assistanceNeeded.includes('Other') || formData.customAssistanceType) &&
           formData.assistanceDescription.trim() &&
           formData.urgencyLevel &&
           formData.contactName.trim() &&
@@ -249,31 +256,21 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
   }, [currentStep, checkCanProceed]);
 
   const handleNext = useCallback(() => {
-    console.log('handleNext called, currentStep:', currentStep);
-    console.log('formData.description:', formData.description);
-    console.log('formData.description.length:', formData.description.length);
-    
     const isValid = validateStep(currentStep);
-    console.log('validateStep result:', isValid);
-    
+
     if (isValid) {
-      console.log('Validation passed, moving to next step');
       setCurrentStep(prev => Math.min(prev + 1, 4));
       setErrors({});
-    } else {
-      console.log('Validation failed, staying on current step');
     }
     // If validation fails, errors will be set by validateStep
-  }, [currentStep, validateStep, formData.description]);
+  }, [currentStep, validateStep]);
 
   // Handle Next button click - always validate, even if button would be disabled
   const handleNextClick = useCallback(() => {
-    console.log('handleNextClick called, canProceed:', canProceed);
     if (canProceed) {
       handleNext();
     } else {
       // Even if we can't proceed, run validation to show errors
-      console.log('Button disabled, but running validation to show errors');
       validateStep(currentStep);
     }
   }, [canProceed, handleNext, validateStep, currentStep]);
@@ -400,7 +397,9 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         },
         impactType: formData.impactType,
         customImpactType: formData.customImpactType,
+        impactDescription: formData.impactDescription,
         assistanceNeeded: formData.assistanceNeeded,
+        customAssistanceType: formData.customAssistanceType,
         assistanceDescription: formData.assistanceDescription,
         urgencyLevel: formData.urgencyLevel as 'immediate' | 'within_24h' | 'within_week' | 'non_urgent',
         contactName: formData.contactName,
@@ -421,7 +420,6 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
       }, 3000);
       
     } catch (error) {
-      console.error('Error submitting report:', error);
       setErrors({ submit: 'Failed to submit report. Please try again.' });
     } finally {
       setIsSubmitting(false);
@@ -727,8 +725,11 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-4">
                     Location *
                   </label>
-                  <div className="border border-gray-200 rounded-xl overflow-hidden">
-                    <LocationPicker onLocationSelect={handleLocationSelect} />
+                  <div className="border border-gray-200 rounded-xl relative">
+                    <LocationPicker
+                      onLocationSelect={handleLocationSelect}
+                      height="450px"
+                    />
                   </div>
                   {formData.location && (
                     <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center">
@@ -783,7 +784,28 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                   </div>
                 )}
 
-
+                {/* Impact Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Detailed Impact Description *
+                  </label>
+                  <textarea
+                    value={formData.impactDescription}
+                    onChange={(e) => setFormData(prev => ({ ...prev, impactDescription: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                    rows={4}
+                    maxLength={500}
+                    placeholder="Provide detailed information about the impact, current situation, and any immediate concerns..."
+                  />
+                  <div className="flex justify-between items-center mt-2">
+                    {errors.impactDescription && (
+                      <p className="text-sm text-red-600" data-testid="impactDescription-error">{errors.impactDescription}</p>
+                    )}
+                    <p className="text-sm text-gray-500 ml-auto">
+                      {formData.impactDescription.length}/500 characters
+                    </p>
+                  </div>
+                </div>
 
                 {/* Photo Upload */}
                 <div>
@@ -895,6 +917,25 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                   )}
                 </div>
 
+                {/* Custom Assistance Type */}
+                {formData.assistanceNeeded.includes('Other') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Please specify other assistance type *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.customAssistanceType}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customAssistanceType: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Specify the type of assistance needed"
+                    />
+                    {errors.customAssistanceType && (
+                      <p className="mt-2 text-sm text-red-600" data-testid="customAssistanceType-error">{errors.customAssistanceType}</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Assistance Description */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -982,6 +1023,10 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                           }
                         </p>
                       </div>
+                      <div>
+                        <span className="text-gray-600">Impact Description:</span>
+                        <p className="font-medium text-sm leading-relaxed">{formData.impactDescription}</p>
+                      </div>
                       {formData.estimatedDamage && (
                         <div>
                           <span className="text-gray-600">Estimated Damage:</span>
@@ -1021,7 +1066,12 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="text-gray-600">Assistance Needed:</span>
-                        <p className="font-medium">{formData.assistanceNeeded.join(', ')}</p>
+                        <p className="font-medium">
+                          {formData.assistanceNeeded.join(', ')}
+                          {formData.assistanceNeeded.includes('Other') && formData.customAssistanceType &&
+                            ` (${formData.customAssistanceType})`
+                          }
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-600">Contact:</span>

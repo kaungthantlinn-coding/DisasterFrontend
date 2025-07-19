@@ -46,7 +46,7 @@ const SimpleLeafletMap: React.FC<SimpleLeafletMapProps> = ({
 
         setLeafletLoaded(true);
       } catch (error) {
-        console.error('Failed to load Leaflet:', error);
+        // Failed to load Leaflet
       }
     };
 
@@ -176,7 +176,7 @@ const SimpleLeafletMap: React.FC<SimpleLeafletMapProps> = ({
         });
 
       } catch (error) {
-        console.error('Error initializing map:', error);
+        // Error initializing map
       }
     };
 

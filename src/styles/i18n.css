@@ -1,0 +1,183 @@
+/* Internationalization Styles */
+
+/* Myanmar Font Support */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@300;400;500;600;700&display=swap');
+
+/* Language-specific font families */
+html[lang="my"] {
+  font-family: 'Noto Sans Myanmar', 'Myanmar Text', 'Padauk', sans-serif;
+}
+
+html[lang="en"] {
+  font-family: 'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Myanmar text rendering optimizations */
+html[lang="my"] * {
+  font-feature-settings: "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Myanmar-specific text adjustments */
+html[lang="my"] {
+  line-height: 1.7; /* Better line spacing for Myanmar text */
+}
+
+html[lang="my"] h1,
+html[lang="my"] h2,
+html[lang="my"] h3,
+html[lang="my"] h4,
+html[lang="my"] h5,
+html[lang="my"] h6 {
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+html[lang="my"] p {
+  line-height: 1.8;
+}
+
+/* Button text adjustments for Myanmar */
+html[lang="my"] button,
+html[lang="my"] .btn {
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+/* Navigation adjustments for Myanmar */
+html[lang="my"] nav a {
+  font-weight: 500;
+}
+
+/* Form input adjustments for Myanmar */
+html[lang="my"] input,
+html[lang="my"] textarea,
+html[lang="my"] select {
+  font-family: 'Noto Sans Myanmar', 'Myanmar Text', 'Padauk', sans-serif;
+  line-height: 1.6;
+}
+
+/* Language switcher styles */
+.language-switcher {
+  position: relative;
+}
+
+.language-switcher-dropdown {
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+
+.language-option:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.language-option.active {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: rgb(59, 130, 246);
+}
+
+.language-flag {
+  font-size: 1.25rem;
+  margin-right: 12px;
+}
+
+.language-names {
+  display: flex;
+  flex-direction: column;
+}
+
+.language-native {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.language-english {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+/* Responsive text sizing for different languages */
+@media (max-width: 768px) {
+  html[lang="my"] {
+    font-size: 14px;
+  }
+  
+  html[lang="my"] h1 {
+    font-size: 1.75rem;
+  }
+  
+  html[lang="my"] h2 {
+    font-size: 1.5rem;
+  }
+  
+  html[lang="my"] h3 {
+    font-size: 1.25rem;
+  }
+}
+
+/* RTL support (if needed for future languages) */
+html[dir="rtl"] {
+  direction: rtl;
+}
+
+html[dir="rtl"] .flex {
+  flex-direction: row-reverse;
+}
+
+/* Animation adjustments for text changes */
+.i18n-fade-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.i18n-fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.i18n-fade-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.i18n-fade-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+/* Loading state for language switching */
+.language-switching {
+  opacity: 0.7;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* Ensure proper text wrapping for Myanmar */
+html[lang="my"] {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Accessibility improvements */
+.language-switcher button:focus {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
+}
+
+.language-option:focus {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: -2px;
+}

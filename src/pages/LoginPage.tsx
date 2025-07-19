@@ -1,14 +1,17 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { getRoleBasedRedirectPath, logRoleBasedRedirection } from '../utils/roleRedirection';
 import LoginForm from '../components/LoginForm';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const LoginPage: React.FC = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    const redirectPath = getRoleBasedRedirectPath(user);
+    logRoleBasedRedirection(user, redirectPath);
+    return <Navigate to={redirectPath} replace />;
   }
 
   return (

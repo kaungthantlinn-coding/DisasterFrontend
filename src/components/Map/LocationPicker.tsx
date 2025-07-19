@@ -6,9 +6,9 @@ import toast from 'react-hot-toast';
 // Fix for default markers in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
 interface LocationPickerProps {
@@ -31,6 +31,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const markerRef = useRef<L.Marker | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   // Reverse geocoding function (mock implementation)
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
@@ -52,7 +54,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
       }
     } catch (error) {
-      console.error('Reverse geocoding failed:', error);
       return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
   };
@@ -61,58 +62,82 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   useEffect(() => {
     if (!mapRef.current) return;
 
-    const map = L.map(mapRef.current, {
-      center: [39.8283, -98.5795], // Center of US
-      zoom: 4,
-      scrollWheelZoom: true,
-      doubleClickZoom: true,
-      touchZoom: true,
-      boxZoom: true,
-      keyboard: true,
-      dragging: true,
-      zoomControl: false, // We'll add custom controls
-      attributionControl: true,
-      fadeAnimation: true,
-      zoomAnimation: true,
-      markerZoomAnimation: true,
-    });
-    mapInstanceRef.current = map;
+    // Add a small delay to ensure DOM is ready
+    const initializeMap = () => {
+      try {
+        setMapError(null);
+        setIsMapLoaded(false);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19,
-      minZoom: 1,
-    }).addTo(map);
+        const map = L.map(mapRef.current!, {
+        center: [39.8283, -98.5795], // Center of US
+        zoom: 4,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        touchZoom: true,
+        boxZoom: true,
+        keyboard: true,
+        dragging: true,
+        zoomControl: false, // We'll add custom controls
+        attributionControl: true,
+        fadeAnimation: true,
+        zoomAnimation: true,
+        markerZoomAnimation: true,
+      });
+      mapInstanceRef.current = map;
 
-    // Add click handler for location selection
-    map.on('click', async (e) => {
-      const { lat, lng } = e.latlng;
-      
-      // Remove existing marker
-      if (markerRef.current) {
-        map.removeLayer(markerRef.current);
+      const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+        minZoom: 1,
+      });
+
+      tileLayer.addTo(map);
+
+      // Set map as loaded when tiles are ready
+      tileLayer.on('load', () => {
+        setIsMapLoaded(true);
+      });
+
+      // Add click handler for location selection
+      map.on('click', async (e) => {
+        const { lat, lng } = e.latlng;
+
+        // Remove existing marker
+        if (markerRef.current) {
+          map.removeLayer(markerRef.current);
+        }
+
+        // Add new marker
+        const marker = L.marker([lat, lng]).addTo(map);
+        markerRef.current = marker;
+
+        // Get address through reverse geocoding
+        const address = await reverseGeocode(lat, lng);
+
+        // Call the callback with location data
+        onLocationSelect(lat, lng, address);
+      });
+
+      // Enable scroll wheel zoom after map is ready
+      map.whenReady(() => {
+        map.scrollWheelZoom.enable();
+        setIsMapLoaded(true);
+      });
+
+      } catch (error) {
+        setMapError('Failed to initialize map. Please refresh the page.');
       }
+    };
 
-      // Add new marker
-      const marker = L.marker([lat, lng]).addTo(map);
-      markerRef.current = marker;
-
-      // Get address through reverse geocoding
-      const address = await reverseGeocode(lat, lng);
-      
-      // Call the callback with location data
-      onLocationSelect(lat, lng, address);
-    });
-
-    // Enable scroll wheel zoom after map is ready
-    map.whenReady(() => {
-      map.scrollWheelZoom.enable();
-    });
+    // Initialize with a small delay
+    const timeoutId = setTimeout(initializeMap, 100);
 
     return () => {
+      clearTimeout(timeoutId);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        setIsMapLoaded(false);
       }
     };
   }, [onLocationSelect]);
@@ -134,65 +159,17 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     }
   }, [selectedLocation]);
 
-  // Simple test function to check basic geolocation
-  const testBasicGeolocation = () => {
-    console.log('Testing basic geolocation...');
-    console.log('Geolocation API available:', !!navigator.geolocation);
-    console.log('getCurrentPosition function:', typeof navigator.geolocation?.getCurrentPosition);
 
-    if (!navigator.geolocation) {
-      console.error('Geolocation not available');
-      return;
-    }
-
-    // Test with minimal options
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        console.log('Basic geolocation test SUCCESS:', position);
-        toast.success('Basic geolocation test passed!');
-      },
-      (error) => {
-        console.log('Basic geolocation test FAILED:', error);
-        console.log('Error details:', {
-          code: error.code,
-          message: error.message,
-          PERMISSION_DENIED: error.PERMISSION_DENIED,
-          POSITION_UNAVAILABLE: error.POSITION_UNAVAILABLE,
-          TIMEOUT: error.TIMEOUT
-        });
-        toast.error(`Basic test failed: ${error.message}`);
-      },
-      { timeout: 5000, enableHighAccuracy: false, maximumAge: 0 }
-    );
-  };
 
   // Get current location with enhanced error handling and user feedback
   const getCurrentLocation = async () => {
-    console.log('getCurrentLocation called');
-
     if (!navigator.geolocation) {
-      console.error('Geolocation not supported');
-      toast.error('Geolocation is not supported by this browser. Please click on the map to select a location.');
+      toast.info('Automatic location detection not available. Please click on the map to select your location.', {
+        duration: 3000,
+        icon: '📍'
+      });
       return;
     }
-
-    console.log('Starting geolocation request...');
-    console.log('Current protocol:', window.location.protocol);
-    console.log('Is secure context:', window.isSecureContext);
-
-    // Check if geolocation API has been modified
-    console.log('Geolocation API checks:');
-    console.log('- navigator.geolocation:', navigator.geolocation);
-    console.log('- getCurrentPosition type:', typeof navigator.geolocation.getCurrentPosition);
-    console.log('- getCurrentPosition toString:', navigator.geolocation.getCurrentPosition.toString());
-    console.log('- watchPosition type:', typeof navigator.geolocation.watchPosition);
-
-    // Check for common extension interference
-    const originalGetCurrentPosition = navigator.geolocation.getCurrentPosition;
-    console.log('- Original function check:', originalGetCurrentPosition.toString().includes('[native code]'));
-
-    // Run basic test first
-    testBasicGeolocation();
 
     setIsGettingLocation(true);
 
@@ -201,25 +178,23 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       if ('permissions' in navigator) {
         try {
           const permission = await navigator.permissions.query({ name: 'geolocation' });
-          console.log('Permission state:', permission.state);
           if (permission.state === 'denied') {
-            toast.error('Location access is denied. Please enable location permissions in your browser settings and try again, or click on the map to select a location manually.');
+            toast.info('Location access not available. Please click on the map to select your location.', {
+              duration: 3000,
+              icon: '📍'
+            });
             setIsGettingLocation(false);
             return;
           }
         } catch (permError) {
-          console.warn('Permission query failed:', permError);
           // Continue with location request anyway
         }
       }
 
       // Try multiple approaches to bypass potential extension interference
-      console.log('Trying simple getCurrentPosition...');
-
       // Approach 1: Direct call with conservative settings
       const simpleResult = await new Promise<GeolocationPosition | null>((resolve) => {
         const timeoutId = setTimeout(() => {
-          console.log('Simple approach timed out');
           resolve(null);
         }, 8000);
 
@@ -227,26 +202,22 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           navigator.geolocation.getCurrentPosition(
             (position) => {
               clearTimeout(timeoutId);
-              console.log('Simple approach succeeded:', position);
               resolve(position);
             },
             (error) => {
               clearTimeout(timeoutId);
-              console.log('Simple approach failed:', error);
               resolve(null);
             },
             { timeout: 7000, enableHighAccuracy: false, maximumAge: 300000 }
           );
         } catch (syncError) {
           clearTimeout(timeoutId);
-          console.log('Simple approach threw synchronous error:', syncError);
           resolve(null);
         }
       });
 
       if (simpleResult) {
         const { latitude, longitude } = simpleResult.coords;
-        console.log('Using simple result:', { latitude, longitude });
 
         setCurrentLocation({ lat: latitude, lng: longitude });
 
@@ -265,7 +236,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             onLocationSelect(latitude, longitude, address);
             toast.success('Location found successfully!');
           } catch (geocodeError) {
-            console.warn('Reverse geocoding failed:', geocodeError);
             onLocationSelect(latitude, longitude, `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
             toast.success('Location found successfully!');
           }
@@ -276,7 +246,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       }
 
       // If simple approach failed, try alternative method
-      console.log('Simple approach failed, trying alternative methods...');
 
       // Approach 2: Try with watchPosition as primary method
       const watchResult = await new Promise<GeolocationPosition | null>((resolve) => {
@@ -285,7 +254,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           if (watchId !== null) {
             navigator.geolocation.clearWatch(watchId);
           }
-          console.log('Watch approach timed out');
           resolve(null);
         }, 10000);
 
@@ -296,7 +264,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
               }
-              console.log('Watch approach succeeded:', position);
               resolve(position);
             },
             (error) => {
@@ -304,21 +271,18 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
               }
-              console.log('Watch approach failed:', error);
               resolve(null);
             },
             { timeout: 8000, enableHighAccuracy: false, maximumAge: 300000 }
           );
         } catch (watchError) {
           clearTimeout(timeoutId);
-          console.log('Watch approach threw synchronous error:', watchError);
           resolve(null);
         }
       });
 
       if (watchResult) {
         const { latitude, longitude } = watchResult.coords;
-        console.log('Using watch result:', { latitude, longitude });
 
         setCurrentLocation({ lat: latitude, lng: longitude });
 
@@ -337,7 +301,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
             onLocationSelect(latitude, longitude, address);
             toast.success('Location found successfully!');
           } catch (geocodeError) {
-            console.warn('Reverse geocoding failed:', geocodeError);
             onLocationSelect(latitude, longitude, `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
             toast.success('Location found successfully!');
           }
@@ -389,7 +352,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           navigator.geolocation.getCurrentPosition(handleSuccess, (error) => {
             // If getCurrentPosition fails quickly, try watchPosition as fallback
             if (!resolved && error.code !== GeolocationPositionError.PERMISSION_DENIED) {
-              console.warn('getCurrentPosition failed, trying watchPosition as fallback:', error);
               try {
                 watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, options);
               } catch (watchError) {
@@ -413,16 +375,9 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
       for (let i = 0; i < strategies.length; i++) {
         try {
-          console.log(`Attempting geolocation strategy ${i + 1}:`, strategies[i]);
           const position = await getLocationWithTimeout(strategies[i]);
-          
+
           const { latitude, longitude, accuracy } = position.coords;
-          console.log('Location obtained successfully:', { 
-            latitude, 
-            longitude, 
-            accuracy: accuracy ? `${Math.round(accuracy)}m` : 'unknown',
-            timestamp: new Date(position.timestamp).toISOString()
-          });
 
           setCurrentLocation({ lat: latitude, lng: longitude });
 
@@ -445,7 +400,6 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
               onLocationSelect(latitude, longitude, address);
               toast.success('Location found successfully!');
             } catch (geocodeError) {
-              console.warn('Reverse geocoding failed:', geocodeError);
               // Still call onLocationSelect with coordinates
               onLocationSelect(latitude, longitude, `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
               toast.success('Location found successfully!');
@@ -455,8 +409,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           return; // Success, exit the function
         } catch (error) {
           lastError = error;
-          console.warn(`Geolocation strategy ${i + 1} failed:`, error);
-          
+
           // If this isn't the last strategy, continue to next one
           if (i < strategies.length - 1) {
             continue;
@@ -468,55 +421,32 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       throw lastError;
 
     } catch (error) {
-      console.error('All geolocation attempts failed:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error constructor:', error?.constructor?.name);
-      console.error('Error details:', {
-        message: error?.message,
-        code: error?.code,
-        stack: error?.stack,
-        toString: error?.toString?.()
-      });
-
       let errorMessage = 'Unable to get your current location. ';
 
       if (error instanceof GeolocationPositionError) {
-        console.log('GeolocationPositionError detected, code:', error.code);
         switch (error.code) {
           case GeolocationPositionError.PERMISSION_DENIED:
-            errorMessage += 'Location access was denied. Please enable location permissions in your browser settings.';
+            errorMessage = 'Location access not available. No worries - just click on the map to select your location!';
             break;
           case GeolocationPositionError.POSITION_UNAVAILABLE:
-            errorMessage += 'Location information is unavailable. Please check that location services are enabled on your device.';
+            errorMessage = 'Location services unavailable. Please click on the map to select your location.';
             break;
           case GeolocationPositionError.TIMEOUT:
-            errorMessage += 'Location request timed out. Please ensure you have a stable internet connection.';
+            errorMessage = 'Location request timed out. Please click on the map to select your location.';
             break;
           default:
-            errorMessage += `An unknown geolocation error occurred (code: ${error.code}).`;
+            errorMessage = 'Automatic location detection not available. Please click on the map to select your location.';
             break;
         }
-      } else if (error instanceof Error) {
-        console.log('Standard Error detected:', error.message);
-        if (error.message.includes('timeout')) {
-          errorMessage += 'Location request timed out. Please try again or check your internet connection.';
-        } else {
-          errorMessage += `Error: ${error.message}`;
-        }
       } else {
-        console.log('Unknown error type:', error);
-        errorMessage += `An unexpected error occurred while retrieving your location. Details: ${JSON.stringify(error)}`;
+        errorMessage = 'Automatic location detection not available. Please click on the map to select your location.';
       }
 
-      errorMessage += ' You can click anywhere on the map to manually select a location.';
-
-      // Add note about potential browser extension interference
-      if (errorMessage.includes('unexpected error')) {
-        errorMessage += '\n\nNote: If you have browser extensions that modify location services, try disabling them or using incognito mode.';
-      }
-
-      // Show user-friendly error message
-      toast.error(errorMessage, { duration: 10000 });
+      // Show user-friendly info message instead of error
+      toast.info(errorMessage, {
+        duration: 4000,
+        icon: '📍'
+      });
       
     } finally {
       setIsGettingLocation(false);
@@ -537,68 +467,22 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   };
 
   return (
-    <div className="relative">
-      {/* Enhanced Instructions */}
-      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-        <div className="flex items-start space-x-3">
-          <MapPin size={20} className="text-blue-600 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-blue-800">How to select location:</p>
-            <p className="text-sm text-blue-700 mt-1">
-              <strong>Click anywhere on the map</strong> to drop a pin and select the disaster location. You can also try the location button (📍) to use your current position.
-            </p>
-            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-xs text-green-800 font-medium">
-                💡 <strong>Pro Tip:</strong> Use the zoom controls (+/-) to get a better view, then click precisely where the disaster occurred.
-              </p>
-            </div>
-            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-xs text-amber-800">
-                <strong>Location Button Not Working?</strong> This is normal and can happen due to:
-              </p>
-              <ul className="text-xs text-amber-700 mt-1 ml-3 list-disc space-y-0.5">
-                <li>Browser location permissions disabled</li>
-                <li>Using HTTP instead of HTTPS</li>
-                <li>Location services disabled on device</li>
-                <li>Network connectivity issues</li>
-              </ul>
-              <p className="text-xs text-green-800 mt-2 font-medium">
-                ✅ <strong>No Problem!</strong> Manual selection by clicking on the map works perfectly and is often more accurate!
-              </p>
-            </div>
-          </div>
+    <div className="relative w-full" style={{ position: 'relative' }}>
+      {/* Simple Instructions */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center space-x-2">
+          <MapPin size={16} className="text-blue-600" />
+          <p className="text-sm text-blue-800">
+            <strong>Click anywhere on the map</strong> to select the disaster location
+          </p>
         </div>
       </div>
 
-      {/* Debug Controls - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-xs text-gray-600 mb-2">Debug Controls:</p>
-          <div className="flex space-x-2">
-            <button
-              onClick={testBasicGeolocation}
-              className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
-            >
-              Test Basic Geolocation
-            </button>
-            <button
-              onClick={() => {
-                console.log('Navigator geolocation:', navigator.geolocation);
-                console.log('Permissions API:', 'permissions' in navigator);
-                console.log('Secure context:', window.isSecureContext);
-                console.log('Protocol:', window.location.protocol);
-              }}
-              className="px-3 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
-            >
-              Log Environment
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* Current location indicator */}
       {currentLocation && (
-        <div className="absolute top-4 left-4 z-10 bg-blue-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium">
+        <div className="absolute top-4 left-4 z-50 bg-blue-500 text-white px-3 py-2 rounded-lg shadow-lg text-sm font-medium">
           <div className="flex items-center space-x-2">
             <Crosshair size={14} />
             <span>Your Location</span>
@@ -607,37 +491,47 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       )}
 
       {/* Map controls */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col space-y-2">
+      <div
+        className="absolute top-4 right-4 z-50 flex flex-col space-y-2"
+        style={{
+          zIndex: 1000,
+          position: 'absolute',
+          pointerEvents: 'auto'
+        }}
+      >
         {/* Zoom controls */}
         <button
           onClick={zoomIn}
-          className="w-10 h-10 bg-white text-gray-700 rounded-lg shadow-lg hover:bg-gray-50 transition-colors flex items-center justify-center"
+          className="w-12 h-12 bg-white text-gray-700 rounded-lg shadow-xl hover:bg-gray-50 transition-colors flex items-center justify-center border border-gray-200"
           title="Zoom in"
+          style={{ zIndex: 1000 }}
         >
-          <Plus size={16} />
+          <Plus size={18} />
         </button>
-        
+
         <button
           onClick={zoomOut}
-          className="w-10 h-10 bg-white text-gray-700 rounded-lg shadow-lg hover:bg-gray-50 transition-colors flex items-center justify-center"
+          className="w-12 h-12 bg-white text-gray-700 rounded-lg shadow-xl hover:bg-gray-50 transition-colors flex items-center justify-center border border-gray-200"
           title="Zoom out"
+          style={{ zIndex: 1000 }}
         >
-          <Minus size={16} />
+          <Minus size={18} />
         </button>
 
         {/* Location button */}
         <button
           onClick={getCurrentLocation}
           disabled={isGettingLocation}
-          className={`w-10 h-10 bg-white text-gray-700 rounded-lg shadow-lg hover:bg-gray-50 transition-colors flex items-center justify-center ${
+          className={`w-12 h-12 bg-white text-gray-700 rounded-lg shadow-xl hover:bg-gray-50 transition-colors flex items-center justify-center border border-gray-200 ${
             isGettingLocation ? 'opacity-50 cursor-not-allowed' : ''
           }`}
-          title={isGettingLocation ? 'Getting your location...' : 'Get current location'}
+          title={isGettingLocation ? 'Getting your location...' : 'Try to detect current location (or click on map)'}
+          style={{ zIndex: 1000 }}
         >
           {isGettingLocation ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent"></div>
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-gray-400 border-t-transparent"></div>
           ) : (
-            <Crosshair size={16} />
+            <Crosshair size={18} />
           )}
         </button>
       </div>
@@ -649,14 +543,39 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           height,
           width: '100%',
           touchAction: 'pan-x pan-y',
-          zIndex: 1
+          zIndex: 10,
+          minHeight: '400px',
+          position: 'relative'
         }}
-        className="rounded-xl border border-gray-200 relative cursor-crosshair"
+        className="leaflet-container rounded-xl border border-gray-200 relative cursor-crosshair bg-gray-100"
         onWheel={(e) => {
           // Prevent page scroll when zooming on map
           e.stopPropagation();
         }}
-      />
+      >
+        {/* Loading/Error indicator */}
+        {mapError ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-red-500 mb-2">⚠️</div>
+              <p className="text-sm text-red-600">{mapError}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700"
+              >
+                Refresh Page
+              </button>
+            </div>
+          </div>
+        ) : !isMapLoaded && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-sm text-gray-600">Loading map...</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

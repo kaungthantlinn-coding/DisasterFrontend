@@ -1,6 +1,907 @@
+@import "./styles/i18n.css";
+@import "./styles/image-cards.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Enhanced Professional Navbar Styles */
+@layer components {
+  /* Advanced Backdrop Effects */
+  .navbar-blur {
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+  }
+
+  /* Professional Shadow System */
+  .navbar-shadow {
+    box-shadow:
+      0 1px 3px 0 rgba(0, 0, 0, 0.1),
+      0 1px 2px 0 rgba(0, 0, 0, 0.06),
+      0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
+
+  .navbar-shadow-lg {
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .navbar-shadow-xl {
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .navbar-shadow-2xl {
+    box-shadow:
+      0 25px 50px -12px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(255, 255, 255, 0.05),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Disaster Management Professional Glassmorphism */
+  .glass-navbar {
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(248, 250, 252, 0.85) 50%,
+      rgba(241, 245, 249, 0.8) 100%
+    );
+    backdrop-filter: blur(24px) saturate(180%) brightness(1.1);
+    -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.1);
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    border-top: 1px solid rgba(16, 185, 129, 0.1);
+    box-shadow:
+      0 8px 32px 0 rgba(37, 99, 235, 0.12),
+      0 4px 16px 0 rgba(16, 185, 129, 0.08),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .glass-dropdown {
+    background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(248, 250, 252, 0.95) 50%,
+      rgba(241, 245, 249, 0.92) 100%
+    );
+    backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
+    -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.05);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-top: 1px solid rgba(16, 185, 129, 0.1);
+    box-shadow:
+      0 20px 40px -4px rgba(37, 99, 235, 0.12),
+      0 8px 16px -4px rgba(16, 185, 129, 0.08),
+      0 4px 8px -2px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+  }
+
+  .glass-button {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Professional Navigation Item Styles */
+  .nav-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+  }
+
+  .nav-item:hover {
+    background: linear-gradient(135deg,
+      rgba(59, 130, 246, 0.05) 0%,
+      rgba(16, 185, 129, 0.03) 100%
+    );
+    border-color: rgba(59, 130, 246, 0.15);
+    color: rgb(37, 99, 235);
+    transform: translateY(-1px);
+    box-shadow:
+      0 4px 12px rgba(59, 130, 246, 0.15),
+      0 2px 6px rgba(16, 185, 129, 0.1);
+  }
+
+  .nav-item.active {
+    background: linear-gradient(135deg,
+      rgba(59, 130, 246, 0.12) 0%,
+      rgba(16, 185, 129, 0.08) 50%,
+      rgba(99, 102, 241, 0.1) 100%
+    );
+    border-color: rgba(59, 130, 246, 0.25);
+    color: rgb(29, 78, 216); /* Stronger professional blue */
+    box-shadow:
+      0 4px 12px rgba(59, 130, 246, 0.2),
+      0 2px 6px rgba(16, 185, 129, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 3px;
+    background: linear-gradient(90deg,
+      rgb(59, 130, 246) 0%,    /* Professional blue */
+      rgb(16, 185, 129) 50%,   /* Safety green */
+      rgb(99, 102, 241) 100%   /* Trust purple */
+    );
+    border-radius: 2px;
+    box-shadow:
+      0 2px 4px rgba(59, 130, 246, 0.4),
+      0 1px 2px rgba(16, 185, 129, 0.3);
+  }
+
+  /* Disaster Management Brand Colors */
+  :root {
+    --dm-primary-blue: rgb(37, 99, 235);      /* Trust and reliability */
+    --dm-secondary-blue: rgb(59, 130, 246);   /* Professional communication */
+    --dm-safety-green: rgb(16, 185, 129);     /* Safety and security */
+    --dm-emergency-green: rgb(34, 197, 94);   /* Emergency response */
+    --dm-alert-red: rgb(220, 38, 38);         /* Critical alerts */
+    --dm-warning-amber: rgb(245, 158, 11);    /* Warnings */
+    --dm-neutral-gray: rgb(75, 85, 99);       /* Information */
+    --dm-trust-purple: rgb(99, 102, 241);     /* Authority */
+  }
+
+  /* Disaster Management Professional Logo Styles */
+  .logo-container {
+    position: relative;
+    padding: 0.75rem;
+    background: linear-gradient(135deg,
+      rgb(37, 99, 235) 0%,     /* Trust blue */
+      rgb(59, 130, 246) 30%,   /* Professional blue */
+      rgb(16, 185, 129) 70%,   /* Safety green */
+      rgb(34, 197, 94) 100%    /* Emergency green */
+    );
+    border-radius: 1rem;
+    box-shadow:
+      0 8px 16px rgba(59, 130, 246, 0.3),
+      0 4px 8px rgba(34, 197, 94, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .logo-container:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow:
+      0 12px 24px rgba(59, 130, 246, 0.4),
+      0 8px 16px rgba(34, 197, 94, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg,
+      rgb(29, 78, 216) 0%,     /* Deeper trust blue */
+      rgb(37, 99, 235) 30%,    /* Enhanced professional blue */
+      rgb(5, 150, 105) 70%,    /* Deeper safety green */
+      rgb(22, 163, 74) 100%    /* Enhanced emergency green */
+    );
+  }
+
+  .logo-status-indicator {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: linear-gradient(135deg, rgb(34, 197, 94), rgb(22, 163, 74));
+    border: 2px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(34, 197, 94, 0.4);
+    animation: pulse-status 2s infinite;
+  }
+
+  @keyframes pulse-status {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.1);
+    }
+  }
+
+  /* Professional Dropdown Styles */
+  .dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 0.5rem;
+    min-width: 18rem;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 1rem;
+    padding: 0.5rem;
+    box-shadow:
+      0 20px 40px -4px rgba(0, 0, 0, 0.1),
+      0 8px 16px -4px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+    z-index: 50;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+    animation: dropdown-enter 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes dropdown-enter {
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .dropdown-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 0.75rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dropdown-item:hover {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border-color: rgba(59, 130, 246, 0.1);
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  }
+
+  .dropdown-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.5s;
+  }
+
+  .dropdown-item:hover::before {
+    left: 100%;
+  }
+
+  /* Disaster Relief Donate Button */
+  .donate-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg,
+      var(--dm-alert-red) 0%,        /* Emergency urgency */
+      rgb(239, 68, 68) 40%,          /* Compassionate action */
+      rgb(248, 113, 113) 70%,        /* Hope and support */
+      var(--dm-emergency-green) 100% /* Positive impact */
+    );
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
+    border-radius: 0.75rem;
+    border: none;
+    box-shadow:
+      0 8px 16px rgba(220, 38, 38, 0.35),
+      0 4px 8px rgba(34, 197, 94, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  .donate-button:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow:
+      0 12px 24px rgba(220, 38, 38, 0.45),
+      0 8px 16px rgba(34, 197, 94, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    background: linear-gradient(135deg,
+      rgb(185, 28, 28) 0%,           /* Deeper emergency red */
+      var(--dm-alert-red) 40%,       /* Strong call to action */
+      rgb(239, 68, 68) 70%,          /* Compassionate urgency */
+      rgb(22, 163, 74) 100%          /* Positive outcome */
+    );
+  }
+
+  .donate-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.7s;
+  }
+
+  .donate-button:hover::before {
+    left: 100%;
+  }
+
+  /* Advanced Micro-interactions */
+  .nav-item:focus-visible {
+    outline: 2px solid rgb(59, 130, 246);
+    outline-offset: 2px;
+    border-radius: 0.75rem;
+  }
+
+  .nav-item:active {
+    transform: translateY(1px) scale(0.98);
+  }
+
+  /* Smooth page transitions */
+  .page-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Enhanced focus states for accessibility */
+  .glass-button:focus-visible {
+    outline: 2px solid rgb(59, 130, 246);
+    outline-offset: 2px;
+    border-radius: 0.75rem;
+  }
+
+  .dropdown-item:focus-visible {
+    outline: 2px solid rgb(59, 130, 246);
+    outline-offset: -2px;
+    border-radius: 0.75rem;
+  }
+
+  /* Loading states */
+  .loading-shimmer {
+    background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  /* Scroll-based navbar effects */
+  .navbar-scrolled {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  /* Professional hover effects for icons */
+  .icon-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .icon-hover:hover {
+    transform: scale(1.1) rotate(5deg);
+    filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
+  }
+
+  /* Notification badge styles */
+  .notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: linear-gradient(135deg, rgb(239, 68, 68), rgb(220, 38, 38));
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.125rem 0.375rem;
+    border-radius: 9999px;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+    animation: pulse-notification 2s infinite;
+  }
+
+  @keyframes pulse-notification {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+
+  /* Responsive Design Enhancements */
+  @media (max-width: 1024px) {
+    .nav-item {
+      padding: 0.625rem 0.875rem;
+      font-size: 0.8125rem;
+    }
+
+    .logo-container {
+      padding: 0.625rem;
+    }
+
+    .donate-button {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.8125rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .nav-item {
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      min-height: 48px; /* Better touch targets */
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .dropdown-item {
+      padding: 1rem;
+      min-height: 48px; /* Better touch targets */
+    }
+
+    .glass-button {
+      min-height: 48px; /* Better touch targets */
+      padding: 0.75rem 1rem;
+    }
+
+    /* Mobile-specific animations */
+    .nav-item:active {
+      transform: scale(0.98);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    /* Improved mobile dropdown */
+    .dropdown-menu {
+      position: fixed;
+      top: auto;
+      left: 1rem;
+      right: 1rem;
+      bottom: 1rem;
+      margin-top: 0;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .logo-container {
+      padding: 0.5rem;
+    }
+
+    .nav-item {
+      font-size: 0.9375rem;
+      letter-spacing: 0.01em;
+    }
+
+    /* Compact mobile layout */
+    .glass-navbar {
+      padding: 0.5rem 0;
+    }
+  }
+
+  /* High DPI displays */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .logo-container,
+    .nav-item,
+    .glass-button {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  }
+
+  /* Reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .nav-item,
+    .dropdown-item,
+    .glass-button,
+    .donate-button,
+    .logo-container {
+      transition: none;
+      animation: none;
+    }
+
+    .logo-status-indicator {
+      animation: none;
+    }
+
+    .dropdown-menu {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Enhanced Accessibility Styles */
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .nav-item {
+      border: 2px solid currentColor;
+      background: white;
+      color: black;
+    }
+
+    .nav-item:hover,
+    .nav-item.active {
+      background: black;
+      color: white;
+    }
+
+    .glass-navbar {
+      background: white;
+      border: 2px solid black;
+    }
+
+    .dropdown-menu {
+      background: white;
+      border: 2px solid black;
+    }
+  }
+
+  /* Focus indicators for keyboard navigation */
+  .nav-item:focus-visible,
+  .glass-button:focus-visible,
+  .dropdown-item:focus-visible {
+    outline: 3px solid rgb(59, 130, 246);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.2);
+  }
+
+  /* Skip link for screen readers */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: rgb(59, 130, 246);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    z-index: 1000;
+    font-weight: 600;
+  }
+
+  .skip-link:focus {
+    top: 6px;
+  }
+
+  /* Screen reader only content */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Color contrast improvements */
+  .nav-item {
+    color: rgb(55, 65, 81); /* Improved contrast */
+  }
+
+  .nav-item:hover {
+    color: rgb(29, 78, 216); /* Better contrast on hover */
+  }
+
+  .dropdown-item {
+    color: rgb(55, 65, 81); /* Improved contrast */
+  }
+
+  .dropdown-item:hover {
+    color: rgb(29, 78, 216); /* Better contrast on hover */
+  }
+
+  /* Touch target improvements for mobile */
+  @media (pointer: coarse) {
+    .nav-item,
+    .glass-button,
+    .dropdown-item {
+      min-height: 44px; /* WCAG recommended minimum */
+      min-width: 44px;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .glass-navbar {
+      background: rgba(17, 24, 39, 0.85);
+      border-color: rgba(75, 85, 99, 0.3);
+    }
+
+    .nav-item {
+      color: rgb(209, 213, 219);
+    }
+
+    .nav-item:hover {
+      color: rgb(147, 197, 253);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .dropdown-menu {
+      background: rgba(17, 24, 39, 0.98);
+      border-color: rgba(75, 85, 99, 0.3);
+    }
+
+    .dropdown-item {
+      color: rgb(209, 213, 219);
+    }
+
+    .dropdown-item:hover {
+      color: rgb(147, 197, 253);
+      background: rgba(59, 130, 246, 0.1);
+    }
+  }
+
+  /* Disaster Management Specific Utility Classes */
+
+  /* Emergency Status Indicators */
+  .status-active {
+    background: linear-gradient(135deg, var(--dm-safety-green), var(--dm-emergency-green));
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+  }
+
+  .status-alert {
+    background: linear-gradient(135deg, var(--dm-alert-red), rgb(239, 68, 68));
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+    animation: pulse-alert 2s infinite;
+  }
+
+  .status-warning {
+    background: linear-gradient(135deg, var(--dm-warning-amber), rgb(251, 191, 36));
+    color: rgb(92, 77, 19);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+  }
+
+  @keyframes pulse-alert {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.9;
+      transform: scale(1.02);
+    }
+  }
+
+  /* Trust and Authority Indicators */
+  .trust-badge {
+    display: inline-flex;
+    align-items: center;
+    background: linear-gradient(135deg, var(--dm-primary-blue), var(--dm-trust-purple));
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+  }
+
+  /* Professional Communication Styles */
+  .communication-priority-high {
+    border-left: 4px solid var(--dm-alert-red);
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.05), rgba(239, 68, 68, 0.03));
+  }
+
+  .communication-priority-medium {
+    border-left: 4px solid var(--dm-warning-amber);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(251, 191, 36, 0.03));
+  }
+
+  .communication-priority-low {
+    border-left: 4px solid var(--dm-safety-green);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(34, 197, 94, 0.03));
+  }
+
+  /* Disaster Management Typography */
+  .dm-heading {
+    font-weight: 700;
+    color: var(--dm-primary-blue);
+    letter-spacing: -0.025em;
+  }
+
+  .dm-subheading {
+    font-weight: 600;
+    color: var(--dm-neutral-gray);
+    letter-spacing: -0.01em;
+  }
+
+  .dm-body-text {
+    color: rgb(55, 65, 81);
+    line-height: 1.6;
+  }
+
+  .dm-caption {
+    font-size: 0.875rem;
+    color: var(--dm-neutral-gray);
+    font-weight: 500;
+  }
+
+  /* Enhanced Report Map Styles */
+
+  /* Custom Report Popup Styles */
+  .custom-report-popup .leaflet-popup-content-wrapper {
+    border-radius: 16px;
+    box-shadow:
+      0 20px 40px -4px rgba(0, 0, 0, 0.1),
+      0 8px 16px -4px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    overflow: hidden;
+  }
+
+  .custom-report-popup .leaflet-popup-content {
+    margin: 0;
+    line-height: 1.4;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .custom-report-popup .leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  .custom-report-popup .leaflet-popup-close-button {
+    color: #6b7280;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .custom-report-popup .leaflet-popup-close-button:hover {
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    transform: scale(1.1);
+  }
+
+  /* Custom Report Tooltip Styles */
+  .custom-report-tooltip {
+    background: rgba(17, 24, 39, 0.95) !important;
+    backdrop-filter: blur(12px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+    border: 1px solid rgba(75, 85, 99, 0.3) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+    color: white !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+  }
+
+  .custom-report-tooltip::before {
+    border-top-color: rgba(17, 24, 39, 0.95) !important;
+  }
+
+  /* Report Marker Styles */
+  .report-marker {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+  }
+
+  .report-marker:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
+    z-index: 1000;
+  }
+
+  /* Map Container Enhancements */
+  .leaflet-container {
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  .leaflet-control-zoom a {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .leaflet-control-zoom a:hover {
+    background: rgba(59, 130, 246, 0.95);
+    color: white;
+    transform: scale(1.05);
+  }
+
+  /* Responsive Map Adjustments */
+  @media (max-width: 768px) {
+    .custom-report-popup .leaflet-popup-content-wrapper {
+      border-radius: 12px;
+    }
+
+    .report-marker {
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+    }
+
+    .custom-report-tooltip {
+      font-size: 11px !important;
+      padding: 6px 10px !important;
+    }
+  }
+
+  .glass-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .navbar-gradient-shine::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: left 0.7s ease;
+  }
+
+  .navbar-gradient-shine:hover::before {
+    left: 100%;
+  }
+}
 
 /* Leaflet Map Fixes */
 .leaflet-container {
@@ -19,7 +920,7 @@
 
 /* Fix for Leaflet marker icons */
 .leaflet-default-icon-path {
-  background-image: url('https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png');
+  background-image: url("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png");
 }
 
 @layer base {
@@ -86,133 +987,194 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors;
+    @apply bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 font-semibold;
   }
-  
+
   .btn-secondary {
-    @apply bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors;
+    @apply bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-300 font-semibold;
   }
-  
+
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors;
+    @apply w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300;
   }
-  
+
   .card {
-    @apply bg-white overflow-hidden shadow rounded-lg;
+    @apply bg-white overflow-hidden shadow-md rounded-xl border border-gray-100;
   }
 
-  /* Leaflet map styles to ensure proper zoom functionality and z-index layering */
-  .leaflet-container {
-    touch-action: pan-x pan-y !important;
-    /* Ensure map container stays below header (z-50 = 50) */
-    z-index: 10 !important;
+  /* Professional disaster management theme */
+  .disaster-card {
+    @apply bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 overflow-hidden;
   }
 
-  /* Control all Leaflet elements to stay below header */
-  .leaflet-control-container {
-    z-index: 15 !important;
+  .disaster-stat-card {
+    @apply bg-gradient-to-br rounded-2xl p-6 shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300 border border-white/20;
   }
 
-  .leaflet-control {
-    z-index: 15 !important;
+  .professional-button {
+    @apply px-6 py-3 rounded-xl font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
 
-  .leaflet-popup-pane {
-    z-index: 20 !important;
+  .professional-button-primary {
+    @apply professional-button bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
   }
 
-  .leaflet-tooltip-pane {
-    z-index: 25 !important;
+  .professional-button-secondary {
+    @apply professional-button bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 focus:ring-blue-500;
+  }
+}
+
+/* Enhanced animations for Reports page */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+/* Text clamp utilities */
+@layer utilities {
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  .leaflet-marker-pane {
-    z-index: 12 !important;
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  .leaflet-tile-pane {
-    z-index: 5 !important;
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
+}
 
-  .leaflet-container .leaflet-control-zoom {
-    border: none !important;
-    border-radius: 8px !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-    z-index: 15 !important;
-  }
+/* Leaflet map styles to ensure proper zoom functionality and z-index layering */
+.leaflet-container {
+  touch-action: pan-x pan-y !important;
+  /* Ensure map container stays below header (z-50 = 50) */
+  z-index: 10 !important;
+}
 
-  .leaflet-container .leaflet-control-zoom a {
-    border-radius: 6px !important;
-    border: none !important;
-    background-color: white !important;
-    color: #374151 !important;
-    font-weight: 600 !important;
-    transition: all 0.2s ease !important;
-  }
+/* Control all Leaflet elements to stay below header */
+.leaflet-control-container {
+  z-index: 15 !important;
+}
 
-  .leaflet-container .leaflet-control-zoom a:hover {
-    background-color: #f3f4f6 !important;
-    color: #1f2937 !important;
-  }
+.leaflet-control {
+  z-index: 15 !important;
+}
 
-  /* Ensure map sections don't interfere with header */
-  .map-section {
-    position: relative;
-    z-index: 1;
-  }
+.leaflet-popup-pane {
+  z-index: 20 !important;
+}
 
-  /* Ensure header always stays on top */
-  header {
-    position: sticky !important;
-    z-index: 50 !important;
-  }
+.leaflet-tooltip-pane {
+  z-index: 25 !important;
+}
 
-  /* Custom Leaflet popup styles */
-  .custom-disaster-popup .leaflet-popup-content-wrapper {
-    border-radius: 12px !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    padding: 0 !important;
-  }
+.leaflet-marker-pane {
+  z-index: 12 !important;
+}
 
-  .custom-disaster-popup .leaflet-popup-content {
-    margin: 0 !important;
-    line-height: 1.4 !important;
-  }
+.leaflet-tile-pane {
+  z-index: 5 !important;
+}
 
-  .custom-disaster-popup .leaflet-popup-tip {
-    background: white !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-  }
+.leaflet-container .leaflet-control-zoom {
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  z-index: 15 !important;
+}
 
-  /* Custom Leaflet tooltip styles */
-  .custom-disaster-tooltip {
-    background: rgba(0, 0, 0, 0.8) !important;
-    border: none !important;
-    border-radius: 8px !important;
-    color: white !important;
-    font-size: 12px !important;
-    padding: 8px 12px !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-  }
+.leaflet-container .leaflet-control-zoom a {
+  border-radius: 6px !important;
+  border: none !important;
+  background-color: white !important;
+  color: #374151 !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
 
-  .custom-disaster-tooltip::before {
-    border-top-color: rgba(0, 0, 0, 0.8) !important;
-  }
+.leaflet-container .leaflet-control-zoom a:hover {
+  background-color: #f3f4f6 !important;
+  color: #1f2937 !important;
+}
 
-  /* Pulsing animation for critical disasters */
-  @keyframes pulse-marker {
-    0% {
-      box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
-    }
-    70% {
-      box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
-    }
-  }
+/* Ensure map sections don't interfere with header */
+.map-section {
+  position: relative;
+  z-index: 1;
+}
 
-  .pulsing-marker {
-    animation: pulse-marker 2s infinite !important;
+/* Ensure header always stays on top */
+header {
+  position: sticky !important;
+  z-index: 50 !important;
+}
+
+/* Custom Leaflet popup styles */
+.custom-disaster-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  padding: 0 !important;
+}
+
+.custom-disaster-popup .leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.custom-disaster-popup .leaflet-popup-tip {
+  background: white !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Custom Leaflet tooltip styles */
+.custom-disaster-tooltip {
+  background: rgba(0, 0, 0, 0.8) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: white !important;
+  font-size: 12px !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+.custom-disaster-tooltip::before {
+  border-top-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Pulsing animation for critical disasters */
+@keyframes pulse-marker {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
   }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+.pulsing-marker {
+  animation: pulse-marker 2s infinite !important;
 }

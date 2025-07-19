@@ -1,10 +1,13 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { useAuthStore } from '../stores/authStore';
 import { useErrorHandler, ErrorTracker } from '../utils/errorHandler';
+import { getRoleBasedRedirectPath, logRoleBasedRedirection } from '../utils/roleRedirection';
 
 export const useGoogleLogin = () => {
   const { handleError, getErrorMessage } = useErrorHandler();
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: async (credential: string) => {
@@ -20,6 +23,11 @@ export const useGoogleLogin = () => {
       useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken);
       // Track successful login after auth store is updated
       ErrorTracker.getInstance().trackUserAction('google_login_success', { userId: data.user.userId });
+
+      // Implement role-based redirection
+      const redirectPath = getRoleBasedRedirectPath(data.user);
+      logRoleBasedRedirection(data.user, redirectPath);
+      navigate(redirectPath, { replace: true });
     },
     onError: (error) => {
       handleError(error as Error, {

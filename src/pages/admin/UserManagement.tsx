@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users,
@@ -17,7 +17,15 @@ import {
   MoreVertical,
   Download,
   Upload,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Ban,
+  CheckCircle,
+  Clock
 } from 'lucide-react';
 
 interface User {
@@ -34,14 +42,15 @@ interface User {
   avatar?: string;
 }
 
-interface UserCardProps {
+interface UserRowProps {
   user: User;
+  onViewProfile: (user: User) => void;
   onEdit: (user: User) => void;
-  onDelete: (userId: string) => void;
+  onBlacklist: (userId: string) => void;
   onStatusChange: (userId: string, status: User['status']) => void;
 }
 
-const UserCard: React.FC<UserCardProps> = ({ user, onEdit, onDelete, onStatusChange }) => {
+const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlacklist, onStatusChange }) => {
   const [showActions, setShowActions] = useState(false);
 
   const getRoleColor = (role: string) => {
@@ -64,105 +73,105 @@ const UserCard: React.FC<UserCardProps> = ({ user, onEdit, onDelete, onStatusCha
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return <UserCheck className="w-4 h-4" />;
-      case 'inactive': return <Users className="w-4 h-4" />;
-      case 'suspended': return <UserX className="w-4 h-4" />;
-      default: return <Users className="w-4 h-4" />;
+      case 'active': return <CheckCircle className="w-4 h-4" />;
+      case 'inactive': return <Clock className="w-4 h-4" />;
+      case 'suspended': return <Ban className="w-4 h-4" />;
+      default: return <Clock className="w-4 h-4" />;
     }
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-300 hover:border-blue-300">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-start space-x-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+    <tr className="hover:bg-blue-50/30 transition-all duration-200 group">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md group-hover:shadow-lg transition-shadow duration-200">
             {user.avatar ? (
-              <img src={user.avatar} alt={user.name} className="w-12 h-12 rounded-full object-cover" />
+              <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
             ) : (
               user.name.charAt(0).toUpperCase()
             )}
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 text-lg">{user.name}</h3>
-            <div className="flex items-center space-x-2 mt-1">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRoleColor(user.role)}`}>
-                {user.role.toUpperCase()}
-              </span>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(user.status)}`}>
-                {getStatusIcon(user.status)}
-                <span>{user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
-              </span>
-            </div>
+          <div className="ml-4">
+            <div className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200">{user.name}</div>
+            <div className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-200">{user.email}</div>
           </div>
         </div>
-        <div className="relative">
-          <button 
-            onClick={() => setShowActions(!showActions)}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <MoreVertical className="w-5 h-5" />
-          </button>
-          {showActions && (
-            <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[150px]">
-              <button 
-                onClick={() => { onEdit(user); setShowActions(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-              >
-                <Edit className="w-4 h-4" />
-                <span>Edit User</span>
-              </button>
-              <button 
-                onClick={() => { onStatusChange(user.id, user.status === 'active' ? 'suspended' : 'active'); setShowActions(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-              >
-                {user.status === 'active' ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                <span>{user.status === 'active' ? 'Suspend' : 'Activate'}</span>
-              </button>
-              <button 
-                onClick={() => { onDelete(user.id); setShowActions(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>Delete User</span>
-              </button>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
+          {user.role.toUpperCase()}
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
+          {getStatusIcon(user.status)}
+          <span className="ml-1">{user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
+        </span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center space-x-2">
+          {user.role === 'cj' ? (
+            // Only CJ officers have report activity
+            <>
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-gray-900">{user.reportsCount}</span>
+                <span className="text-xs text-blue-600 font-medium">Verified</span>
+              </div>
+              <div className={`w-2 h-2 rounded-full ${
+                user.reportsCount > 50 ? 'bg-green-500' :
+                user.reportsCount > 25 ? 'bg-yellow-500' :
+                user.reportsCount > 0 ? 'bg-blue-500' : 'bg-gray-300'
+              }`} title={`${user.reportsCount} reports verified`}></div>
+            </>
+          ) : (
+            // Admin and regular users don't handle reports
+            <div className="flex flex-col">
+              <span className="text-sm text-gray-400">N/A</span>
+              <span className="text-xs text-gray-400">
+                {user.role === 'admin' ? 'No report duties' : 'No report duties'}
+              </span>
             </div>
           )}
         </div>
-      </div>
-
-      <div className="space-y-2 text-sm text-gray-600">
-        <div className="flex items-center space-x-2">
-          <Mail className="w-4 h-4" />
-          <span>{user.email}</span>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+        <div className="relative">
+          <button
+            onClick={() => setShowActions(!showActions)}
+            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-blue-100 rounded-lg transition-all duration-200 group-hover:bg-blue-50"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+          {showActions && (
+            <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-[180px] overflow-hidden">
+              <div className="py-1">
+                <button
+                  onClick={() => { onViewProfile(user); setShowActions(false); }}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-3 transition-all duration-200 border-b border-gray-100"
+                >
+                  <Eye className="w-4 h-4 text-blue-500" />
+                  <span className="font-medium">View Profile</span>
+                </button>
+                <button
+                  onClick={() => { onEdit(user); setShowActions(false); }}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 flex items-center space-x-3 transition-all duration-200 border-b border-gray-100"
+                >
+                  <Edit className="w-4 h-4 text-green-500" />
+                  <span className="font-medium">Edit User</span>
+                </button>
+                <button
+                  onClick={() => { onBlacklist(user.id); setShowActions(false); }}
+                  className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center space-x-3 transition-all duration-200"
+                >
+                  <Ban className="w-4 h-4 text-red-500" />
+                  <span className="font-medium">Blacklist User</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-        {user.phone && (
-          <div className="flex items-center space-x-2">
-            <Phone className="w-4 h-4" />
-            <span>{user.phone}</span>
-          </div>
-        )}
-        {user.location && (
-          <div className="flex items-center space-x-2">
-            <MapPin className="w-4 h-4" />
-            <span>{user.location}</span>
-          </div>
-        )}
-        <div className="flex items-center space-x-2">
-          <Calendar className="w-4 h-4" />
-          <span>Joined {user.joinDate}</span>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-        <div className="text-sm">
-          <span className="text-gray-500">Reports: </span>
-          <span className="font-semibold text-gray-900">{user.reportsCount}</span>
-        </div>
-        <div className="text-sm text-gray-500">
-          Last active: {user.lastActive}
-        </div>
-      </div>
-    </div>
+      </td>
+    </tr>
   );
 };
 
@@ -171,6 +180,8 @@ const UserManagement: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showAddUser, setShowAddUser] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Mock data - replace with real API data
   const users: User[] = [
@@ -183,7 +194,7 @@ const UserManagement: React.FC = () => {
       status: 'active',
       joinDate: 'Jan 15, 2024',
       location: 'New York, NY',
-      reportsCount: 12,
+      reportsCount: 0, // Admin doesn't handle reports directly
       lastActive: '2 hours ago'
     },
     {
@@ -195,7 +206,7 @@ const UserManagement: React.FC = () => {
       status: 'active',
       joinDate: 'Feb 3, 2024',
       location: 'Los Angeles, CA',
-      reportsCount: 8,
+      reportsCount: 89, // CJ verifies reports
       lastActive: '1 day ago'
     },
     {
@@ -206,7 +217,7 @@ const UserManagement: React.FC = () => {
       status: 'active',
       joinDate: 'Mar 10, 2024',
       location: 'Chicago, IL',
-      reportsCount: 3,
+      reportsCount: 0, // Regular users don't handle reports
       lastActive: '3 hours ago'
     },
     {
@@ -218,7 +229,7 @@ const UserManagement: React.FC = () => {
       status: 'suspended',
       joinDate: 'Jan 28, 2024',
       location: 'Miami, FL',
-      reportsCount: 1,
+      reportsCount: 0, // Regular users don't handle reports
       lastActive: '1 week ago'
     },
     {
@@ -229,19 +240,141 @@ const UserManagement: React.FC = () => {
       status: 'inactive',
       joinDate: 'Dec 15, 2023',
       location: 'Seattle, WA',
-      reportsCount: 15,
+      reportsCount: 156, // Experienced CJ with many verifications
       lastActive: '2 weeks ago'
+    },
+    {
+      id: '6',
+      name: 'Lisa Chen',
+      email: 'lisa.chen@example.com',
+      phone: '+1 (555) 234-5678',
+      role: 'user',
+      status: 'active',
+      joinDate: 'Mar 5, 2024',
+      location: 'San Francisco, CA',
+      reportsCount: 0, // Regular users don't handle reports
+      lastActive: '5 hours ago'
+    },
+    {
+      id: '7',
+      name: 'David Martinez',
+      email: 'david.martinez@example.com',
+      phone: '+1 (555) 345-6789',
+      role: 'cj',
+      status: 'active',
+      joinDate: 'Feb 20, 2024',
+      location: 'Phoenix, AZ',
+      reportsCount: 67, // CJ with good verification record
+      lastActive: '1 hour ago'
+    },
+    {
+      id: '8',
+      name: 'Amanda Taylor',
+      email: 'amanda.taylor@example.com',
+      role: 'user',
+      status: 'inactive',
+      joinDate: 'Jan 10, 2024',
+      location: 'Denver, CO',
+      reportsCount: 0, // Regular users don't handle reports
+      lastActive: '3 days ago'
+    },
+    {
+      id: '9',
+      name: 'James Wilson',
+      email: 'james.wilson@example.com',
+      phone: '+1 (555) 456-7890',
+      role: 'admin',
+      status: 'active',
+      joinDate: 'Dec 1, 2023',
+      location: 'Boston, MA',
+      reportsCount: 0, // Admin doesn't handle reports directly
+      lastActive: '30 minutes ago'
+    },
+    {
+      id: '10',
+      name: 'Maria Garcia',
+      email: 'maria.garcia@example.com',
+      phone: '+1 (555) 567-8901',
+      role: 'user',
+      status: 'active',
+      joinDate: 'Mar 15, 2024',
+      location: 'Austin, TX',
+      reportsCount: 0, // Regular users don't handle reports
+      lastActive: '2 hours ago'
+    },
+    {
+      id: '11',
+      name: 'Kevin Lee',
+      email: 'kevin.lee@example.com',
+      role: 'user',
+      status: 'suspended',
+      joinDate: 'Feb 8, 2024',
+      location: 'Portland, OR',
+      reportsCount: 0, // Regular users don't handle reports
+      lastActive: '2 weeks ago'
+    },
+    {
+      id: '12',
+      name: 'Rachel Green',
+      email: 'rachel.green@example.com',
+      phone: '+1 (555) 678-9012',
+      role: 'cj',
+      status: 'active',
+      joinDate: 'Jan 25, 2024',
+      location: 'Nashville, TN',
+      reportsCount: 43, // CJ with solid verification record
+      lastActive: '4 hours ago'
+    },
+    {
+      id: '13',
+      name: 'Michael Torres',
+      email: 'michael.torres@example.com',
+      phone: '+1 (555) 789-0123',
+      role: 'cj',
+      status: 'active',
+      joinDate: 'Dec 10, 2023',
+      location: 'Atlanta, GA',
+      reportsCount: 124, // Senior CJ with high verification count
+      lastActive: '1 hour ago'
+    },
+    {
+      id: '14',
+      name: 'Jennifer Kim',
+      email: 'jennifer.kim@example.com',
+      role: 'cj',
+      status: 'active',
+      joinDate: 'Feb 14, 2024',
+      location: 'Portland, OR',
+      reportsCount: 31, // New CJ building verification record
+      lastActive: '3 hours ago'
+    },
+    {
+      id: '15',
+      name: 'Alex Rodriguez',
+      email: 'alex.rodriguez@example.com',
+      phone: '+1 (555) 890-1234',
+      role: 'cj',
+      status: 'inactive',
+      joinDate: 'Nov 5, 2023',
+      location: 'Dallas, TX',
+      reportsCount: 78, // Inactive CJ with previous verification work
+      lastActive: '1 week ago'
     }
   ];
+
+  const handleViewProfile = (user: User) => {
+    console.log('View profile:', user);
+    // Implement view profile functionality
+  };
 
   const handleEditUser = (user: User) => {
     console.log('Edit user:', user);
     // Implement edit user functionality
   };
 
-  const handleDeleteUser = (userId: string) => {
-    console.log('Delete user:', userId);
-    // Implement delete user functionality
+  const handleBlacklistUser = (userId: string) => {
+    console.log('Blacklist user:', userId);
+    // Implement blacklist user functionality
   };
 
   const handleStatusChange = (userId: string, status: User['status']) => {
@@ -256,6 +389,17 @@ const UserManagement: React.FC = () => {
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, roleFilter, statusFilter]);
 
   const stats = {
     total: users.length,
@@ -391,30 +535,162 @@ const UserManagement: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Filter className="w-5 h-5 text-gray-400" />
               <span className="text-sm text-gray-600">
-                Showing {filteredUsers.length} of {users.length} users
+                {filteredUsers.length === users.length
+                  ? `${users.length} total users`
+                  : `${filteredUsers.length} of ${users.length} users (filtered)`
+                }
               </span>
             </div>
           </div>
         </div>
 
-        {/* Users Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.map((user) => (
-            <UserCard
-              key={user.id}
-              user={user}
-              onEdit={handleEditUser}
-              onDelete={handleDeleteUser}
-              onStatusChange={handleStatusChange}
-            />
-          ))}
+        {/* Users Table */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-lg">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gradient-to-r from-gray-50 to-blue-50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Role
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Reports Activity
+                  </th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedUsers.map((user) => (
+                  <UserRow
+                    key={user.id}
+                    user={user}
+                    onViewProfile={handleViewProfile}
+                    onEdit={handleEditUser}
+                    onBlacklist={handleBlacklistUser}
+                    onStatusChange={handleStatusChange}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+              <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+            </div>
+          )}
         </div>
 
-        {filteredUsers.length === 0 && (
-          <div className="text-center py-12">
-            <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-            <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+        {/* Pagination */}
+        {filteredUsers.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 mt-6 px-6 py-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+              {/* Pagination Info */}
+              <div className="flex items-center space-x-4">
+                <div className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(endIndex, filteredUsers.length)}</span> of{' '}
+                  <span className="font-medium">{filteredUsers.length}</span> users
+                </div>
+                <div className="flex items-center space-x-2">
+                  <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+                    Show:
+                  </label>
+                  <select
+                    id="itemsPerPage"
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-sm text-gray-700">per page</span>
+                </div>
+              </div>
+
+              {/* Pagination Controls */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="p-2 text-gray-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
+                  title="First page"
+                >
+                  <ChevronsLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 text-gray-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
+                  title="Previous page"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNumber;
+                    if (totalPages <= 5) {
+                      pageNumber = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNumber = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
+                    } else {
+                      pageNumber = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`px-3 py-2 text-sm rounded-lg transition-all duration-200 font-medium ${
+                          currentPage === pageNumber
+                            ? 'bg-blue-600 text-white shadow-md'
+                            : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-transparent hover:border-blue-200'
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-gray-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
+                  title="Next page"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-gray-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
+                  title="Last page"
+                >
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
