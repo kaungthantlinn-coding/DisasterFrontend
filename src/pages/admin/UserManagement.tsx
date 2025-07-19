@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import ViewProfileModal from '../../components/modals/ViewProfileModal';
+import EditUserModal from '../../components/modals/EditUserModal';
 import {
   Users,
   Search,
@@ -10,10 +12,6 @@ import {
   Shield,
   UserCheck,
   UserX,
-  Mail,
-  Phone,
-  Calendar,
-  MapPin,
   MoreVertical,
   Download,
   Upload,
@@ -25,9 +23,13 @@ import {
   ChevronsRight,
   Ban,
   CheckCircle,
-  Clock
+  Clock,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
+import { useUserManagement } from '../../hooks/useUserManagement';
 
+// Map API user to local user interface
 interface User {
   id: string;
   name: string;
@@ -42,15 +44,45 @@ interface User {
   avatar?: string;
 }
 
+// Helper function to map API user to local user
+const mapApiUserToLocal = (apiUser: any): User => {
+  // Determine primary role
+  const primaryRole = apiUser.roleNames?.includes('admin') ? 'admin' :
+                     apiUser.roleNames?.includes('cj') ? 'cj' : 'user';
+
+  // Determine status - handle both UserListItemDto and UserDetailsDto
+  const status = apiUser.isBlacklisted ? 'suspended' : 
+                 apiUser.status ? apiUser.status : 'active';
+
+  return {
+    id: apiUser.userId,
+    name: apiUser.name,
+    email: apiUser.email,
+    phone: apiUser.phone,
+    role: primaryRole,
+    status,
+    joinDate: apiUser.createdAt ? new Date(apiUser.createdAt).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    }) : 'Unknown',
+    location: apiUser.location,
+    reportsCount: apiUser.reportsCount || 0,
+    lastActive: apiUser.lastActive || 'Unknown',
+    avatar: apiUser.photoUrl
+  };
+};
+
 interface UserRowProps {
   user: User;
   onViewProfile: (user: User) => void;
   onEdit: (user: User) => void;
   onBlacklist: (userId: string) => void;
-  onStatusChange: (userId: string, status: User['status']) => void;
+  onUnblacklist: (userId: string) => void;
+  onDelete: (userId: string) => void;
 }
 
-const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlacklist, onStatusChange }) => {
+const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlacklist, onUnblacklist, onDelete }) => {
   const [showActions, setShowActions] = useState(false);
 
   const getRoleColor = (role: string) => {
@@ -111,7 +143,6 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center space-x-2">
           {user.role === 'cj' ? (
-            // Only CJ officers have report activity
             <>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-gray-900">{user.reportsCount}</span>
@@ -124,7 +155,6 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
               }`} title={`${user.reportsCount} reports verified`}></div>
             </>
           ) : (
-            // Admin and regular users don't handle reports
             <div className="flex flex-col">
               <span className="text-sm text-gray-400">N/A</span>
               <span className="text-xs text-gray-400">
@@ -159,12 +189,30 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
                   <Edit className="w-4 h-4 text-green-500" />
                   <span className="font-medium">Edit User</span>
                 </button>
+                {/* Conditional Blacklist/Unblacklist Button */}
+                {user.status === 'suspended' ? (
+                  <button
+                    onClick={() => { onUnblacklist(user.id); setShowActions(false); }}
+                    className="w-full text-left px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-3 transition-all duration-200 border-b border-gray-100"
+                  >
+                    <UserCheck className="w-4 h-4 text-blue-500" />
+                    <span className="font-medium">Unblacklist User</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { onBlacklist(user.id); setShowActions(false); }}
+                    className="w-full text-left px-4 py-3 text-sm text-orange-600 hover:bg-orange-50 hover:text-orange-700 flex items-center space-x-3 transition-all duration-200 border-b border-gray-100"
+                  >
+                    <Ban className="w-4 h-4 text-orange-500" />
+                    <span className="font-medium">Blacklist User</span>
+                  </button>
+                )}
                 <button
-                  onClick={() => { onBlacklist(user.id); setShowActions(false); }}
+                  onClick={() => { onDelete(user.id); setShowActions(false); }}
                   className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center space-x-3 transition-all duration-200"
                 >
-                  <Ban className="w-4 h-4 text-red-500" />
-                  <span className="font-medium">Blacklist User</span>
+                  <Trash2 className="w-4 h-4 text-red-500" />
+                  <span className="font-medium">Delete User</span>
                 </button>
               </div>
             </div>
@@ -176,236 +224,146 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
 };
 
 const UserManagement: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  // Modal state
+  const [viewProfileModal, setViewProfileModal] = useState<{
+    isOpen: boolean;
+    user: User | null;
+  }>({
+    isOpen: false,
+    user: null
+  });
 
-  // Mock data - replace with real API data
-  const users: User[] = [
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      phone: '+1 (555) 123-4567',
-      role: 'admin',
-      status: 'active',
-      joinDate: 'Jan 15, 2024',
-      location: 'New York, NY',
-      reportsCount: 0, // Admin doesn't handle reports directly
-      lastActive: '2 hours ago'
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@example.com',
-      phone: '+1 (555) 987-6543',
-      role: 'cj',
-      status: 'active',
-      joinDate: 'Feb 3, 2024',
-      location: 'Los Angeles, CA',
-      reportsCount: 89, // CJ verifies reports
-      lastActive: '1 day ago'
-    },
-    {
-      id: '3',
-      name: 'Mike Wilson',
-      email: 'mike.wilson@example.com',
-      role: 'user',
-      status: 'active',
-      joinDate: 'Mar 10, 2024',
-      location: 'Chicago, IL',
-      reportsCount: 0, // Regular users don't handle reports
-      lastActive: '3 hours ago'
-    },
-    {
-      id: '4',
-      name: 'Emily Davis',
-      email: 'emily.davis@example.com',
-      phone: '+1 (555) 456-7890',
-      role: 'user',
-      status: 'suspended',
-      joinDate: 'Jan 28, 2024',
-      location: 'Miami, FL',
-      reportsCount: 0, // Regular users don't handle reports
-      lastActive: '1 week ago'
-    },
-    {
-      id: '5',
-      name: 'Robert Brown',
-      email: 'robert.brown@example.com',
-      role: 'cj',
-      status: 'inactive',
-      joinDate: 'Dec 15, 2023',
-      location: 'Seattle, WA',
-      reportsCount: 156, // Experienced CJ with many verifications
-      lastActive: '2 weeks ago'
-    },
-    {
-      id: '6',
-      name: 'Lisa Chen',
-      email: 'lisa.chen@example.com',
-      phone: '+1 (555) 234-5678',
-      role: 'user',
-      status: 'active',
-      joinDate: 'Mar 5, 2024',
-      location: 'San Francisco, CA',
-      reportsCount: 0, // Regular users don't handle reports
-      lastActive: '5 hours ago'
-    },
-    {
-      id: '7',
-      name: 'David Martinez',
-      email: 'david.martinez@example.com',
-      phone: '+1 (555) 345-6789',
-      role: 'cj',
-      status: 'active',
-      joinDate: 'Feb 20, 2024',
-      location: 'Phoenix, AZ',
-      reportsCount: 67, // CJ with good verification record
-      lastActive: '1 hour ago'
-    },
-    {
-      id: '8',
-      name: 'Amanda Taylor',
-      email: 'amanda.taylor@example.com',
-      role: 'user',
-      status: 'inactive',
-      joinDate: 'Jan 10, 2024',
-      location: 'Denver, CO',
-      reportsCount: 0, // Regular users don't handle reports
-      lastActive: '3 days ago'
-    },
-    {
-      id: '9',
-      name: 'James Wilson',
-      email: 'james.wilson@example.com',
-      phone: '+1 (555) 456-7890',
-      role: 'admin',
-      status: 'active',
-      joinDate: 'Dec 1, 2023',
-      location: 'Boston, MA',
-      reportsCount: 0, // Admin doesn't handle reports directly
-      lastActive: '30 minutes ago'
-    },
-    {
-      id: '10',
-      name: 'Maria Garcia',
-      email: 'maria.garcia@example.com',
-      phone: '+1 (555) 567-8901',
-      role: 'user',
-      status: 'active',
-      joinDate: 'Mar 15, 2024',
-      location: 'Austin, TX',
-      reportsCount: 0, // Regular users don't handle reports
-      lastActive: '2 hours ago'
-    },
-    {
-      id: '11',
-      name: 'Kevin Lee',
-      email: 'kevin.lee@example.com',
-      role: 'user',
-      status: 'suspended',
-      joinDate: 'Feb 8, 2024',
-      location: 'Portland, OR',
-      reportsCount: 0, // Regular users don't handle reports
-      lastActive: '2 weeks ago'
-    },
-    {
-      id: '12',
-      name: 'Rachel Green',
-      email: 'rachel.green@example.com',
-      phone: '+1 (555) 678-9012',
-      role: 'cj',
-      status: 'active',
-      joinDate: 'Jan 25, 2024',
-      location: 'Nashville, TN',
-      reportsCount: 43, // CJ with solid verification record
-      lastActive: '4 hours ago'
-    },
-    {
-      id: '13',
-      name: 'Michael Torres',
-      email: 'michael.torres@example.com',
-      phone: '+1 (555) 789-0123',
-      role: 'cj',
-      status: 'active',
-      joinDate: 'Dec 10, 2023',
-      location: 'Atlanta, GA',
-      reportsCount: 124, // Senior CJ with high verification count
-      lastActive: '1 hour ago'
-    },
-    {
-      id: '14',
-      name: 'Jennifer Kim',
-      email: 'jennifer.kim@example.com',
-      role: 'cj',
-      status: 'active',
-      joinDate: 'Feb 14, 2024',
-      location: 'Portland, OR',
-      reportsCount: 31, // New CJ building verification record
-      lastActive: '3 hours ago'
-    },
-    {
-      id: '15',
-      name: 'Alex Rodriguez',
-      email: 'alex.rodriguez@example.com',
-      phone: '+1 (555) 890-1234',
-      role: 'cj',
-      status: 'inactive',
-      joinDate: 'Nov 5, 2023',
-      location: 'Dallas, TX',
-      reportsCount: 78, // Inactive CJ with previous verification work
-      lastActive: '1 week ago'
-    }
-  ];
+  const [editUserModal, setEditUserModal] = useState<{
+    isOpen: boolean;
+    user: User | null;
+  }>({
+    isOpen: false,
+    user: null
+  });
+
+  // Use the custom hook for API integration
+  const {
+    users: apiUsers,
+    totalCount,
+    totalPages: apiTotalPages,
+    currentPage,
+    pageSize,
+    stats,
+    availableRoles,
+    isLoading,
+    isLoadingStats,
+    isLoadingRoles,
+    error,
+    filters,
+    setPage,
+    setPageSize,
+    setSearchTerm,
+    setRoleFilter,
+    setStatusFilter,
+    refresh,
+    blacklistUser,
+    unblacklistUser,
+    deleteUser,
+    updateUser
+  } = useUserManagement({
+    initialPageSize: 10,
+    autoRefresh: false
+  });
+
+  // Convert API users to local format - handle undefined/null apiUsers
+  const users: User[] = (apiUsers || []).map(mapApiUserToLocal);
 
   const handleViewProfile = (user: User) => {
-    console.log('View profile:', user);
-    // Implement view profile functionality
+    setViewProfileModal({
+      isOpen: true,
+      user: user
+    });
   };
 
   const handleEditUser = (user: User) => {
-    console.log('Edit user:', user);
-    // Implement edit user functionality
+    setEditUserModal({
+      isOpen: true,
+      user: user
+    });
   };
 
-  const handleBlacklistUser = (userId: string) => {
-    console.log('Blacklist user:', userId);
-    // Implement blacklist user functionality
+  const handleCloseViewProfile = () => {
+    setViewProfileModal({
+      isOpen: false,
+      user: null
+    });
   };
 
-  const handleStatusChange = (userId: string, status: User['status']) => {
-    console.log('Change status:', userId, status);
-    // Implement status change functionality
+  const handleCloseEditUser = () => {
+    setEditUserModal({
+      isOpen: false,
+      user: null
+    });
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
-  });
+  const handleSaveUser = async (userId: string, userData: any) => {
+    try {
+      await updateUser(userId, userData);
+      // Modal will close automatically on success
+      handleCloseEditUser();
+    } catch (error) {
+      // Error handling is done in the hook via toast
+      throw error;
+    }
+  };
 
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+  const handleBlacklistUser = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    const userName = user?.name || 'this user';
 
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, roleFilter, statusFilter]);
+    if (window.confirm(`Are you sure you want to blacklist ${userName}? They will be suspended and unable to access the system.`)) {
+      try {
+        await blacklistUser(userId);
+        console.log('✅ User blacklisted successfully:', userName);
+        // The UI will automatically update due to the API response
+      } catch (error) {
+        console.error('❌ Failed to blacklist user:', error);
+        alert('Failed to blacklist user. Please try again.');
+      }
+    }
+  };
 
-  const stats = {
-    total: users.length,
-    active: users.filter(u => u.status === 'active').length,
-    suspended: users.filter(u => u.status === 'suspended').length,
-    admins: users.filter(u => u.role === 'admin').length
+  const handleUnblacklistUser = async (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    const userName = user?.name || 'this user';
+
+    if (window.confirm(`Are you sure you want to unblacklist ${userName}? They will regain access to the system.`)) {
+      try {
+        await unblacklistUser(userId);
+        console.log('✅ User unblacklisted successfully:', userName);
+        // The UI will automatically update due to the API response
+      } catch (error) {
+        console.error('❌ Failed to unblacklist user:', error);
+        alert('Failed to unblacklist user. Please try again.');
+      }
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      try {
+        await deleteUser(userId);
+      } catch (error) {
+        console.error('Failed to delete user:', error);
+      }
+    }
+  };
+
+  // Calculate pagination info - handle undefined values
+  const startIndex = ((currentPage || 1) - 1) * (pageSize || 10);
+  const endIndex = Math.min(startIndex + (pageSize || 10), totalCount || 0);
+
+  // Use API stats or calculate from current data as fallback
+  const displayStats = stats || {
+    totalUsers: users.length,
+    activeUsers: users.filter(u => u.status === 'active').length,
+    suspendedUsers: users.filter(u => u.status === 'suspended').length,
+    adminUsers: users.filter(u => u.role === 'admin').length
   };
 
   return (
@@ -424,8 +382,13 @@ const UserManagement: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-                <RefreshCw className="w-5 h-5" />
+              <button
+                onClick={refresh}
+                disabled={isLoading}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                title="Refresh users"
+              >
+                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
               <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                 <Upload className="w-4 h-4 mr-2" />
@@ -435,8 +398,8 @@ const UserManagement: React.FC = () => {
                 <Download className="w-4 h-4 mr-2" />
                 Export Users
               </button>
-              <button 
-                onClick={() => setShowAddUser(true)}
+              <button
+                onClick={() => console.log('Add user functionality to be implemented')}
                 className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -455,7 +418,14 @@ const UserManagement: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                {isLoadingStats ? (
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    <span className="text-lg text-gray-400">Loading...</span>
+                  </div>
+                ) : (
+                  <p className="text-3xl font-bold text-gray-900">{displayStats.totalUsers || 0}</p>
+                )}
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
                 <Users className="w-6 h-6 text-blue-600" />
@@ -466,7 +436,14 @@ const UserManagement: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Users</p>
-                <p className="text-3xl font-bold text-green-600">{stats.active}</p>
+                {isLoadingStats ? (
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    <span className="text-lg text-gray-400">Loading...</span>
+                  </div>
+                ) : (
+                  <p className="text-3xl font-bold text-green-600">{displayStats.activeUsers || 0}</p>
+                )}
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
                 <UserCheck className="w-6 h-6 text-green-600" />
@@ -477,7 +454,14 @@ const UserManagement: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Suspended</p>
-                <p className="text-3xl font-bold text-red-600">{stats.suspended}</p>
+                {isLoadingStats ? (
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    <span className="text-lg text-gray-400">Loading...</span>
+                  </div>
+                ) : (
+                  <p className="text-3xl font-bold text-red-600">{displayStats.suspendedUsers || 0}</p>
+                )}
               </div>
               <div className="p-3 bg-red-100 rounded-lg">
                 <UserX className="w-6 h-6 text-red-600" />
@@ -488,7 +472,14 @@ const UserManagement: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Admins</p>
-                <p className="text-3xl font-bold text-purple-600">{stats.admins}</p>
+                {isLoadingStats ? (
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    <span className="text-lg text-gray-400">Loading...</span>
+                  </div>
+                ) : (
+                  <p className="text-3xl font-bold text-purple-600">{displayStats.adminUsers || 0}</p>
+                )}
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
                 <Shield className="w-6 h-6 text-purple-600" />
@@ -506,24 +497,47 @@ const UserManagement: React.FC = () => {
                 <input
                   type="text"
                   placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filters.searchTerm || ''}
+                  onChange={(e) => {
+                    console.log('Search term changed:', e.target.value);
+                    setSearchTerm(e.target.value);
+                  }}
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
                 />
+                {isLoading && (
+                  <Loader2 className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" />
+                )}
               </div>
               <select
-                value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value)}
+                value={filters.role || 'all'}
+                onChange={(e) => {
+                  console.log('🔍 Role filter changed:', e.target.value);
+                  console.log('🔍 Current filters before change:', filters);
+                  setRoleFilter(e.target.value);
+                  console.log('🔍 setRoleFilter called with:', e.target.value);
+                }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={isLoadingRoles}
               >
                 <option value="all">All Roles</option>
-                <option value="admin">Admin</option>
-                <option value="cj">CJ</option>
-                <option value="user">User</option>
+                {isLoadingRoles ? (
+                  <option disabled>Loading roles...</option>
+                ) : (
+                  availableRoles.map(role => (
+                    <option key={role} value={role.toLowerCase()}>
+                      {role}
+                    </option>
+                  ))
+                )}
               </select>
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                value={filters.status || 'all'}
+                onChange={(e) => {
+                  console.log('🔍 Status filter changed:', e.target.value);
+                  console.log('🔍 Current filters before change:', filters);
+                  setStatusFilter(e.target.value);
+                  console.log('🔍 setStatusFilter called with:', e.target.value);
+                }}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="all">All Status</option>
@@ -535,10 +549,14 @@ const UserManagement: React.FC = () => {
             <div className="flex items-center space-x-2">
               <Filter className="w-5 h-5 text-gray-400" />
               <span className="text-sm text-gray-600">
-                {filteredUsers.length === users.length
-                  ? `${users.length} total users`
-                  : `${filteredUsers.length} of ${users.length} users (filtered)`
-                }
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading users...</span>
+                  </div>
+                ) : (
+                  `${totalCount || 0} total users`
+                )}
               </span>
             </div>
           </div>
@@ -568,39 +586,95 @@ const UserManagement: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedUsers.map((user) => (
-                  <UserRow
-                    key={user.id}
-                    user={user}
-                    onViewProfile={handleViewProfile}
-                    onEdit={handleEditUser}
-                    onBlacklist={handleBlacklistUser}
-                    onStatusChange={handleStatusChange}
-                  />
-                ))}
+                {isLoading ? (
+                  // Loading state
+                  Array.from({ length: pageSize || 10 }).map((_, index) => (
+                    <tr key={index} className="animate-pulse">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                          <div className="ml-4">
+                            <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-48"></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-6 bg-gray-200 rounded w-16"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-6 bg-gray-200 rounded w-20"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-gray-200 rounded w-12"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="h-8 bg-gray-200 rounded w-8 ml-auto"></div>
+                      </td>
+                    </tr>
+                  ))
+                ) : error ? (
+                  // Error state
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center space-y-4">
+                        <AlertCircle className="w-12 h-12 text-red-400" />
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load users</h3>
+                          <p className="text-gray-600 mb-4">{error.message || 'An error occurred while fetching users.'}</p>
+                          <button
+                            onClick={refresh}
+                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                          >
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Try Again
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : users.length === 0 ? (
+                  // Empty state
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center space-y-4">
+                        <Users className="w-12 h-12 text-gray-400" />
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+                          <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  // Data state
+                  users.map((user) => (
+                    <UserRow
+                      key={user.id}
+                      user={user}
+                      onViewProfile={handleViewProfile}
+                      onEdit={handleEditUser}
+                      onBlacklist={handleBlacklistUser}
+                      onUnblacklist={handleUnblacklistUser}
+                      onDelete={handleDeleteUser}
+                    />
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-12">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-              <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
-            </div>
-          )}
         </div>
 
         {/* Pagination */}
-        {filteredUsers.length > 0 && (
+        {users.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 mt-6 px-6 py-5 shadow-sm">
             <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
               {/* Pagination Info */}
               <div className="flex items-center space-x-4">
                 <div className="text-sm text-gray-700">
                   Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-                  <span className="font-medium">{Math.min(endIndex, filteredUsers.length)}</span> of{' '}
-                  <span className="font-medium">{filteredUsers.length}</span> users
+                  <span className="font-medium">{Math.min(endIndex, users.length)}</span> of{' '}
+                  <span className="font-medium">{totalCount || 0}</span> users
                 </div>
                 <div className="flex items-center space-x-2">
                   <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
@@ -608,11 +682,8 @@ const UserManagement: React.FC = () => {
                   </label>
                   <select
                     id="itemsPerPage"
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
+                    value={pageSize}
+                    onChange={(e) => setPageSize(Number(e.target.value))}
                     className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value={5}>5</option>
@@ -627,16 +698,16 @@ const UserManagement: React.FC = () => {
               {/* Pagination Controls */}
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
+                  onClick={() => setPage(1)}
+                  disabled={(currentPage || 1) === 1}
                   className="p-2 text-gray-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
                   title="First page"
                 >
                   <ChevronsLeft className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
+                  onClick={() => setPage(Math.max((currentPage || 1) - 1, 1))}
+                  disabled={(currentPage || 1) === 1}
                   className="p-2 text-gray-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
                   title="Previous page"
                 >
@@ -645,24 +716,26 @@ const UserManagement: React.FC = () => {
 
                 {/* Page Numbers */}
                 <div className="flex items-center space-x-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  {Array.from({ length: Math.min(5, apiTotalPages || 1) }, (_, i) => {
+                    const safeTotalPages = apiTotalPages || 1;
+                    const safeCurrentPage = currentPage || 1;
                     let pageNumber;
-                    if (totalPages <= 5) {
+                    if (safeTotalPages <= 5) {
                       pageNumber = i + 1;
-                    } else if (currentPage <= 3) {
+                    } else if (safeCurrentPage <= 3) {
                       pageNumber = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNumber = totalPages - 4 + i;
+                    } else if (safeCurrentPage >= safeTotalPages - 2) {
+                      pageNumber = safeTotalPages - 4 + i;
                     } else {
-                      pageNumber = currentPage - 2 + i;
+                      pageNumber = safeCurrentPage - 2 + i;
                     }
 
                     return (
                       <button
                         key={pageNumber}
-                        onClick={() => setCurrentPage(pageNumber)}
+                        onClick={() => setPage(pageNumber)}
                         className={`px-3 py-2 text-sm rounded-lg transition-all duration-200 font-medium ${
-                          currentPage === pageNumber
+                          (currentPage || 1) === pageNumber
                             ? 'bg-blue-600 text-white shadow-md'
                             : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-transparent hover:border-blue-200'
                         }`}
@@ -674,16 +747,16 @@ const UserManagement: React.FC = () => {
                 </div>
 
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setPage(Math.min((currentPage || 1) + 1, apiTotalPages || 1))}
+                  disabled={(currentPage || 1) === (apiTotalPages || 1)}
                   className="p-2 text-gray-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
                   title="Next page"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
+                  onClick={() => setPage(apiTotalPages || 1)}
+                  disabled={(currentPage || 1) === (apiTotalPages || 1)}
                   className="p-2 text-gray-400 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
                   title="Last page"
                 >
@@ -694,6 +767,22 @@ const UserManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <ViewProfileModal
+        user={viewProfileModal.user}
+        isOpen={viewProfileModal.isOpen}
+        onClose={handleCloseViewProfile}
+      />
+
+      <EditUserModal
+        user={editUserModal.user}
+        isOpen={editUserModal.isOpen}
+        onClose={handleCloseEditUser}
+        onSave={handleSaveUser}
+        availableRoles={availableRoles}
+        isLoading={false}
+      />
     </div>
   );
 };
