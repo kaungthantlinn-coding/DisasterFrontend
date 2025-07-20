@@ -20,6 +20,7 @@ import GetInvolved from './pages/GetInvolved';
 import Contact from './pages/Contact';
 import Donate from './pages/Donate';
 import Partnership from './pages/Partnership';
+import AvatarDebug from './components/Debug/AvatarDebug';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -68,6 +69,7 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/donate" element={<Donate />} />
               <Route path="/partnership" element={<Partnership />} />
+              <Route path="/debug/avatar" element={<AvatarDebug />} />
               {/* Reports routes - accessible to all authenticated users */}
               <Route
                 path="/reports"

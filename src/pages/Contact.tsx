@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
+import ContactMap from '../components/Map/ContactMap';
 import {
   Mail,
   Phone,
@@ -14,7 +15,8 @@ import {
   Headphones,
   Shield,
   Users,
-  Globe
+  Globe,
+  AlertCircle
 } from 'lucide-react';
 
 interface FormData {
@@ -22,6 +24,13 @@ interface FormData {
   email: string;
   subject: string;
   message: string;
+}
+
+interface FormErrors {
+  name?: string;
+  email?: string;
+  subject?: string;
+  message?: string;
 }
 
 const Contact: React.FC = () => {
@@ -33,27 +42,72 @@ const Contact: React.FC = () => {
     message: ''
   });
 
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
+
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required';
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+
+    if (!formData.subject.trim()) {
+      errors.subject = 'Subject is required';
+    }
+
+    if (!formData.message.trim()) {
+      errors.message = 'Message is required';
+    } else if (formData.message.trim().length < 10) {
+      errors.message = 'Message must be at least 10 characters long';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Clear error for this field when user starts typing
+    if (formErrors[name as keyof FormErrors]) {
+      setFormErrors(prev => ({ ...prev, [name]: undefined }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsSubmitting(true);
+    setSubmitStatus('idle');
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    console.log('Form submitted:', formData);
-    setIsSubmitted(true);
-    setIsSubmitting(false);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Reset form
-    setFormData({ name: '', email: '', subject: '', message: '' });
+      console.log('Form submitted:', formData);
+      setSubmitStatus('success');
+
+      // Reset form after successful submission
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      setFormErrors({});
+    } catch (error) {
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const contactMethods = [
@@ -106,7 +160,7 @@ const Contact: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/20">
       <Header />
 
-      <main className="pt-20">
+      <main className="pt-0">
         {/* Hero Section */}
         <section className="py-16 bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 relative overflow-hidden">
           <div className="absolute inset-0 bg-black/20"></div>
@@ -163,19 +217,25 @@ const Contact: React.FC = () => {
         </section>
 
         {/* Main Content */}
-        <section className="py-12">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="py-16 relative overflow-hidden">
+          {/* Background Elements */}
+          <div className="absolute inset-0">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-100/30 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-100/30 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Contact Form */}
               <div className="lg:col-span-2">
-                <div id="contact-form" className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                <div id="contact-form" className="card shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
                     <h2 className="text-2xl font-bold text-gray-900">Send us a Message</h2>
                     <p className="text-gray-600 mt-1">We'll get back to you within 24 hours</p>
                   </div>
 
                   <div className="p-6">
-                    {isSubmitted ? (
+                    {submitStatus === 'success' ? (
                       <div className="text-center py-12">
                         <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
                           <CheckCircle size={32} />
@@ -187,10 +247,28 @@ const Contact: React.FC = () => {
                           Thank you for contacting us. We'll respond within 24 hours.
                         </p>
                         <button
-                          onClick={() => setIsSubmitted(false)}
-                          className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors duration-200"
+                          onClick={() => setSubmitStatus('idle')}
+                          className="btn-primary"
                         >
                           Send Another Message
+                        </button>
+                      </div>
+                    ) : submitStatus === 'error' ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <AlertCircle size={32} />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                          Something went wrong
+                        </h3>
+                        <p className="text-gray-600 mb-8">
+                          Please try again or contact us directly.
+                        </p>
+                        <button
+                          onClick={() => setSubmitStatus('idle')}
+                          className="btn-primary"
+                        >
+                          Try Again
                         </button>
                       </div>
                     ) : (
@@ -205,10 +283,15 @@ const Contact: React.FC = () => {
                               name="name"
                               value={formData.name}
                               onChange={handleInputChange}
-                              required
-                              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                              className={`input-field ${formErrors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                               placeholder="Enter your full name"
                             />
+                            {formErrors.name && (
+                              <p className="mt-1 text-sm text-red-600 flex items-center">
+                                <AlertCircle size={14} className="mr-1" />
+                                {formErrors.name}
+                              </p>
+                            )}
                           </div>
 
                           <div>
@@ -220,10 +303,15 @@ const Contact: React.FC = () => {
                               name="email"
                               value={formData.email}
                               onChange={handleInputChange}
-                              required
-                              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                              className={`input-field ${formErrors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                               placeholder="your.email@example.com"
                             />
+                            {formErrors.email && (
+                              <p className="mt-1 text-sm text-red-600 flex items-center">
+                                <AlertCircle size={14} className="mr-1" />
+                                {formErrors.email}
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -235,8 +323,7 @@ const Contact: React.FC = () => {
                             name="subject"
                             value={formData.subject}
                             onChange={handleInputChange}
-                            required
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                            className={`input-field ${formErrors.subject ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                           >
                             <option value="">Select a subject</option>
                             <option value="emergency">Emergency Support</option>
@@ -246,6 +333,12 @@ const Contact: React.FC = () => {
                             <option value="technical">Technical Support</option>
                             <option value="other">Other</option>
                           </select>
+                          {formErrors.subject && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                              <AlertCircle size={14} className="mr-1" />
+                              {formErrors.subject}
+                            </p>
+                          )}
                         </div>
 
                         <div>
@@ -257,16 +350,21 @@ const Contact: React.FC = () => {
                             rows={6}
                             value={formData.message}
                             onChange={handleInputChange}
-                            required
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 resize-none"
+                            className={`input-field resize-none ${formErrors.message ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                             placeholder="Tell us how we can help you..."
                           />
+                          {formErrors.message && (
+                            <p className="mt-1 text-sm text-red-600 flex items-center">
+                              <AlertCircle size={14} className="mr-1" />
+                              {formErrors.message}
+                            </p>
+                          )}
                         </div>
 
                         <button
                           type="submit"
                           disabled={isSubmitting}
-                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center"
+                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100 flex items-center justify-center"
                         >
                           {isSubmitting ? (
                             <>
@@ -275,7 +373,7 @@ const Contact: React.FC = () => {
                             </>
                           ) : (
                             <>
-                              <Send size={20} className="mr-2" />
+                              <Send size={20} className="mr-2 group-hover:scale-110 transition-transform duration-300" />
                               Send Message
                             </>
                           )}
@@ -289,77 +387,91 @@ const Contact: React.FC = () => {
               {/* Sidebar */}
               <div className="space-y-6">
                 {/* Contact Methods */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                <div className="card p-6 hover:shadow-xl transition-all duration-300">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Contact</h3>
                   <div className="space-y-4">
-                    <div className="flex items-center">
-                      <div className="p-2 bg-red-100 rounded-lg mr-3">
+                    <a
+                      href="tel:+15551234567"
+                      className="flex items-center p-3 rounded-xl hover:bg-red-50 transition-all duration-200 group"
+                    >
+                      <div className="p-2 bg-red-100 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-200">
                         <Phone size={16} className="text-red-600" />
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">Emergency</p>
                         <p className="text-gray-600 text-sm">+1 (555) 123-4567</p>
                       </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="p-2 bg-blue-100 rounded-lg mr-3">
+                    </a>
+                    <a
+                      href="mailto:contact@disasterwatch.org"
+                      className="flex items-center p-3 rounded-xl hover:bg-blue-50 transition-all duration-200 group"
+                    >
+                      <div className="p-2 bg-blue-100 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-200">
                         <Mail size={16} className="text-blue-600" />
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">General</p>
                         <p className="text-gray-600 text-sm">contact@disasterwatch.org</p>
                       </div>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="p-2 bg-indigo-100 rounded-lg mr-3">
+                    </a>
+                    <a
+                      href="mailto:support@disasterwatch.org"
+                      className="flex items-center p-3 rounded-xl hover:bg-indigo-50 transition-all duration-200 group"
+                    >
+                      <div className="p-2 bg-indigo-100 rounded-lg mr-3 group-hover:scale-110 transition-transform duration-200">
                         <Headphones size={16} className="text-indigo-600" />
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 text-sm">Support</p>
                         <p className="text-gray-600 text-sm">support@disasterwatch.org</p>
                       </div>
-                    </div>
+                    </a>
                   </div>
                 </div>
 
                 {/* Office Hours */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200 hover:shadow-lg transition-all duration-300">
                   <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center">
                     <Clock size={18} className="mr-2" />
                     Office Hours
                   </h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-700">Monday - Friday</span>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-blue-100/50 transition-colors duration-200">
+                      <span className="text-blue-700 font-medium">Monday - Friday</span>
                       <span className="font-semibold text-blue-900">9:00 AM - 6:00 PM</span>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-700">Saturday</span>
+                    <div className="flex justify-between items-center p-2 rounded-lg hover:bg-blue-100/50 transition-colors duration-200">
+                      <span className="text-blue-700 font-medium">Saturday</span>
                       <span className="font-semibold text-blue-900">10:00 AM - 4:00 PM</span>
                     </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-blue-700">Emergency Line</span>
-                      <span className="font-semibold text-blue-900">24/7</span>
+                    <div className="flex justify-between items-center p-2 rounded-lg bg-red-50 border border-red-200">
+                      <span className="text-red-700 font-medium">Emergency Line</span>
+                      <span className="font-bold text-red-900">24/7</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Location */}
-                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                <div className="card p-6 hover:shadow-xl transition-all duration-300">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                     <MapPin size={18} className="mr-2 text-blue-600" />
                     Our Location
                   </h3>
-                  <div className="space-y-2">
-                    <p className="font-semibold text-gray-900">DisasterWatch Headquarters</p>
-                    <p className="text-gray-600 text-sm">123 Emergency Response Ave</p>
-                    <p className="text-gray-600 text-sm">Disaster City, DC 12345</p>
-                    <p className="text-gray-600 text-sm">United States</p>
-                  </div>
-                  <div className="mt-4 h-32 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <MapPin size={24} className="text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">Interactive Map</p>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-semibold text-gray-900">DisasterWatch Headquarters</p>
+                      <p className="text-gray-600 text-sm">123 Emergency Response Ave</p>
+                      <p className="text-gray-600 text-sm">Disaster City, DC 12345</p>
+                      <p className="text-gray-600 text-sm">United States</p>
+                    </div>
+                    <div className="pt-3 border-t border-gray-200">
+                      <button
+                        onClick={() => window.open('https://www.google.com/maps/dir/?api=1&destination=38.9072,-77.0369', '_blank')}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-semibold transition-colors duration-200 flex items-center justify-center"
+                      >
+                        <MapPin size={16} className="mr-2" />
+                        View on Map
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -368,9 +480,68 @@ const Contact: React.FC = () => {
           </div>
         </section>
 
-        {/* Contact Methods Section */}
-        <section className="py-12 bg-gradient-to-br from-gray-50 to-blue-50">
+        {/* Interactive Map Section */}
+        <section className="py-16 bg-white">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                Find Us on the Map
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Visit our headquarters or get directions to our emergency response center
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+              <ContactMap height="400px" className="w-full" />
+            </div>
+
+            {/* Quick Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+              <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <MapPin size={24} className="text-white" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">Address</h3>
+                <p className="text-sm text-gray-600">123 Emergency Response Ave<br />Disaster City, DC 12345</p>
+              </div>
+
+              <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Phone size={24} className="text-white" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">Phone</h3>
+                <p className="text-sm text-gray-600">
+                  <a href="tel:+15551234567" className="text-green-600 hover:text-green-800 font-medium">
+                    +1 (555) 123-4567
+                  </a>
+                </p>
+              </div>
+
+              <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl border border-purple-200">
+                <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                  <Mail size={24} className="text-white" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">Email</h3>
+                <p className="text-sm text-gray-600">
+                  <a href="mailto:contact@disasterwatch.org" className="text-purple-600 hover:text-purple-800 font-medium">
+                    contact@disasterwatch.org
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Contact Methods Section */}
+        <section className="py-16 bg-gradient-to-br from-gray-50 via-white to-blue-50/30 relative overflow-hidden">
+          {/* Background Elements */}
+          <div className="absolute inset-0">
+            <div className="absolute top-1/3 left-1/3 w-72 h-72 bg-blue-200/20 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-1/3 right-1/3 w-64 h-64 bg-indigo-200/20 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
                 Multiple Ways to Reach Us
@@ -380,28 +551,28 @@ const Contact: React.FC = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {contactMethods.map((method, index) => (
                 <div
                   key={index}
-                  className={`${method.bgColor} ${method.borderColor} border-2 rounded-2xl p-6 text-center hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1`}
+                  className={`${method.bgColor} ${method.borderColor} border-2 rounded-2xl p-8 text-center hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 group`}
                 >
-                  <div className={`inline-flex items-center justify-center w-16 h-16 ${method.iconColor} bg-white rounded-xl mb-4 shadow-md`}>
-                    <method.icon size={28} />
+                  <div className={`inline-flex items-center justify-center w-20 h-20 ${method.iconColor} bg-white rounded-2xl mb-6 shadow-lg group-hover:scale-110 transition-all duration-300`}>
+                    <method.icon size={32} />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
                     {method.title}
                   </h3>
-                  <p className="text-gray-600 mb-4 text-sm">
+                  <p className="text-gray-600 mb-6 leading-relaxed">
                     {method.description}
                   </p>
-                  <div className="space-y-1 mb-4">
-                    <p className="font-semibold text-gray-900">{method.contact}</p>
-                    <p className="text-xs text-gray-500">{method.availability}</p>
+                  <div className="space-y-2 mb-6">
+                    <p className="font-semibold text-gray-900 text-lg">{method.contact}</p>
+                    <p className="text-sm text-gray-500 font-medium">{method.availability}</p>
                   </div>
                   <a
                     href={method.action}
-                    className={`inline-flex items-center justify-center w-full px-4 py-3 ${method.iconColor} bg-white border-2 ${method.borderColor} rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-200 text-sm`}
+                    className={`inline-flex items-center justify-center w-full px-6 py-4 ${method.iconColor} bg-white border-2 ${method.borderColor} rounded-xl font-bold hover:bg-gray-50 hover:scale-105 transition-all duration-300 shadow-md hover:shadow-lg`}
                   >
                     {method.actionText}
                   </a>

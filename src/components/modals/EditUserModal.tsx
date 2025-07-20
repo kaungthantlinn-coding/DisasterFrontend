@@ -9,6 +9,7 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react';
+import Avatar from '../Common/Avatar';
 
 interface User {
   id: string;
@@ -166,13 +167,13 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* User Avatar */}
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
-              {user.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-16 h-16 rounded-full object-cover" />
-              ) : (
-                formData.name.charAt(0).toUpperCase() || user.name.charAt(0).toUpperCase()
-              )}
-            </div>
+            <Avatar
+              src={user.avatar}
+              alt={user.name}
+              name={formData.name || user.name}
+              size="xl"
+              className="shadow-lg"
+            />
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Editing: {user.name}</h3>
               <p className="text-sm text-gray-600">User ID: {user.id}</p>

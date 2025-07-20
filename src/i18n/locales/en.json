@@ -664,6 +664,10 @@
     "amount": "Amount",
     "frequency": "Frequency",
     "paymentMethod": "Payment Method",
+    "payment": "Payment",
+    "donation": "donation",
+    "scanQrCode": "Scan this QR code with your",
+    "app": "app",
     "personalInfo": "Personal Information",
     "firstName": "First Name",
     "lastName": "Last Name",
@@ -677,6 +681,96 @@
     "paypal": "PayPal",
     "bankTransfer": "Bank Transfer",
     "securePayment": "Secure Payment",
+    "hero": {
+      "badge": "Emergency Relief Fund",
+      "title": "Help Save Lives",
+      "subtitle": "During Crisis",
+      "description": "Your donation provides immediate emergency relief to disaster victims in Myanmar.",
+      "donateButton": "Donate Now"
+    },
+    "form": {
+      "title": "Make a Donation",
+      "stepOf": "Step {current} of {total}",
+      "donationAmount": "Donation Amount (MMK)",
+      "customAmountPlaceholder": "Custom amount",
+      "frequency": "Frequency",
+      "oneTimeLabel": "One-time",
+      "monthlyLabel": "Monthly",
+      "choosePaymentMethod": "Choose Payment Method",
+      "personalInformation": "Personal Information",
+      "firstNameLabel": "First Name *",
+      "firstNamePlaceholder": "Enter your first name",
+      "lastNameLabel": "Last Name *",
+      "lastNamePlaceholder": "Enter your last name",
+      "emailLabel": "Email Address *",
+      "emailPlaceholder": "your.email@example.com",
+      "phoneLabel": "Phone Number *",
+      "phonePlaceholder": "09xxxxxxxxx",
+      "cardDetails": "Card Details",
+      "cardholderName": "Cardholder Name *",
+      "cardholderPlaceholder": "Name on card",
+      "cardNumber": "Card Number *",
+      "cardNumberPlaceholder": "1234 5678 9012 3456",
+      "expiryDate": "Expiry Date *",
+      "expiryPlaceholder": "MM/YY",
+      "cvv": "CVV *",
+      "cvvPlaceholder": "123",
+      "qrPayment": "{method} Payment",
+      "qrInstructions": "Scan this QR code with your {method} app",
+      "paymentDetails": "Payment Details:",
+      "amountLabel": "Amount: {amount} MMK",
+      "referenceLabel": "Reference: {reference}",
+      "copyPaymentLink": "Copy Payment Link",
+      "saveQrCode": "Save QR Code",
+      "makeAnonymous": "Make this donation anonymous",
+      "previous": "Previous",
+      "continue": "Continue",
+      "completeDonation": "Complete Donation"
+    },
+    "success": {
+      "title": "Donation Successful!",
+      "message": "Thank you for your generous donation. Your contribution will help save lives during disasters.",
+      "returnHome": "Return to Home"
+    },
+    "paymentMethods": {
+      "creditCard": {
+        "name": "Credit/Debit Card",
+        "description": "Visa, Mastercard, JCB"
+      },
+      "kpay": {
+        "name": "KBZ Pay",
+        "description": "Scan QR code to pay"
+      },
+      "wavepay": {
+        "name": "Wave Pay",
+        "description": "Scan QR code to pay"
+      }
+    },
+    "impactData": {
+      "emergencySupplies": "Emergency supplies for 1 family",
+      "foodWeek": "Food for 5 people for a week",
+      "medicalAid": "Medical aid for 3 victims",
+      "cleanWater": "Clean water for 15 families",
+      "emergencyShelter": "Emergency shelter for 10 families"
+    },
+    "sidebar": {
+      "yourImpact": "Your Impact",
+      "donationAmount": "{amount} MMK donation",
+      "secureAndTrusted": "Secure & Trusted",
+      "sslEncrypted": "SSL encrypted",
+      "charityRating": "4-star charity rating",
+      "toPrograms": "98% to programs",
+      "acceptedPayments": "Accepted Payments",
+      "visaMastercard": "Visa, Mastercard, JCB",
+      "kbzPay": "KBZ Pay",
+      "wavePay": "Wave Pay"
+    },
+    "stats": {
+      "livesHelped": "Lives Helped",
+      "fundsToPrograms": "Direct Impact",
+      "emergencyResponse": "Response Time",
+      "countriesServed": "Countries"
+    },
     "impact": {
       "title": "Your Impact",
       "subtitle": "See how your donation makes a difference",

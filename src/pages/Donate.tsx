@@ -68,40 +68,40 @@ const Donate: React.FC = () => {
   const presetAmounts = [1000, 5000, 10000, 25000, 50000]; // Myanmar Kyat amounts
 
   const impactData = [
-    { amount: 1000, impact: "Emergency supplies for 1 family", icon: Home },
-    { amount: 5000, impact: "Food for 5 people for a week", icon: Utensils },
-    { amount: 10000, impact: "Medical aid for 3 victims", icon: Stethoscope },
-    { amount: 25000, impact: "Clean water for 15 families", icon: Droplets },
-    { amount: 50000, impact: "Emergency shelter for 10 families", icon: Home }
+    { amount: 1000, impact: t('donate.impactData.emergencySupplies'), icon: Home },
+    { amount: 5000, impact: t('donate.impactData.foodWeek'), icon: Utensils },
+    { amount: 10000, impact: t('donate.impactData.medicalAid'), icon: Stethoscope },
+    { amount: 25000, impact: t('donate.impactData.cleanWater'), icon: Droplets },
+    { amount: 50000, impact: t('donate.impactData.emergencyShelter'), icon: Home }
   ];
 
   const stats = [
-    { value: "2.3M", label: "Lives Helped", icon: Users, color: "from-blue-500 to-indigo-600" },
-    { value: "98%", label: "Direct Impact", icon: Target, color: "from-emerald-500 to-green-600" },
-    { value: "24/7", label: "Response Time", icon: Clock, color: "from-purple-500 to-pink-600" },
-    { value: "156", label: "Countries", icon: Globe, color: "from-orange-500 to-red-600" }
+    { value: "2.3M", label: t('donate.stats.livesHelped'), icon: Users, color: "from-blue-500 to-indigo-600" },
+    { value: "98%", label: t('donate.stats.fundsToPrograms'), icon: Target, color: "from-emerald-500 to-green-600" },
+    { value: "24/7", label: t('donate.stats.emergencyResponse'), icon: Clock, color: "from-purple-500 to-pink-600" },
+    { value: "156", label: t('donate.stats.countriesServed'), icon: Globe, color: "from-orange-500 to-red-600" }
   ];
 
   const paymentMethods = [
     {
       id: 'card',
-      name: 'Credit/Debit Card',
+      name: t('donate.paymentMethods.creditCard.name'),
       icon: CreditCard,
-      description: 'Visa, Mastercard, JCB',
+      description: t('donate.paymentMethods.creditCard.description'),
       color: 'from-blue-500 to-blue-600'
     },
     {
       id: 'kpay',
-      name: 'KBZ Pay',
+      name: t('donate.paymentMethods.kpay.name'),
       icon: QrCode,
-      description: 'Scan QR code to pay',
+      description: t('donate.paymentMethods.kpay.description'),
       color: 'from-green-500 to-green-600'
     },
     {
       id: 'wavepay',
-      name: 'Wave Pay',
+      name: t('donate.paymentMethods.wavepay.name'),
       icon: Smartphone,
-      description: 'Scan QR code to pay',
+      description: t('donate.paymentMethods.wavepay.description'),
       color: 'from-purple-500 to-purple-600'
     }
   ];
@@ -190,19 +190,19 @@ const Donate: React.FC = () => {
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white text-sm font-semibold mb-6">
             <Heart size={18} className="mr-2 text-red-400" />
-            Emergency Relief Fund
+            {t('donate.hero.badge')}
           </div>
 
           <h1 className="text-5xl sm:text-6xl font-black text-white mb-6 leading-tight">
-            Help Save Lives
+            {t('donate.hero.title')}
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300">
-              During Crisis
+              {t('donate.hero.subtitle')}
             </span>
           </h1>
 
           <p className="text-xl text-blue-100 max-w-2xl mx-auto leading-relaxed mb-8">
-            Your donation provides immediate emergency relief to disaster victims in Myanmar.
+            {t('donate.hero.description')}
           </p>
 
           {/* Quick Impact Stats */}
@@ -223,7 +223,7 @@ const Donate: React.FC = () => {
             className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-10 py-4 rounded-2xl font-bold text-lg hover:from-red-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-xl hover:shadow-2xl flex items-center justify-center mx-auto"
           >
             <Heart size={20} className="mr-2" />
-            Donate Now
+            {t('donate.hero.donateButton')}
           </button>
         </div>
       </section>
@@ -237,9 +237,9 @@ const Donate: React.FC = () => {
               {/* Progress Header */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-100">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-bold text-gray-900">Make a Donation</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">{t('donate.form.title')}</h2>
                   <div className="text-sm text-gray-600">
-                    Step {currentStep} of {totalSteps}
+                    {`${t('donate.step')} ${currentStep} ${t('donate.of')} ${totalSteps}`}
                   </div>
                 </div>
                 
@@ -270,16 +270,16 @@ const Donate: React.FC = () => {
                     <CheckCircle size={32} />
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                    Donation Successful!
+                    {t('donate.success.title')}
                   </h3>
                   <p className="text-gray-600 mb-8">
-                    Thank you for your generous donation. Your contribution will help save lives during disasters.
+                    {t('donate.success.message')}
                   </p>
                   <Link
                     to="/"
                     className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors duration-200"
                   >
-                    Return to Home
+                    {t('donate.success.returnHome')}
                   </Link>
                 </div>
               ) : (
@@ -289,7 +289,7 @@ const Donate: React.FC = () => {
                     <div className="space-y-6">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-4">
-                          Donation Amount (MMK)
+                          {t('donate.form.donationAmount')}
                         </label>
                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
                           {presetAmounts.map((amount) => (
@@ -317,7 +317,7 @@ const Donate: React.FC = () => {
                             value={formData.customAmount}
                             onChange={(e) => handleCustomAmountChange(e.target.value)}
                             className="w-full pl-4 pr-16 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                            placeholder="Custom amount"
+                            placeholder={t('donate.form.customAmountPlaceholder')}
                           />
                           <span className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
                             MMK
@@ -327,12 +327,12 @@ const Donate: React.FC = () => {
 
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-4">
-                          Frequency
+                          {t('donate.form.frequency')}
                         </label>
                         <div className="grid grid-cols-2 gap-3">
                           {[
-                            { value: 'one-time', label: 'One-time', icon: Gift },
-                            { value: 'monthly', label: 'Monthly', icon: TrendingUp }
+                            { value: 'one-time', label: t('donate.form.oneTimeLabel'), icon: Gift },
+                            { value: 'monthly', label: t('donate.form.monthlyLabel'), icon: TrendingUp }
                           ].map((freq) => (
                             <button
                               key={freq.value}
@@ -358,7 +358,7 @@ const Donate: React.FC = () => {
                     <div className="space-y-6">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-4">
-                          Choose Payment Method
+                          {t('donate.form.choosePaymentMethod')}
                         </label>
                         <div className="grid gap-4">
                           {paymentMethods.map((method) => (
@@ -402,11 +402,11 @@ const Donate: React.FC = () => {
                     <div className="space-y-6">
                       {/* Personal Information */}
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('donate.form.personalInformation')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              First Name *
+                              {t('donate.form.firstNameLabel')}
                             </label>
                             <input
                               type="text"
@@ -415,12 +415,12 @@ const Donate: React.FC = () => {
                               onChange={handleInputChange}
                               required
                               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                              placeholder="Enter your first name"
+                              placeholder={t('donate.form.firstNamePlaceholder')}
                             />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Last Name *
+                              {t('donate.form.lastNameLabel')}
                             </label>
                             <input
                               type="text"
@@ -429,12 +429,12 @@ const Donate: React.FC = () => {
                               onChange={handleInputChange}
                               required
                               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                              placeholder="Enter your last name"
+                              placeholder={t('donate.form.lastNamePlaceholder')}
                             />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Email Address *
+                              {t('donate.form.emailLabel')}
                             </label>
                             <input
                               type="email"
@@ -443,12 +443,12 @@ const Donate: React.FC = () => {
                               onChange={handleInputChange}
                               required
                               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                              placeholder="your.email@example.com"
+                              placeholder={t('donate.form.emailPlaceholder')}
                             />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Phone Number *
+                              {t('donate.form.phoneLabel')}
                             </label>
                             <input
                               type="tel"
@@ -457,7 +457,7 @@ const Donate: React.FC = () => {
                               onChange={handleInputChange}
                               required
                               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                              placeholder="09xxxxxxxxx"
+                              placeholder={t('donate.form.phonePlaceholder')}
                             />
                           </div>
                         </div>
@@ -466,11 +466,11 @@ const Donate: React.FC = () => {
                       {/* Payment Details */}
                       {formData.paymentMethod === 'card' && (
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Card Details</h3>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('donate.form.cardDetails')}</h3>
                           <div className="space-y-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Cardholder Name *
+                                {t('donate.form.cardholderName')}
                               </label>
                               <input
                                 type="text"
@@ -479,12 +479,12 @@ const Donate: React.FC = () => {
                                 onChange={handleInputChange}
                                 required
                                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                                placeholder="Name on card"
+                                placeholder={t('donate.form.cardholderPlaceholder')}
                               />
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Card Number *
+                                {t('donate.form.cardNumber')}
                               </label>
                               <input
                                 type="text"
@@ -494,13 +494,13 @@ const Donate: React.FC = () => {
                                 required
                                 maxLength={19}
                                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                                placeholder="1234 5678 9012 3456"
+                                placeholder={t('donate.form.cardNumberPlaceholder')}
                               />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  Expiry Date *
+                                  {t('donate.form.expiryDate')}
                                 </label>
                                 <input
                                   type="text"
@@ -510,12 +510,12 @@ const Donate: React.FC = () => {
                                   required
                                   maxLength={5}
                                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                                  placeholder="MM/YY"
+                                  placeholder={t('donate.form.expiryPlaceholder')}
                                 />
                               </div>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                  CVV *
+                                  {t('donate.form.cvv')}
                                 </label>
                                 <input
                                   type="text"
@@ -525,7 +525,7 @@ const Donate: React.FC = () => {
                                   required
                                   maxLength={4}
                                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                                  placeholder="123"
+                                  placeholder={t('donate.form.cvvPlaceholder')}
                                 />
                               </div>
                             </div>
@@ -537,7 +537,7 @@ const Donate: React.FC = () => {
                       {(formData.paymentMethod === 'kpay' || formData.paymentMethod === 'wavepay') && (
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                            {formData.paymentMethod === 'kpay' ? 'KBZ Pay' : 'Wave Pay'} Payment
+                            {`${formData.paymentMethod === 'kpay' ? 'KBZ Pay' : 'Wave Pay'} ${t('donate.payment')}`}
                           </h3>
                           <div className="bg-gray-50 rounded-xl p-6 text-center">
                             <div className="w-48 h-48 bg-white rounded-xl mx-auto mb-4 flex items-center justify-center border-2 border-gray-200">
@@ -547,12 +547,12 @@ const Donate: React.FC = () => {
                               </div>
                             </div>
                             <p className="text-sm text-gray-600 mb-4">
-                              Scan this QR code with your {formData.paymentMethod === 'kpay' ? 'KBZ Pay' : 'Wave Pay'} app
+                              {`${t('donate.scanQrCode')} ${formData.paymentMethod === 'kpay' ? 'KBZ Pay' : 'Wave Pay'} ${t('donate.app')}`}
                             </p>
                             <div className="bg-white rounded-lg p-3 mb-4">
-                              <p className="text-xs text-gray-500 mb-1">Payment Details:</p>
-                              <p className="font-semibold">Amount: {(formData.customAmount ? parseFloat(formData.customAmount) : formData.amount).toLocaleString()} MMK</p>
-                              <p className="text-sm text-gray-600">Reference: DONATION_{Date.now()}</p>
+                              <p className="text-xs text-gray-500 mb-1">{t('donate.form.paymentDetails')}</p>
+                              <p className="font-semibold">{`${t('donate.amount')}: ${(formData.customAmount ? parseFloat(formData.customAmount) : formData.amount).toLocaleString()} MMK`}</p>
+                              <p className="text-sm text-gray-600">{`Reference: DONATION_${Date.now()}`}</p>
                             </div>
                             <div className="flex gap-2 justify-center">
                               <button
@@ -561,14 +561,14 @@ const Donate: React.FC = () => {
                                 className="flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm"
                               >
                                 <Copy size={16} className="mr-2" />
-                                Copy Payment Link
+                                {t('donate.form.copyPaymentLink')}
                               </button>
                               <button
                                 type="button"
                                 className="flex items-center px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm"
                               >
                                 <Download size={16} className="mr-2" />
-                                Save QR Code
+                                {t('donate.form.saveQrCode')}
                               </button>
                             </div>
                           </div>
@@ -585,7 +585,7 @@ const Donate: React.FC = () => {
                             onChange={handleInputChange}
                             className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500"
                           />
-                          <span className="ml-3 text-sm font-medium text-gray-700">Make this donation anonymous</span>
+                          <span className="ml-3 text-sm font-medium text-gray-700">{t('donate.form.makeAnonymous')}</span>
                         </label>
                       </div>
                     </div>
@@ -604,7 +604,7 @@ const Donate: React.FC = () => {
                       }`}
                     >
                       <ArrowLeft size={18} className="mr-2" />
-                      Previous
+                      {t('donate.form.previous')}
                     </button>
                     
                     {currentStep < totalSteps ? (
@@ -613,7 +613,7 @@ const Donate: React.FC = () => {
                         onClick={nextStep}
                         className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center"
                       >
-                        Continue
+                        {t('donate.form.continue')}
                         <ArrowRight size={18} className="ml-2" />
                       </button>
                     ) : (
@@ -622,7 +622,7 @@ const Donate: React.FC = () => {
                         className="bg-gradient-to-r from-red-500 to-orange-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-red-600 hover:to-orange-600 transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center"
                       >
                         <Heart size={18} className="mr-2" />
-                        Complete Donation
+                        {t('donate.form.completeDonation')}
                       </button>
                     )}
                   </div>
@@ -642,7 +642,7 @@ const Donate: React.FC = () => {
                 <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-6 border border-emerald-200">
                   <h3 className="text-lg font-bold text-emerald-900 mb-4 flex items-center">
                     <Heart size={20} className="mr-2 text-red-500" />
-                    Your Impact
+                    {t('donate.sidebar.yourImpact')}
                   </h3>
                   <div className="flex items-center">
                     <div className="p-3 bg-emerald-500 rounded-xl mr-4">
@@ -651,7 +651,7 @@ const Donate: React.FC = () => {
                     <div>
                       <p className="text-emerald-800 font-medium">{currentImpact.impact}</p>
                       <p className="text-emerald-600 text-sm mt-1">
-                        {(formData.customAmount ? parseFloat(formData.customAmount) : formData.amount).toLocaleString()} MMK donation
+                        {`${(formData.customAmount ? parseFloat(formData.customAmount) : formData.amount).toLocaleString()} MMK ${t('donate.donation')}`}
                       </p>
                     </div>
                   </div>
@@ -663,39 +663,39 @@ const Donate: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
                 <Shield size={20} className="mr-2 text-blue-600" />
-                Secure & Trusted
+                {t('donate.sidebar.secureAndTrusted')}
               </h3>
               <div className="space-y-3">
                 <div className="flex items-center text-sm">
                   <Lock size={14} className="text-green-600 mr-2" />
-                  <span className="text-gray-700">SSL encrypted</span>
+                  <span className="text-gray-700">{t('donate.sidebar.sslEncrypted')}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <CheckCircle size={14} className="text-blue-600 mr-2" />
-                  <span className="text-gray-700">4-star charity rating</span>
+                  <span className="text-gray-700">{t('donate.sidebar.charityRating')}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Target size={14} className="text-emerald-600 mr-2" />
-                  <span className="text-gray-700">98% to programs</span>
+                  <span className="text-gray-700">{t('donate.sidebar.toPrograms')}</span>
                 </div>
               </div>
             </div>
 
             {/* Payment Methods */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
-              <h3 className="text-lg font-bold text-blue-900 mb-4">Accepted Payments</h3>
+              <h3 className="text-lg font-bold text-blue-900 mb-4">{t('donate.sidebar.acceptedPayments')}</h3>
               <div className="space-y-3">
                 <div className="flex items-center text-sm">
                   <CreditCard size={16} className="text-blue-600 mr-2" />
-                  <span className="text-blue-800">Visa, Mastercard, JCB</span>
+                  <span className="text-blue-800">{t('donate.sidebar.visaMastercard')}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <QrCode size={16} className="text-green-600 mr-2" />
-                  <span className="text-blue-800">KBZ Pay</span>
+                  <span className="text-blue-800">{t('donate.sidebar.kbzPay')}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <Smartphone size={16} className="text-purple-600 mr-2" />
-                  <span className="text-blue-800">Wave Pay</span>
+                  <span className="text-blue-800">{t('donate.sidebar.wavePay')}</span>
                 </div>
               </div>
             </div>

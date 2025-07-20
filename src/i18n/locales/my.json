@@ -663,6 +663,10 @@
     "amount": "ပမာণ",
     "frequency": "ကြိမ်နှုန်း",
     "paymentMethod": "ငွေပေးချေမှု နည်းလမ်း",
+    "payment": "ငွေပေးချေမှု",
+    "donation": "လှူဒါန်းမှု",
+    "scanQrCode": "သင်၏",
+    "app": "အက်ပ်ဖြင့် ဤ QR ကုဒ်ကို စကင်န်ဖတ်ပါ",
     "personalInfo": "ကိုယ်ရေးကိုယ်တာ အချက်အလက်",
     "firstName": "အမည်",
     "lastName": "မျိုးနွယ်အမည်",
@@ -704,6 +708,96 @@
       "description": "သင်၏ ပံ့ပိုးမှုက အရေးပေါ် တုံ့ပြန်မှု၊ ဆေးဝါး ကူညီမှုနှင့် ကမ္ဘာတစ်ဝှမ်းရှိ အသိုင်းအဝိုင်း ပြန်လည်တည်ဆောက်ရေး ကြိုးပမ်းမှုများကို တိုက်ရိုက် ရန်ပုံငွေ ပံ့ပိုးပေးသည်။",
       "startSaving": "ယခုပင် အသက်များကို ကယ်တင်ရန် စတင်ပါ",
       "seeEmergencies": "လက်ရှိ အရေးပေါ်အခြေအနေများ ကြည့်ရှုပါ"
+    },
+    "hero": {
+      "badge": "အရေးပေါ် ကယ်ဆယ်ရေး ရန်ပုံငွေ",
+      "title": "အသက်များကို ကယ်တင်ရန် ကူညီပါ",
+      "subtitle": "အကျပ်အတည်းအတွင်း",
+      "description": "သင်၏ လှူဒါန်းမှုက မြန်မာနိုင်ငံရှိ သဘာဝဘေးအန္တရာယ် ခံစားရသူများအတွက် ချက်ချင်း အရေးပေါ် ကယ်ဆယ်ရေး ပံ့ပိုးမှု ပေးပါသည်။",
+      "donateButton": "ယခုပင် လှူဒါန်းပါ"
+    },
+    "form": {
+      "title": "လှူဒါန်းမှု ပြုလုပ်ပါ",
+      "stepOf": "အဆင့် {current} / {total}",
+      "donationAmount": "လှူဒါန်းမည့် ပမာဏ (ကျပ်)",
+      "customAmountPlaceholder": "စိတ်ကြိုက် ပမာဏ",
+      "frequency": "ကြိမ်နှုန်း",
+      "oneTimeLabel": "တစ်ကြိမ်တည်း",
+      "monthlyLabel": "လစဉ်",
+      "choosePaymentMethod": "ငွေပေးချေမှု နည်းလမ်း ရွေးချယ်ပါ",
+      "personalInformation": "ကိုယ်ရေးကိုယ်တာ အချက်အလက်",
+      "firstNameLabel": "အမည် *",
+      "firstNamePlaceholder": "သင်၏ အမည်ကို ရိုက်ထည့်ပါ",
+      "lastNameLabel": "မျိုးနွယ်အမည် *",
+      "lastNamePlaceholder": "သင်၏ မျိုးနွယ်အမည်ကို ရိုက်ထည့်ပါ",
+      "emailLabel": "အီးမေးလ် လိပ်စာ *",
+      "emailPlaceholder": "your.email@example.com",
+      "phoneLabel": "ဖုန်းနံပါတ် *",
+      "phonePlaceholder": "09xxxxxxxxx",
+      "cardDetails": "ကတ် အသေးစိတ်",
+      "cardholderName": "ကတ်ပိုင်ရှင် အမည် *",
+      "cardholderPlaceholder": "ကတ်ပေါ်ရှိ အမည်",
+      "cardNumber": "ကတ်နံပါတ် *",
+      "cardNumberPlaceholder": "1234 5678 9012 3456",
+      "expiryDate": "သက်တမ်းကုန်ဆုံးရက် *",
+      "expiryPlaceholder": "လ/နှစ်",
+      "cvv": "CVV *",
+      "cvvPlaceholder": "123",
+      "qrPayment": "{method} ငွေပေးချေမှု",
+      "qrInstructions": "သင်၏ {method} အက်ပ်ဖြင့် ဤ QR ကုဒ်ကို စကင်န်ဖတ်ပါ",
+      "paymentDetails": "ငွေပေးချေမှု အသေးစိတ်:",
+      "amountLabel": "ပမာဏ: {amount} ကျပ်",
+      "referenceLabel": "ရည်ညွှန်းနံပါတ်: {reference}",
+      "copyPaymentLink": "ငွေပေးချေမှု လင့်ခ် ကူးယူရန်",
+      "saveQrCode": "QR ကုဒ် သိမ်းဆည်းရန်",
+      "makeAnonymous": "ဤလှူဒါန်းမှုကို အမည်မဖော်ပြပါ",
+      "previous": "ယခင်",
+      "continue": "ဆက်လက်",
+      "completeDonation": "လှူဒါန်းမှု ပြီးစီးရန်"
+    },
+    "success": {
+      "title": "လှူဒါန်းမှု အောင်မြင်ပါသည်!",
+      "message": "သင်၏ ရက်ရောသော လှူဒါန်းမှုအတွက် ကျေးဇူးတင်ပါသည်။ သင်၏ ပံ့ပိုးမှုက သဘာဝဘေးအန္တရာယ်အတွင်း အသက်များကို ကယ်တင်ရန် ကူညီပါလိမ့်မည်။",
+      "returnHome": "ပင်မစာမျက်နှာသို့ ပြန်သွားရန်"
+    },
+    "paymentMethods": {
+      "creditCard": {
+        "name": "ခရက်ဒစ်/ဒက်ဘစ် ကတ်",
+        "description": "Visa, Mastercard, JCB"
+      },
+      "kpay": {
+        "name": "KBZ Pay",
+        "description": "QR ကုဒ် စကင်န်ဖတ်၍ ပေးချေပါ"
+      },
+      "wavepay": {
+        "name": "Wave Pay",
+        "description": "QR ကုဒ် စကင်န်ဖတ်၍ ပေးချေပါ"
+      }
+    },
+    "impactData": {
+      "emergencySupplies": "မိသားစု ၁ စုအတွက် အရေးပေါ် ပစ္စည်းများ",
+      "foodWeek": "လူ ၅ ယောက်အတွက် တစ်ပတ်ကြာ အစားအစာ",
+      "medicalAid": "ခံစားရသူ ၃ ယောက်အတွက် ဆေးဝါး ကူညီမှု",
+      "cleanWater": "မိသားစု ၁၅ စုအတွက် သန့်ရှင်းသော ရေ",
+      "emergencyShelter": "မိသားစု ၁၀ စုအတွက် အရေးပေါ် အမိုးအကာ"
+    },
+    "sidebar": {
+      "yourImpact": "သင်၏ သက်ရောက်မှု",
+      "donationAmount": "{amount} ကျပ် လှူဒါန်းမှု",
+      "secureAndTrusted": "လုံခြုံ၍ ယုံကြည်ရသော",
+      "sslEncrypted": "SSL ဖြင့် ကုဒ်ဝှက်ထားသည်",
+      "charityRating": "၄ ကြယ် ပရဟိတ အဆင့်သတ်မှတ်ချက်",
+      "toPrograms": "၉၈% အစီအစဉ်များသို့",
+      "acceptedPayments": "လက်ခံသော ငွေပေးချေမှုများ",
+      "visaMastercard": "Visa, Mastercard, JCB",
+      "kbzPay": "KBZ Pay",
+      "wavePay": "Wave Pay"
+    },
+    "stats": {
+      "livesHelped": "ကူညီခံရသူများ",
+      "fundsToPrograms": "တိုက်ရိုက် သက်ရောက်မှု",
+      "emergencyResponse": "တုံ့ပြန်မှု အချိန်",
+      "countriesServed": "နိုင်ငံများ"
     }
   },
   "header": {

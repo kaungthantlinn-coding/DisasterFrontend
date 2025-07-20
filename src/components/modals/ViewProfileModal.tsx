@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Ban
 } from 'lucide-react';
+import Avatar from '../Common/Avatar';
 
 interface User {
   id: string;
@@ -96,13 +97,13 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({ user, isOpen, onClo
         <div className="p-6 space-y-6">
           {/* User Avatar and Basic Info */}
           <div className="flex items-center space-x-4">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-              {user.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-20 h-20 rounded-full object-cover" />
-              ) : (
-                user.name.charAt(0).toUpperCase()
-              )}
-            </div>
+            <Avatar
+              src={user.avatar}
+              alt={user.name}
+              name={user.name}
+              size="xl"
+              className="shadow-lg"
+            />
             <div className="flex-1">
               <h3 className="text-xl font-semibold text-gray-900">{user.name}</h3>
               <p className="text-gray-600">{user.email}</p>

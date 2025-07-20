@@ -28,6 +28,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useUserManagement } from '../../hooks/useUserManagement';
+import Avatar from '../../components/Common/Avatar';
 
 // Map API user to local user interface
 interface User {
@@ -51,8 +52,30 @@ const mapApiUserToLocal = (apiUser: any): User => {
                      apiUser.roleNames?.includes('cj') ? 'cj' : 'user';
 
   // Determine status - handle both UserListItemDto and UserDetailsDto
-  const status = apiUser.isBlacklisted ? 'suspended' : 
+  const status = apiUser.isBlacklisted ? 'suspended' :
                  apiUser.status ? apiUser.status : 'active';
+
+  // Extract photo URL from multiple possible fields
+  const extractPhotoUrl = (): string | undefined => {
+    const possibleFields = [
+      apiUser.photoUrl,
+      apiUser.photo_url,
+      apiUser.picture, // Google OAuth standard field
+      apiUser.avatar,
+      apiUser.profile_picture
+    ];
+
+    const photoUrl = possibleFields.find(field => field && typeof field === 'string' && field.trim() !== '');
+
+    if (photoUrl) {
+      // Ensure HTTPS and optimize image size for better performance
+      return photoUrl
+        .replace('http://', 'https://')
+        .replace('=s96-c', '=s128-c'); // Increase Google profile image size
+    }
+
+    return undefined;
+  };
 
   return {
     id: apiUser.userId,
@@ -61,15 +84,15 @@ const mapApiUserToLocal = (apiUser: any): User => {
     phone: apiUser.phone,
     role: primaryRole,
     status,
-    joinDate: apiUser.createdAt ? new Date(apiUser.createdAt).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    joinDate: apiUser.createdAt ? new Date(apiUser.createdAt).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     }) : 'Unknown',
     location: apiUser.location,
     reportsCount: apiUser.reportsCount || 0,
     lastActive: apiUser.lastActive || 'Unknown',
-    avatar: apiUser.photoUrl
+    avatar: extractPhotoUrl()
   };
 };
 
@@ -116,13 +139,13 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
     <tr className="hover:bg-blue-50/30 transition-all duration-200 group">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-md group-hover:shadow-lg transition-shadow duration-200">
-            {user.avatar ? (
-              <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
-            ) : (
-              user.name.charAt(0).toUpperCase()
-            )}
-          </div>
+          <Avatar
+            src={user.avatar}
+            alt={user.name}
+            name={user.name}
+            size="lg"
+            className="shadow-md group-hover:shadow-lg transition-shadow duration-200"
+          />
           <div className="ml-4">
             <div className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200">{user.name}</div>
             <div className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-200">{user.email}</div>
@@ -272,6 +295,14 @@ const UserManagement: React.FC = () => {
 
   // Convert API users to local format - handle undefined/null apiUsers
   const users: User[] = (apiUsers || []).map(mapApiUserToLocal);
+
+  // Debug: Log user data to console
+  React.useEffect(() => {
+    if (apiUsers && apiUsers.length > 0) {
+      console.log('API Users:', apiUsers);
+      console.log('Mapped Users:', users);
+    }
+  }, [apiUsers, users]);
 
   const handleViewProfile = (user: User) => {
     setViewProfileModal({

@@ -1343,6 +1343,49 @@ header {
   z-index: 50 !important;
 }
 
+/* Contact Map Styles */
+.custom-contact-popup .leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.custom-contact-popup .leaflet-popup-content {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.custom-contact-popup .leaflet-popup-tip {
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-top: none !important;
+  border-right: none !important;
+}
+
+.custom-contact-tooltip {
+  background: rgba(0, 0, 0, 0.8) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: white !important;
+  font-size: 12px !important;
+  padding: 8px 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.custom-contact-tooltip::before {
+  border-top-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.custom-marker {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.custom-marker:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+  transform: scale(1.05);
+  transition: all 0.2s ease;
+}
+
 /* Custom Leaflet popup styles */
 .custom-disaster-popup .leaflet-popup-content-wrapper {
   border-radius: 12px !important;

@@ -48,6 +48,7 @@ const Avatar: React.FC<AvatarProps> = ({
   };
 
   const handleImageError = () => {
+    console.warn('Avatar image failed to load:', src);
     setImageError(true);
     setImageLoading(false);
   };
