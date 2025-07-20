@@ -82,13 +82,79 @@
       "description": "Real-time disaster reporting and coordination platform connecting communities, responders, and resources when it matters most.",
       "reportEmergency": "Report Emergency",
       "learnMore": "Learn More",
-      "watchDemo": "Watch Demo"
+      "watchDemo": "Watch Demo",
+      "trustBadge": "Real-time disaster monitoring worldwide",
+      "becomeVolunteer": "Become a Volunteer",
+      "watchEmergencyDemo": "Watch Emergency Demo",
+      "watchVolunteerStories": "Watch Volunteer Stories",
+      "monitoring24x7": "24/7 Monitoring",
+      "verifiedData": "Verified Data",
+      "globalNetwork": "Global Network"
+    },
+    "heroImages": {
+      "emergencyResponse": {
+        "title": "Emergency Response",
+        "description": "Rapid coordination when every second counts",
+        "category": "Response",
+        "livesSaved": "Lives Saved",
+        "responseTime": "Response Time"
+      },
+      "communityUnity": {
+        "title": "Community Unity",
+        "description": "Bringing people together in times of crisis",
+        "category": "Community",
+        "communities": "Communities",
+        "support": "Support"
+      },
+      "weatherMonitoring": {
+        "title": "Weather Monitoring",
+        "description": "Advanced early warning systems",
+        "category": "Prevention",
+        "accuracy": "Accuracy",
+        "alertTime": "Alert Time"
+      },
+      "recoveryRebuild": {
+        "title": "Recovery & Rebuild",
+        "description": "Supporting communities through recovery",
+        "category": "Recovery",
+        "peopleHelped": "People Helped",
+        "countries": "Countries"
+      }
     },
     "stats": {
       "livesHelped": "Lives Helped",
       "countriesServed": "Countries Served",
       "responseTime": "Response Time",
-      "volunteers": "Active Volunteers"
+      "volunteers": "Active Volunteers",
+      "activeDisasters": "Active Disasters",
+      "criticalEvents": "Critical Events",
+      "highSeverity": "High Severity",
+      "dataSources": "Data Sources",
+      "realTimeIncidents": "Real-time incidents",
+      "urgentSituations": "Urgent situations",
+      "majorIncidents": "Major incidents",
+      "liveMonitoring": "Live monitoring",
+      "realTimeImpactMetrics": "Real-Time Impact Metrics",
+      "makingRealImpact": "Making a Real Impact",
+      "impactDescription": "Our platform transforms disaster response globally, connecting communities and saving lives through advanced technology and seamless coordination."
+    },
+    "liveImpact": {
+      "title": "Making Real Impact Worldwide",
+      "subtitle": "Live Global Impact",
+      "description": "Our platform coordinates real-time disaster response across the globe. See live incidents, active response teams, and communities we're helping right now.",
+      "liveDisasterMap": "Live Disaster Map",
+      "liveUpdates": "Live Updates",
+      "loading": "Loading...",
+      "error": "Error",
+      "refreshData": "Refresh data",
+      "unableToLoad": "Unable to load disaster data",
+      "tryAgain": "Try Again",
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "viewDetails": "View Details",
+      "verified": "Verified"
     },
     "features": {
       "title": "How We Help Communities",
@@ -110,11 +176,247 @@
         "description": "Track and coordinate emergency resources, supplies, and personnel for optimal disaster response effectiveness."
       }
     },
+    "safety": {
+      "title": "Stay Safe & Be Prepared",
+      "subtitle": "Emergency Preparedness",
+      "description": "Essential safety tips and emergency preparedness guidelines to protect you and your loved ones during disasters. Knowledge saves lives.",
+      "emergencyKit": {
+        "title": "Emergency Kit Essentials",
+        "description": "Prepare a comprehensive emergency kit with water, non-perishable food, flashlight, first aid supplies, and important documents. Keep enough supplies for at least 72 hours.",
+        "tips": [
+          "1 gallon of water per person per day",
+          "Non-perishable food for 3+ days",
+          "Battery-powered radio and flashlight",
+          "First aid kit and medications"
+        ]
+      },
+      "evacuationPlanning": {
+        "title": "Evacuation Planning",
+        "description": "Create and practice evacuation routes with your family. Know multiple ways to exit your home and neighborhood, and establish meeting points.",
+        "tips": [
+          "Plan primary and alternate routes",
+          "Practice evacuation drills regularly",
+          "Identify safe meeting locations",
+          "Keep vehicle fuel tanks full"
+        ]
+      },
+      "communicationStrategy": {
+        "title": "Communication Strategy",
+        "description": "Establish a family communication plan with out-of-state contacts. Ensure everyone knows how to reach each other during emergencies.",
+        "tips": [
+          "Designate out-of-state contact person",
+          "Program emergency numbers in phones",
+          "Keep written contact information",
+          "Learn text messaging for emergencies"
+        ]
+      },
+      "homeSafety": {
+        "title": "Home Safety Measures",
+        "description": "Secure your home against disasters by installing smoke detectors, securing heavy furniture, and knowing utility shut-off locations.",
+        "tips": [
+          "Install smoke and carbon monoxide detectors",
+          "Secure heavy furniture and appliances",
+          "Know utility shut-off locations",
+          "Maintain fire extinguishers"
+        ]
+      },
+      "communityPreparedness": {
+        "title": "Community Preparedness",
+        "description": "Connect with neighbors and local emergency services. Join community emergency response teams and stay informed about local hazards.",
+        "tips": [
+          "Know your neighbors and their skills",
+          "Join local emergency response teams",
+          "Stay informed about local hazards",
+          "Participate in community drills"
+        ]
+      },
+      "digitalPreparedness": {
+        "title": "Digital Preparedness",
+        "description": "Back up important documents digitally, keep devices charged, and download emergency apps for real-time alerts and information.",
+        "tips": [
+          "Back up documents to cloud storage",
+          "Keep portable chargers ready",
+          "Download emergency alert apps",
+          "Store digital copies of IDs"
+        ]
+      }
+    },
     "cta": {
       "title": "Ready to Make a Difference?",
       "description": "Join thousands of people using DisasterWatch to build safer, more resilient communities worldwide.",
       "getStarted": "Get Started",
-      "joinCommunity": "Join Community"
+      "joinCommunity": "Join Community",
+      "emergencyResponse": {
+        "title": "Ready to Respond to Emergencies?",
+        "subtitle": "Emergency Response",
+        "description": "As an authorized responder, you have the power to coordinate emergency response and save lives. Every second counts in disaster management.",
+        "reportEmergency": "Report Emergency",
+        "viewReports": "View Reports",
+        "emergencyLine": "24/7 Emergency Line",
+        "emergencyCoordination": "Emergency Coordination",
+        "commandCenter": "Command Center",
+        "available24x7": "Available 24/7"
+      },
+      "volunteer": {
+        "title": "Ready to Become a Community Hero?",
+        "subtitle": "Become a Hero",
+        "description": "Join thousands of volunteers worldwide who are making a real difference in their communities. Your skills, time, and compassion can help save lives and rebuild hope.",
+        "becomeVolunteer": "Become a Volunteer",
+        "viewOpportunities": "View Opportunities",
+        "volunteerHotline": "Volunteer Hotline",
+        "volunteerSupport": "Volunteer Support",
+        "trainingSupport": "Training Support",
+        "availableMonFri": "Available Mon-Fri"
+      }
+    }
+  },
+  "about": {
+    "title": "About DisasterWatch",
+    "hero": {
+      "title": "About DisasterWatch",
+      "description": "Empowering communities with real-time disaster reporting and coordinated emergency response",
+      "viewReports": "View Reports",
+      "getInvolved": "Get Involved"
+    },
+    "mission": {
+      "title": "Our Mission",
+      "description": "To create a safer world by connecting communities, enabling rapid disaster response, and empowering people with the tools they need to protect and support each other during emergencies.",
+      "values": {
+        "reliability": {
+          "title": "Reliability",
+          "description": "Trusted disaster reporting and response coordination when communities need it most."
+        },
+        "communityFirst": {
+          "title": "Community First",
+          "description": "Empowering local communities with tools to protect and support each other."
+        },
+        "rapidResponse": {
+          "title": "Rapid Response",
+          "description": "Real-time alerts and immediate action to minimize disaster impact."
+        },
+        "globalReach": {
+          "title": "Global Reach",
+          "description": "Connecting communities worldwide for shared disaster preparedness and response."
+        }
+      }
+    },
+    "whatWeDo": {
+      "title": "What We Do",
+      "description": "DisasterWatch is a comprehensive disaster management platform that bridges the gap between communities and emergency responders. We provide real-time reporting, coordinated response, and vital resources when disasters strike.",
+      "features": {
+        "realTimeMonitoring": {
+          "title": "Real-Time Monitoring",
+          "description": "24/7 disaster tracking and community reporting system"
+        },
+        "communityNetwork": {
+          "title": "Community Network",
+          "description": "Connect with local volunteers and emergency responders"
+        },
+        "preciseAlerts": {
+          "title": "Precise Alerts",
+          "description": "Location-based warnings and emergency notifications"
+        }
+      },
+      "learnMore": "Learn More About Our Work",
+      "systemStatus": {
+        "active": "Active",
+        "monitoring": "Monitoring",
+        "realTime": "Real-time",
+        "alerts": "Alerts",
+        "communityReports": "Community Reports",
+        "emergencyResponse": "Emergency Response",
+        "volunteerNetwork": "Volunteer Network",
+        "ready": "Ready",
+        "connected": "Connected"
+      }
+    },
+    "organization": {
+      "title": "Our Organization",
+      "description": "Built by a dedicated team of emergency management professionals, technologists, and community advocates committed to making disaster response more effective and accessible.",
+      "expertTeam": {
+        "title": "Expert Team",
+        "description": "Emergency management specialists, software engineers, and community organizers working together to save lives and protect communities.",
+        "certifications": [
+          "Emergency Management Certified",
+          "Technology Innovation Leaders",
+          "Community Safety Advocates"
+        ]
+      },
+      "globalNetwork": {
+        "title": "Global Network",
+        "description": "Partnering with emergency services, NGOs, and community organizations worldwide to create a comprehensive disaster response ecosystem.",
+        "partnerships": [
+          "Emergency Services Partners",
+          "NGO Collaborations",
+          "Community Organizations"
+        ]
+      },
+      "innovation": {
+        "title": "Innovation Driven",
+        "description": "Continuously improving our platform with cutting-edge technology, user feedback, and lessons learned from real-world disaster response.",
+        "focus": [
+          "Real-time Technology",
+          "User-Centered Design",
+          "Continuous Improvement"
+        ]
+      }
+    },
+    "leadership": {
+      "title": "Our Leadership Team",
+      "description": "Meet the experienced professionals leading DisasterWatch's mission to transform disaster response and build resilient communities worldwide.",
+      "team": {
+        "sarahChen": {
+          "name": "Dr. Sarah Chen",
+          "title": "Executive Director",
+          "bio": "Former FEMA Regional Administrator with 15+ years in emergency management. PhD in Crisis Leadership from Harvard. Led response efforts for major disasters affecting over 2 million people.",
+          "badge": "Leadership"
+        },
+        "michaelRodriguez": {
+          "name": "Captain Michael Rodriguez",
+          "title": "Emergency Response Coordinator",
+          "bio": "20-year veteran firefighter and paramedic. Certified Emergency Manager (CEM) specializing in multi-agency coordination. Coordinates real-time response operations across 12 states.",
+          "badge": "Emergency Response"
+        },
+        "priyaPatel": {
+          "name": "Dr. Priya Patel",
+          "title": "Technology Director",
+          "bio": "Former Google AI researcher with expertise in real-time data systems. PhD in Computer Science from MIT. Pioneered machine learning applications for disaster prediction and response optimization.",
+          "badge": "Technology"
+        },
+        "mariaSantos": {
+          "name": "Maria Santos",
+          "title": "Community Outreach Manager",
+          "bio": "Former Red Cross International Operations Manager. Fluent in 5 languages. Masters in International Relations. Built volunteer networks in 25+ countries and trained over 10,000 community responders.",
+          "badge": "Community"
+        },
+        "jamesThompson": {
+          "name": "James Thompson",
+          "title": "Operations Manager",
+          "bio": "Former military logistics officer with NATO peacekeeping experience. MBA in Operations Management. Specializes in resource coordination and supply chain management for emergency response operations.",
+          "badge": "Operations"
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to Make a Difference?",
+      "description": "Join our community of emergency responders, volunteers, and concerned citizens working together to build safer, more resilient communities.",
+      "getInvolved": "Get Involved",
+      "contactUs": "Contact Us",
+      "contact": {
+        "title": "Get in Touch",
+        "email": {
+          "label": "Email",
+          "value": "contact@disasterwatch.org"
+        },
+        "phone": {
+          "label": "Emergency Hotline",
+          "value": "24/7 Support Available"
+        },
+        "responseTime": {
+          "label": "Response Time",
+          "value": "Real-time monitoring"
+        }
+      }
     }
   },
   "reports": {
@@ -125,24 +427,218 @@
     "filter": "Filter Reports",
     "search": "Search reports...",
     "noReports": "No reports found",
-    "loading": "Loading reports..."
-  },
-  "about": {
-    "title": "About DisasterWatch",
-    "subtitle": "Connecting communities in times of crisis",
-    "mission": "Our Mission",
-    "vision": "Our Vision",
-    "values": "Our Values"
+    "loading": "Loading reports...",
+    "header": {
+      "statusBadges": {
+        "liveReports": "Live Reports",
+        "refresh": "Refresh",
+        "refreshing": "Refreshing...",
+        "refreshTitle": "Refresh Reports",
+        "enhancedUI": "Enhanced UI"
+      },
+      "titles": {
+        "regularUser": {
+          "main": "Community",
+          "sub": "Safety Updates"
+        },
+        "responder": {
+          "main": "Emergency",
+          "sub": "Reports Hub"
+        }
+      },
+      "descriptions": {
+        "regularUser": "Stay informed about verified disaster reports and safety updates in your community. Access reliable information to keep yourself and your family safe.",
+        "responder": "Real-time disaster reports from communities worldwide. Browse verified incidents, track emergency responses, and stay informed about ongoing situations in your area."
+      }
+    },
+    "statistics": {
+      "totalReports": {
+        "title": "Total Reports",
+        "subtitle": "Currently displayed"
+      },
+      "verifiedReports": {
+        "title": "Verified Reports",
+        "subtitle": "% of total"
+      },
+      "highPriority": {
+        "title": "High Priority",
+        "subtitle": "Critical & High severity"
+      },
+      "activeResponse": {
+        "title": "Active Response",
+        "subtitle": "Reports with assistance"
+      }
+    },
+    "communityBanner": {
+      "title": "Community Safety Information",
+      "description": "You are viewing verified disaster reports and safety updates. All information has been reviewed by our emergency response team to ensure accuracy and reliability for community safety."
+    },
+    "searchAndFilters": {
+      "searchPlaceholder": "Search reports by title, description, or location...",
+      "viewModes": {
+        "grid": "Grid",
+        "list": "List",
+        "map": "Map"
+      },
+      "filters": "Filters",
+      "filterLabels": {
+        "disasterType": "Disaster Type",
+        "severityLevel": "Severity Level",
+        "reportStatus": "Report Status",
+        "dateRange": "Date Range"
+      },
+      "filterOptions": {
+        "allTypes": "All Types",
+        "allSeverities": "All Severities",
+        "allStatuses": "All Statuses",
+        "allTime": "All Time",
+        "last24Hours": "Last 24 Hours",
+        "lastWeek": "Last Week",
+        "lastMonth": "Last Month"
+      },
+      "sortBy": "Sort by",
+      "sortOptions": {
+        "newest": "Newest First",
+        "oldest": "Oldest First",
+        "severity": "Severity",
+        "location": "Location"
+      },
+      "clearAllFilters": "Clear All Filters"
+    },
+    "disasterTypes": {
+      "flood": "Flood",
+      "fire": "Fire",
+      "earthquake": "Earthquake",
+      "storm": "Storm",
+      "landslide": "Landslide",
+      "accident": "Accident",
+      "other": "Other"
+    },
+    "severityLevels": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "statusTypes": {
+      "pending": "Pending",
+      "verified": "Verified",
+      "investigating": "Investigating",
+      "resolved": "Resolved"
+    },
+    "reportCard": {
+      "reportedBy": "Reported by",
+      "reportedOn": "Reported on",
+      "location": "Location",
+      "severity": "Severity",
+      "status": "Status",
+      "viewDetails": "View Details",
+      "assistanceProvided": "Assistance Provided",
+      "noAssistance": "No assistance recorded",
+      "imageLoadError": "Failed to load image",
+      "defaultImage": "Default",
+      "photos": "photos"
+    },
+    "noResults": {
+      "title": "No reports found",
+      "description": "Try adjusting your search criteria or filters to find more reports.",
+      "suggestions": [
+        "Clear search terms",
+        "Remove filters",
+        "Try different keywords"
+      ]
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page",
+      "of": "of",
+      "showing": "Showing",
+      "to": "to",
+      "results": "results"
+    }
   },
   "contact": {
-    "title": "Contact Us",
-    "subtitle": "Get in touch with our team",
+    "hero": {
+      "badge": "24/7 Support Available",
+      "title": "Get in Touch",
+      "subtitle": "We're Here to Help",
+      "description": "Whether you need emergency assistance, have questions about our services, or want to partner with us, our dedicated team is ready to support you around the clock.",
+      "emergencyButton": "Emergency Hotline",
+      "messageButton": "Send Message"
+    },
+    "methods": {
+      "title": "How Can We Help You?",
+      "description": "Choose the best way to reach us based on your needs and urgency level.",
+      "emergency": {
+        "title": "Emergency Hotline",
+        "description": "24/7 emergency response for urgent disasters and critical situations",
+        "availability": "Available 24/7",
+        "action": "Call Now"
+      },
+      "email": {
+        "title": "General Inquiries",
+        "description": "For questions, partnerships, and general support",
+        "availability": "Response within 24 hours",
+        "action": "Send Email"
+      },
+      "support": {
+        "title": "Technical Support",
+        "description": "Platform assistance and technical help",
+        "availability": "Business hours",
+        "action": "Get Support"
+      }
+    },
     "form": {
-      "name": "Full Name",
-      "email": "Email Address",
-      "subject": "Subject",
-      "message": "Message",
-      "send": "Send Message"
+      "title": "Send Us a Message",
+      "description": "Fill out the form below and we'll get back to you as soon as possible.",
+      "fields": {
+        "name": "Full Name",
+        "email": "Email Address",
+        "subject": "Subject",
+        "message": "Message"
+      },
+      "placeholders": {
+        "name": "Enter your full name",
+        "email": "your.email@example.com",
+        "subject": "Brief subject of your message",
+        "message": "Please provide detailed information about your inquiry..."
+      },
+      "validation": {
+        "nameRequired": "Name is required",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Please enter a valid email address",
+        "subjectRequired": "Subject is required",
+        "messageRequired": "Message is required",
+        "messageMinLength": "Message must be at least 10 characters"
+      },
+      "submit": "Send Message",
+      "sending": "Sending...",
+      "success": {
+        "title": "Message Sent Successfully!",
+        "message": "Thank you for contacting us. We'll get back to you within 24 hours.",
+        "sendAnother": "Send Another Message"
+      }
+    },
+    "office": {
+      "title": "Our Office",
+      "description": "Visit us or get in touch through our main office location.",
+      "headquarters": {
+        "title": "Headquarters",
+        "address": "123 Emergency Response Center",
+        "city": "Yangon, Myanmar",
+        "phone": "+95 1 234 5678",
+        "email": "contact@disasterwatch.org",
+        "hours": {
+          "title": "Office Hours",
+          "weekdays": "Monday - Friday: 9:00 AM - 6:00 PM",
+          "emergency": "Emergency Line: 24/7 Available"
+        }
+      },
+      "map": {
+        "title": "Find Us",
+        "description": "Visit our headquarters in Yangon, Myanmar"
+      }
     }
   },
   "footer": {

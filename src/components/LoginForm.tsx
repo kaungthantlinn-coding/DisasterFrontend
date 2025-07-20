@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useLogin } from '../hooks/useLogin';
 import { LoginRequest } from '../types';
 
@@ -8,6 +10,7 @@ const LoginForm: React.FC = () => {
     password: '',
     rememberMe: false,
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const loginMutation = useLogin();
 
@@ -26,63 +29,94 @@ const LoginForm: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Email Field */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
           Email Address
         </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          placeholder="Enter your email"
-        />
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Mail size={20} className="text-gray-400" />
+          </div>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-gray-50 focus:bg-white"
+            placeholder="Enter your email address"
+          />
+        </div>
       </div>
 
+      {/* Password Field */}
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+        <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
           Password
         </label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          minLength={6}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-          placeholder="Enter your password"
-        />
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Lock size={20} className="text-gray-400" />
+          </div>
+          <input
+            type={showPassword ? 'text' : 'password'}
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            minLength={6}
+            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-gray-50 focus:bg-white"
+            placeholder="Enter your password"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-center">
-        <input
-          type="checkbox"
-          id="rememberMe"
-          name="rememberMe"
-          checked={formData.rememberMe}
-          onChange={handleChange}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-        <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
-          Remember me
-        </label>
+      {/* Remember Me & Forgot Password */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="rememberMe"
+            name="rememberMe"
+            checked={formData.rememberMe}
+            onChange={handleChange}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+          />
+          <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700 font-medium">
+            Remember me
+          </label>
+        </div>
+        <Link
+          to="/forgot-password"
+          className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+        >
+          Forgot password?
+        </Link>
       </div>
 
+      {/* Error Message */}
       {loginMutation.error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-          {(loginMutation.error as any)?.response?.data?.message || 'Login failed. Please try again.'}
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center">
+          <AlertCircle size={16} className="mr-2 flex-shrink-0" />
+          <span>{(loginMutation.error as any)?.response?.data?.message || 'Login failed. Please try again.'}</span>
         </div>
       )}
 
+      {/* Submit Button */}
       <button
         type="submit"
         disabled={loginMutation.isPending}
-        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
       >
         {loginMutation.isPending ? (
           <div className="flex items-center">
@@ -96,6 +130,16 @@ const LoginForm: React.FC = () => {
           'Sign in'
         )}
       </button>
+
+      {/* Signup Link */}
+      <div className="text-center mt-6">
+        <p className="text-sm text-gray-600">
+          New to DisasterWatch?{' '}
+          <Link to="/signup" className="font-semibold text-blue-600 hover:text-blue-800 transition-colors">
+            Create your account
+          </Link>
+        </p>
+      </div>
     </form>
   );
 };

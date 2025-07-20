@@ -3,6 +3,7 @@ import { RefreshCw, AlertTriangle, Globe, MapPin, Clock } from 'lucide-react';
 import { useDisasterData } from '../../hooks/useDisasterData';
 import DisasterMap from '../Map/DisasterMap';
 import { format } from 'date-fns';
+import { RealWorldDisaster } from '../../types';
 
 const DisasterDataDemo: React.FC = () => {
   const { disasters, loading, error, lastUpdated, refresh, statistics } = useDisasterData({
@@ -11,7 +12,7 @@ const DisasterDataDemo: React.FC = () => {
     includeSignificantOnly: true,
   });
 
-  const [selectedDisaster, setSelectedDisaster] = useState(null);
+  const [selectedDisaster, setSelectedDisaster] = useState<RealWorldDisaster | null>(null);
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">

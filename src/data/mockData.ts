@@ -18,7 +18,7 @@ export const mockReports: Report[] = [
     title: 'Severe Flooding in Downtown Business District',
     description: 'Heavy rainfall over 6 hours caused severe flooding in the downtown business district. Water levels reached 3 feet in some areas, affecting multiple businesses and causing traffic disruptions. Storm drains were overwhelmed and several vehicles were stranded.',
     location: {
-      address: '123 Main St, Downtown Financial District',
+      address: 'Financial District, Lower Manhattan, New York, NY',
       coordinates: { lat: 40.7128, lng: -74.0060 }
     },
     disasterType: 'flood',
@@ -54,7 +54,7 @@ export const mockReports: Report[] = [
     title: 'Earthquake Structural Damage - Hillside Residential',
     description: 'Magnitude 5.2 earthquake at 8:15 AM caused significant structural damage to 12 homes in the Hillside residential area. Multiple foundation cracks, broken windows, and damaged chimneys reported. Roads have visible cracks and one gas line was damaged.',
     location: {
-      address: '456 Oak Avenue, Hillside Residential Area',
+      address: 'Times Square Area, Midtown Manhattan, New York, NY',
       coordinates: { lat: 40.7589, lng: -73.9851 }
     },
     disasterType: 'earthquake',
@@ -97,7 +97,7 @@ export const mockReports: Report[] = [
     title: 'Critical Wildfire Threat - Northern Hills Evacuation',
     description: 'Fast-moving wildfire covering 500 acres is rapidly approaching Northern Hills Subdivision. Wind speeds of 25 mph are pushing the fire toward residential areas. Immediate evacuation of 200+ homes may be necessary within the next 2 hours.',
     location: {
-      address: 'Northern Hills Subdivision, Pine Ridge Drive',
+      address: 'Northern Manhattan, Washington Heights, New York, NY',
       coordinates: { lat: 40.8176, lng: -74.0431 }
     },
     disasterType: 'wildfire',
@@ -133,7 +133,7 @@ export const mockReports: Report[] = [
     title: 'Hurricane Maria Aftermath - Coastal District Recovery',
     description: 'Category 2 Hurricane Maria caused extensive damage throughout the coastal district. Widespread power outages affecting 15,000 residents, numerous downed trees blocking roads, damaged roofs, and flooding in low-lying areas. Recovery operations ongoing.',
     location: {
-      address: 'Coastal District, Oceanview Boulevard',
+      address: 'Staten Island Waterfront, New York, NY',
       coordinates: { lat: 40.6892, lng: -74.0445 }
     },
     disasterType: 'hurricane',
@@ -183,7 +183,7 @@ export const mockReports: Report[] = [
     title: 'Industrial Chemical Spill - Hazmat Response',
     description: 'Chemical spill of approximately 500 gallons of industrial solvent at MetroChem facility. Hazmat team successfully contained the spill. No immediate threat to public safety, but environmental monitoring is ongoing. Facility evacuated as precaution.',
     location: {
-      address: '789 Industrial Boulevard, Manufacturing District',
+      address: 'Industrial Area, Jersey City, NJ',
       coordinates: { lat: 40.7282, lng: -74.0776 }
     },
     disasterType: 'chemical_spill',
@@ -226,7 +226,7 @@ export const mockReports: Report[] = [
     title: 'Severe Thunderstorm Damage - Westside Neighborhoods',
     description: 'Severe thunderstorm with 70 mph winds caused significant damage across Westside neighborhoods. Multiple trees down, power lines damaged, several homes with roof damage, and hail damage to vehicles. Storm lasted 45 minutes.',
     location: {
-      address: 'Westside Neighborhoods, Maple Street Area',
+      address: 'West Village, Manhattan, New York, NY',
       coordinates: { lat: 40.7505, lng: -74.1157 }
     },
     disasterType: 'storm',
@@ -269,7 +269,7 @@ export const mockReports: Report[] = [
     title: 'Building Collapse - Construction Site Emergency',
     description: 'Partial building collapse at active construction site on 5th Avenue. Three workers injured and transported to hospital. Structural engineer on scene assessing stability of remaining structure. Adjacent buildings evacuated as precaution.',
     location: {
-      address: '234 5th Avenue, Construction Zone',
+      address: '5th Avenue, Midtown Manhattan, New York, NY',
       coordinates: { lat: 40.7411, lng: -73.9897 }
     },
     disasterType: 'structural_failure',
@@ -312,7 +312,7 @@ export const mockReports: Report[] = [
     title: 'Water Main Break - Central Business District',
     description: 'Major water main break on Central Avenue causing significant flooding and water service disruption to downtown businesses. Estimated 2 million gallons of water lost. Road closures in effect. Repair crews working to restore service.',
     location: {
-      address: 'Central Avenue & 3rd Street, Business District',
+      address: 'Lower Manhattan, New York, NY',
       coordinates: { lat: 40.7282, lng: -74.0021 }
     },
     disasterType: 'infrastructure_failure',
@@ -355,7 +355,7 @@ export const mockReports: Report[] = [
     title: 'Ice Storm Power Outages',
     description: 'Severe ice storm causing widespread power outages. Trees and power lines down across the region.',
     location: {
-      address: 'Northern Counties',
+      address: 'Minneapolis, Minnesota',
       coordinates: { lat: 44.9778, lng: -93.2650 }
     },
     disasterType: 'storm',
@@ -392,7 +392,7 @@ export const mockReports: Report[] = [
     title: 'Coastal Erosion Emergency',
     description: 'Severe coastal erosion threatening beachfront properties. Emergency relocation may be necessary.',
     location: {
-      address: 'Coastal Highway',
+      address: 'Central Valley, California',
       coordinates: { lat: 36.7783, lng: -119.4179 }
     },
     disasterType: 'other',
@@ -420,7 +420,7 @@ export const mockReports: Report[] = [
     title: 'Drought Emergency Declaration',
     description: 'Severe drought conditions affecting agricultural areas. Water restrictions in effect.',
     location: {
-      address: 'Agricultural District',
+      address: 'Nashville, Tennessee',
       coordinates: { lat: 36.1627, lng: -86.7816 }
     },
     disasterType: 'other',
@@ -448,7 +448,7 @@ export const mockReports: Report[] = [
     title: 'Apartment Building Fire',
     description: 'Multi-story apartment fire with residents evacuated. Fire department on scene.',
     location: {
-      address: 'Downtown Residential',
+      address: 'Downtown Boston, Massachusetts',
       coordinates: { lat: 42.3601, lng: -71.0589 }
     },
     disasterType: 'fire',
@@ -485,7 +485,7 @@ export const mockReports: Report[] = [
     title: 'Sinkhole Formation',
     description: 'Large sinkhole opened on major roadway. Traffic diverted, structural damage to nearby buildings.',
     location: {
-      address: 'Main Street Corridor',
+      address: 'Orlando, Florida',
       coordinates: { lat: 28.5383, lng: -81.3792 }
     },
     disasterType: 'other',
@@ -513,7 +513,7 @@ export const mockReports: Report[] = [
     title: 'Blizzard Warning - Mountain Region',
     description: 'Heavy snowfall and high winds creating blizzard conditions. Travel extremely dangerous.',
     location: {
-      address: 'Mountain Pass',
+      address: 'Denver, Colorado',
       coordinates: { lat: 39.7391, lng: -105.0178 }
     },
     disasterType: 'storm',
@@ -549,7 +549,7 @@ export const mockReports: Report[] = [
     title: 'Gas Leak Evacuation',
     description: 'Major gas leak requiring evacuation of 6-block radius. Utility crews working to stop leak.',
     location: {
-      address: 'Commercial District',
+      address: 'Downtown Cleveland, Ohio',
       coordinates: { lat: 41.4993, lng: -81.6944 }
     },
     disasterType: 'other',

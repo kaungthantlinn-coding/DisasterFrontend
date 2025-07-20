@@ -112,7 +112,7 @@ export const authService = {
   async login(email: string, password: string): Promise<Result<LoginResponse>> {
     try {
       ErrorTracker.getInstance().trackUserAction('login_attempt', { email });
-      
+
       const apiData = await errorHandler.withRetry(
         () => apiService.auth.login(email, password),
         {
@@ -123,7 +123,7 @@ export const authService = {
           },
         }
       );
-      
+
       const data = mapApiResponse(apiData);
       ErrorTracker.getInstance().trackUserAction('login_success', { userId: data.user.userId });
       return { success: true, data };
@@ -133,10 +133,42 @@ export const authService = {
         action: 'login',
         additionalData: { email },
       });
-      
-      return { 
-        success: false, 
-        error: errorHandler.fromAxiosError(error) 
+
+      return {
+        success: false,
+        error: errorHandler.fromAxiosError(error)
+      };
+    }
+  },
+
+  async signup(fullName: string, email: string, password: string, confirmPassword: string, agreeToTerms: boolean): Promise<Result<LoginResponse>> {
+    try {
+      ErrorTracker.getInstance().trackUserAction('signup_attempt', { email });
+
+      const apiData = await errorHandler.withRetry(
+        () => apiService.auth.signup(fullName, email, password, confirmPassword, agreeToTerms),
+        {
+          maxRetries: 2,
+          shouldRetry: (error) => {
+            // Don't retry on validation errors or conflicts
+            return !(error.message.includes('400') || error.message.includes('409'));
+          },
+        }
+      );
+
+      const data = mapApiResponse(apiData);
+      ErrorTracker.getInstance().trackUserAction('signup_success', { userId: data.user.userId });
+      return { success: true, data };
+    } catch (error) {
+      ErrorTracker.getInstance().track(error as Error, {
+        component: 'AuthService',
+        action: 'signup',
+        additionalData: { email },
+      });
+
+      return {
+        success: false,
+        error: errorHandler.fromAxiosError(error)
       };
     }
   },

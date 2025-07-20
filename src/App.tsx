@@ -3,6 +3,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import './i18n'; // Initialize i18n
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Reports from './pages/Reports';
@@ -18,7 +23,9 @@ import Contact from './pages/Contact';
 import Donate from './pages/Donate';
 import Leadership from './pages/Leadership';
 import Partnership from './pages/Partnership';
-
+import VolunteerPage from './pages/volunteer/VolunteerPage';
+import VolunteerRegisterStreamlined from './pages/volunteer/VolunteerRegisterStreamlined';
+import VolunteerOpportunities from './pages/volunteer/VolunteerOpportunities';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -47,6 +54,11 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
               <Route
                 path="/dashboard"
                 element={
@@ -101,7 +113,11 @@ function App() {
               />
               <Route path="/assistance/:id" element={<ReportDetail />} />
               <Route path="/assistance/received/:id" element={<ReportDetail />} />
-              <Route path="/volunteer" element={<div className="p-8 text-center">Volunteer page coming soon...</div>} />
+
+              {/* Volunteer routes */}
+              <Route path="/volunteer" element={<VolunteerPage />} />
+              <Route path="/volunteer/register" element={<VolunteerRegisterStreamlined />} />
+              <Route path="/volunteer/opportunities" element={<VolunteerOpportunities />} />
               
               {/* Admin routes */}
               <Route

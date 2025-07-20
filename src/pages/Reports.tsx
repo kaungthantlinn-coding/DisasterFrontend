@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import {
   Search,
   MapPin,
@@ -46,6 +47,9 @@ import { mockReports } from '../data/mockData';
 import { Report } from '../types';
 
 const Reports: React.FC = () => {
+  // Translation
+  const { t } = useTranslation();
+
   // Navigation
   const navigate = useNavigate();
 
@@ -82,10 +86,10 @@ const Reports: React.FC = () => {
     ? ['all', 'verified'] // Regular users only see verified reports
     : ['all', 'pending', 'verified', 'resolved']; // Admin/CJ see all statuses
   const sortOptions = [
-    { value: 'newest', label: 'Newest First' },
-    { value: 'oldest', label: 'Oldest First' },
-    { value: 'severity', label: 'Severity' },
-    { value: 'location', label: 'Location' }
+    { value: 'newest', label: t('reports.searchAndFilters.sortOptions.newest') },
+    { value: 'oldest', label: t('reports.searchAndFilters.sortOptions.oldest') },
+    { value: 'severity', label: t('reports.searchAndFilters.sortOptions.severity') },
+    { value: 'location', label: t('reports.searchAndFilters.sortOptions.location') }
   ];
 
   // Filter and sort reports based on user role
@@ -198,13 +202,35 @@ const Reports: React.FC = () => {
   // Get disaster type display name
   const getDisasterTypeName = (type: string) => {
     switch (type) {
-      case 'flood': return 'Flood';
-      case 'fire': return 'Fire';
-      case 'earthquake': return 'Earthquake';
-      case 'storm': return 'Storm';
-      case 'landslide': return 'Landslide';
-      case 'accident': return 'Accident';
-      default: return 'Other';
+      case 'flood': return t('reports.disasterTypes.flood');
+      case 'fire': return t('reports.disasterTypes.fire');
+      case 'earthquake': return t('reports.disasterTypes.earthquake');
+      case 'storm': return t('reports.disasterTypes.storm');
+      case 'landslide': return t('reports.disasterTypes.landslide');
+      case 'accident': return t('reports.disasterTypes.accident');
+      default: return t('reports.disasterTypes.other');
+    }
+  };
+
+  // Get severity level display name
+  const getSeverityLevelName = (level: string) => {
+    switch (level) {
+      case 'critical': return t('reports.severityLevels.critical');
+      case 'high': return t('reports.severityLevels.high');
+      case 'medium': return t('reports.severityLevels.medium');
+      case 'low': return t('reports.severityLevels.low');
+      default: return level.charAt(0).toUpperCase() + level.slice(1);
+    }
+  };
+
+  // Get status display name
+  const getStatusName = (status: string) => {
+    switch (status) {
+      case 'pending': return t('reports.statusTypes.pending');
+      case 'verified': return t('reports.statusTypes.verified');
+      case 'investigating': return t('reports.statusTypes.investigating');
+      case 'resolved': return t('reports.statusTypes.resolved');
+      default: return status.charAt(0).toUpperCase() + status.slice(1);
     }
   };
 
@@ -257,7 +283,7 @@ const Reports: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-indigo-50/20">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 navbar-spacing pb-16">
         {/* Professional Page Header */}
         <div className="text-center mb-16">
           {/* Status Badges */}
@@ -265,7 +291,7 @@ const Reports: React.FC = () => {
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-semibold hover:bg-blue-100 transition-colors duration-200">
               <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
               <Activity size={16} className="mr-2" />
-              Live Reports
+              {t('reports.header.statusBadges.liveReports')}
             </div>
             <button
               onClick={() => {
@@ -275,25 +301,25 @@ const Reports: React.FC = () => {
                 }, 500);
               }}
               className="inline-flex items-center px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
-              title="Refresh Reports"
+              title={t('reports.header.statusBadges.refreshTitle')}
               disabled={isLoading}
             >
               <RefreshCw size={16} className={`mr-2 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-300`} />
-              {isLoading ? 'Refreshing...' : 'Refresh'}
+              {isLoading ? t('reports.header.statusBadges.refreshing') : t('reports.header.statusBadges.refresh')}
             </button>
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-sm font-semibold">
               <Sparkles size={16} className="mr-2" />
-              Enhanced UI
+              {t('reports.header.statusBadges.enhancedUI')}
             </div>
           </div>
 
           {/* Main Title */}
           <div className="relative mb-8">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              {isRegularUser ? 'Community' : 'Emergency'}
+              {isRegularUser ? t('reports.header.titles.regularUser.main') : t('reports.header.titles.responder.main')}
               <br />
               <span className="text-blue-600">
-                {isRegularUser ? 'Safety Updates' : 'Reports Hub'}
+                {isRegularUser ? t('reports.header.titles.regularUser.sub') : t('reports.header.titles.responder.sub')}
               </span>
             </h1>
           </div>
@@ -301,8 +327,8 @@ const Reports: React.FC = () => {
           {/* Description */}
           <p className="text-lg sm:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-12">
             {isRegularUser
-              ? 'Stay informed about verified disaster reports and safety updates in your community. Access reliable information to keep yourself and your family safe.'
-              : 'Real-time disaster reports from communities worldwide. Browse verified incidents, track emergency responses, and stay informed about ongoing situations in your area.'
+              ? t('reports.header.descriptions.regularUser')
+              : t('reports.header.descriptions.responder')
             }
           </p>
 
@@ -320,8 +346,8 @@ const Reports: React.FC = () => {
                 <div className="text-4xl font-black text-gray-900 mb-2">
                   {filteredAndSortedReports.length}
                 </div>
-                <div className="text-gray-900 font-bold text-base mb-1">Total Reports</div>
-                <div className="text-sm text-blue-600 font-medium">Currently displayed</div>
+                <div className="text-gray-900 font-bold text-base mb-1">{t('reports.statistics.totalReports.title')}</div>
+                <div className="text-sm text-blue-600 font-medium">{t('reports.statistics.totalReports.subtitle')}</div>
               </div>
             </div>
 
@@ -337,9 +363,9 @@ const Reports: React.FC = () => {
                 <div className="text-4xl font-black text-gray-900 mb-2">
                   {filteredAndSortedReports.filter(r => r.status === 'verified').length}
                 </div>
-                <div className="text-gray-900 font-bold text-base mb-1">Verified Reports</div>
+                <div className="text-gray-900 font-bold text-base mb-1">{t('reports.statistics.verifiedReports.title')}</div>
                 <div className="text-sm text-blue-600 font-medium">
-                  {filteredAndSortedReports.length > 0 ? Math.round((filteredAndSortedReports.filter(r => r.status === 'verified').length / filteredAndSortedReports.length) * 100) : 0}% of total
+                  {filteredAndSortedReports.length > 0 ? Math.round((filteredAndSortedReports.filter(r => r.status === 'verified').length / filteredAndSortedReports.length) * 100) : 0}% {t('reports.statistics.verifiedReports.subtitle')}
                 </div>
               </div>
             </div>
@@ -356,8 +382,8 @@ const Reports: React.FC = () => {
                 <div className="text-4xl font-black text-gray-900 mb-2">
                   {filteredAndSortedReports.filter(r => r.severity === 'critical' || r.severity === 'high').length}
                 </div>
-                <div className="text-gray-900 font-bold text-base mb-1">High Priority</div>
-                <div className="text-sm text-blue-600 font-medium">Critical & High severity</div>
+                <div className="text-gray-900 font-bold text-base mb-1">{t('reports.statistics.highPriority.title')}</div>
+                <div className="text-sm text-blue-600 font-medium">{t('reports.statistics.highPriority.subtitle')}</div>
               </div>
             </div>
 
@@ -373,8 +399,8 @@ const Reports: React.FC = () => {
                 <div className="text-4xl font-black text-gray-900 mb-2">
                   {filteredAndSortedReports.filter(r => r.assistanceLog && r.assistanceLog.length > 0).length}
                 </div>
-                <div className="text-gray-900 font-bold text-base mb-1">Active Response</div>
-                <div className="text-sm text-blue-600 font-medium">Reports with assistance</div>
+                <div className="text-gray-900 font-bold text-base mb-1">{t('reports.statistics.activeResponse.title')}</div>
+                <div className="text-sm text-blue-600 font-medium">{t('reports.statistics.activeResponse.subtitle')}</div>
               </div>
             </div>
           </div>
@@ -389,10 +415,10 @@ const Reports: React.FC = () => {
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2 flex items-center">
-                  Community Safety Information
+                  {t('reports.communityBanner.title')}
                 </h3>
                 <p className="text-blue-800 leading-relaxed">
-                  You are viewing verified disaster reports and safety updates. All information has been reviewed by our emergency response team to ensure accuracy and reliability for community safety.
+                  {t('reports.communityBanner.description')}
                 </p>
               </div>
             </div>
@@ -409,7 +435,7 @@ const Reports: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search reports by title, description, or location..."
+                placeholder={t('reports.searchAndFilters.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
@@ -435,7 +461,7 @@ const Reports: React.FC = () => {
                 }`}
               >
                 <Grid3X3 size={18} className="mr-2" />
-                Grid
+                {t('reports.searchAndFilters.viewModes.grid')}
               </button>
               <button
                 onClick={() => setViewMode('list')}
@@ -446,7 +472,7 @@ const Reports: React.FC = () => {
                 }`}
               >
                 <List size={18} className="mr-2" />
-                List
+                {t('reports.searchAndFilters.viewModes.list')}
               </button>
               <button
                 onClick={() => setViewMode('map')}
@@ -457,7 +483,7 @@ const Reports: React.FC = () => {
                 }`}
               >
                 <Map size={18} className="mr-2" />
-                Map
+                {t('reports.searchAndFilters.viewModes.map')}
               </button>
             </div>
 
@@ -471,7 +497,7 @@ const Reports: React.FC = () => {
               }`}
             >
               <SlidersHorizontal size={18} className="mr-2" />
-              Filters
+              {t('reports.searchAndFilters.filters')}
             </button>
           </div>
 
@@ -481,7 +507,7 @@ const Reports: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                   {/* Disaster Type Filter */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">Disaster Type</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">{t('reports.searchAndFilters.filterLabels.disasterType')}</label>
                     <select
                       value={selectedDisasterType}
                       onChange={(e) => setSelectedDisasterType(e.target.value)}
@@ -489,7 +515,7 @@ const Reports: React.FC = () => {
                     >
                       {disasterTypes.map(type => (
                         <option key={type} value={type}>
-                          {type === 'all' ? 'All Types' : getDisasterTypeName(type)}
+                          {type === 'all' ? t('reports.searchAndFilters.filterOptions.allTypes') : getDisasterTypeName(type)}
                         </option>
                       ))}
                     </select>
@@ -497,7 +523,7 @@ const Reports: React.FC = () => {
 
                   {/* Severity Filter */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">Severity Level</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">{t('reports.searchAndFilters.filterLabels.severityLevel')}</label>
                     <select
                       value={selectedSeverity}
                       onChange={(e) => setSelectedSeverity(e.target.value)}
@@ -505,7 +531,7 @@ const Reports: React.FC = () => {
                     >
                       {severityLevels.map(level => (
                         <option key={level} value={level}>
-                          {level === 'all' ? 'All Severities' : level.charAt(0).toUpperCase() + level.slice(1)}
+                          {level === 'all' ? t('reports.searchAndFilters.filterOptions.allSeverities') : getSeverityLevelName(level)}
                         </option>
                       ))}
                     </select>
@@ -513,7 +539,7 @@ const Reports: React.FC = () => {
 
                   {/* Status Filter */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">Report Status</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">{t('reports.searchAndFilters.filterLabels.reportStatus')}</label>
                     <select
                       value={selectedStatus}
                       onChange={(e) => setSelectedStatus(e.target.value)}
@@ -521,7 +547,7 @@ const Reports: React.FC = () => {
                     >
                       {statusOptions.map(status => (
                         <option key={status} value={status}>
-                          {status === 'all' ? 'All Statuses' : status.charAt(0).toUpperCase() + status.slice(1)}
+                          {status === 'all' ? t('reports.searchAndFilters.filterOptions.allStatuses') : getStatusName(status)}
                         </option>
                       ))}
                     </select>
@@ -529,7 +555,7 @@ const Reports: React.FC = () => {
 
                   {/* Sort By */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">Sort Order</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-3">{t('reports.searchAndFilters.sortBy')}</label>
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
@@ -672,7 +698,7 @@ const Reports: React.FC = () => {
                     {/* Image quality indicator */}
                     {imageErrorStates[report.id] && (
                       <div className="absolute bottom-3 left-3 bg-amber-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-md text-xs font-medium">
-                        Default Image
+                        {t('reports.reportCard.imageLoadError')}
                       </div>
                     )}
 
@@ -685,7 +711,7 @@ const Reports: React.FC = () => {
                           report.severity === 'medium' ? 'bg-yellow-400' :
                           'bg-green-400'
                         }`}></div>
-                        <span>{report.severity?.toUpperCase()}</span>
+                        <span>{getSeverityLevelName(report.severity).toUpperCase()}</span>
                       </div>
                     </div>
 
@@ -699,7 +725,7 @@ const Reports: React.FC = () => {
                       }`}>
                         {report.status === 'verified' && <CheckCircle size={12} className="mr-1" />}
                         {report.status === 'pending' && <Clock size={12} className="mr-1" />}
-                        <span>{report.status.charAt(0).toUpperCase() + report.status.slice(1)}</span>
+                        <span>{getStatusName(report.status)}</span>
                       </div>
                     </div>
 
@@ -760,7 +786,7 @@ const Reports: React.FC = () => {
                         to={`/reports/${report.id}`}
                         className="w-full inline-flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                       >
-                        View Details
+                        {t('reports.reportCard.viewDetails')}
                         <ArrowRight size={16} className="ml-2" />
                       </Link>
                     </div>
@@ -811,7 +837,7 @@ const Reports: React.FC = () => {
                         {/* Image quality indicator for thumbnails */}
                         {imageErrorStates[report.id] && (
                           <div className="absolute top-2 left-2 bg-amber-500/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-xs font-medium">
-                            Default
+                            {t('reports.reportCard.defaultImage')}
                           </div>
                         )}
                       </div>
@@ -831,7 +857,7 @@ const Reports: React.FC = () => {
                           {/* Professional Status and Severity Badges */}
                           <div className="flex flex-col items-end space-y-2 ml-4">
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getSeverityColor(report.severity)}`}>
-                              {report.severity?.toUpperCase()}
+                              {getSeverityLevelName(report.severity).toUpperCase()}
                             </span>
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                               report.status === 'verified' ? 'bg-green-100 text-green-800' :
@@ -841,7 +867,7 @@ const Reports: React.FC = () => {
                             }`}>
                               {report.status === 'verified' && <CheckCircle size={12} className="inline mr-1" />}
                               {report.status === 'pending' && <Clock size={12} className="inline mr-1" />}
-                              {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                              {getStatusName(report.status)}
                             </span>
                           </div>
                         </div>
@@ -869,7 +895,7 @@ const Reports: React.FC = () => {
                           {report.photos && report.photos.length > 1 && (
                             <div className="flex items-center text-sm text-gray-600">
                               <ImageIcon size={14} className="mr-1.5 text-blue-600" />
-                              <span>{report.photos.length} photos</span>
+                              <span>{report.photos.length} {t('reports.reportCard.photos')}</span>
                             </div>
                           )}
                         </div>
@@ -881,7 +907,7 @@ const Reports: React.FC = () => {
                           to={`/reports/${report.id}`}
                           className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
                         >
-                          View Details
+                          {t('reports.reportCard.viewDetails')}
                           <ArrowRight size={16} className="ml-2" />
                         </Link>
                       </div>
@@ -903,9 +929,9 @@ const Reports: React.FC = () => {
                 <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-br from-indigo-400/30 to-blue-500/30 rounded-full opacity-60 animate-pulse delay-1000"></div>
               </div>
 
-              <h3 className="text-3xl font-bold text-gray-900 mb-6">No Reports Found</h3>
+              <h3 className="text-3xl font-bold text-gray-900 mb-6">{t('reports.noResults.title')}</h3>
               <p className="text-xl text-gray-600 mb-12 leading-relaxed">
-                We couldn't find any reports matching your current search criteria. Try adjusting your filters or search terms.
+                {t('reports.noResults.description')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
@@ -914,7 +940,7 @@ const Reports: React.FC = () => {
                   className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/25 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <span className="relative">Clear All Filters</span>
+                  <span className="relative">{t('reports.searchAndFilters.clearAllFilters')}</span>
                 </button>
               </div>
 
@@ -990,7 +1016,7 @@ const Reports: React.FC = () => {
                   }`}
                 >
                   <ChevronLeft size={18} className={`mr-2 ${currentPage === 1 ? '' : 'group-hover:-translate-x-1'} transition-transform`} />
-                  Previous
+                  {t('reports.pagination.previous')}
                 </button>
 
                 {/* Enhanced Page Numbers */}
@@ -1033,7 +1059,7 @@ const Reports: React.FC = () => {
                       : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 shadow-lg hover:shadow-xl transform hover:scale-105'
                   }`}
                 >
-                  Next
+                  {t('reports.pagination.next')}
                   <ChevronRight size={18} className={`ml-2 ${currentPage === totalPages ? '' : 'group-hover:translate-x-1'} transition-transform`} />
                 </button>
               </div>

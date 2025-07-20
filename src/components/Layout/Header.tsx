@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  ShieldCheck, Menu, X, ChevronDown, User, LogOut, Settings, Shield, 
-  Heart, Globe, Users, Target, Award, HandHeart, Handshake, Phone,
+import {
+  ShieldCheck, Menu, X, ChevronDown, User, LogOut, Settings, Shield,
+  Heart, Globe, Users, Target, Award, HandHeart, Phone,
   AlertTriangle, Info, HelpCircle, MapPin, Zap, BookOpen, FileText,
   Languages, DollarSign, Sparkles
 } from 'lucide-react';
@@ -56,26 +56,9 @@ const Header: React.FC = () => {
       { name: t('navigation.about'), path: '/about' }
     ];
 
-    // Add "Take Action" only if user is not CJ role
+    // Add "Volunteer" only if user is not CJ role
     if (!isCj()) {
-      baseItems.push({
-        name: 'Take Action',
-        path: '/get-involved',
-        dropdown: [
-          {
-            name: 'Ways to Give',
-            path: '/donate',
-            icon: <Heart size={16} />,
-            description: 'Support our disaster relief efforts'
-          },
-          {
-            name: 'Apply Partnership',
-            path: '/partnership',
-            icon: <Handshake size={16} />,
-            description: 'Partner with us for greater impact'
-          }
-        ]
-      });
+      baseItems.push({ name: 'Volunteer', path: '/volunteer/opportunities' });
     }
 
     // Add "Contact" only if user is not CJ role
@@ -149,11 +132,6 @@ const Header: React.FC = () => {
 
   return (
     <>
-      {/* Skip Link for Screen Readers */}
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
-
       <header
         className="fixed top-0 left-0 right-0 z-50 glass-navbar navbar-shadow-lg border-b border-white/20"
         role="banner"

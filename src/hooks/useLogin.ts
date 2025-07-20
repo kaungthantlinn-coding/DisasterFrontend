@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { useAuthStore } from '../stores/authStore';
 import { useErrorHandler, ErrorTracker } from '../utils/errorHandler';
@@ -8,6 +8,7 @@ import { getRoleBasedRedirectPath, logRoleBasedRedirection } from '../utils/role
 export const useLogin = () => {
   const { handleError, getErrorMessage } = useErrorHandler();
   const navigate = useNavigate();
+  const location = useLocation();
 
   return useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
@@ -23,10 +24,18 @@ export const useLogin = () => {
       useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken);
       ErrorTracker.getInstance().trackUserAction('login_success', { userId: data.user.userId });
 
-      // Implement role-based redirection
-      const redirectPath = getRoleBasedRedirectPath(data.user);
-      logRoleBasedRedirection(data.user, redirectPath);
-      navigate(redirectPath, { replace: true });
+      // Check for intended destination from location state
+      const from = (location.state as any)?.from?.pathname;
+
+      if (from && from !== '/login') {
+        // Redirect to the intended destination
+        navigate(from, { replace: true });
+      } else {
+        // Use role-based redirection as fallback
+        const redirectPath = getRoleBasedRedirectPath(data.user);
+        logRoleBasedRedirection(data.user, redirectPath);
+        navigate(redirectPath, { replace: true });
+      }
     },
     onError: (error) => {
       handleError(error as Error, {

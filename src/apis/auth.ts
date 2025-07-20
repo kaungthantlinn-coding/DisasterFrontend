@@ -4,6 +4,8 @@ import {
   SignupRequest,
   GoogleLoginRequest,
   RefreshTokenRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
   AuthResponse,
   User,
 } from '../types';
@@ -55,6 +57,24 @@ export const authApi = {
   // Get Google Client ID
   getGoogleClientId: async (): Promise<string> => {
     const response = await apiClient.get('/Config/google-client-id');
+    return response.data;
+  },
+
+  // Forgot password - send reset email
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<{ message: string }> => {
+    const response = await apiClient.post('/Auth/forgot-password', data);
+    return response.data;
+  },
+
+  // Reset password with token
+  resetPassword: async (data: ResetPasswordRequest): Promise<{ message: string }> => {
+    const response = await apiClient.post('/Auth/reset-password', data);
+    return response.data;
+  },
+
+  // Verify reset token
+  verifyResetToken: async (token: string): Promise<{ valid: boolean; message?: string }> => {
+    const response = await apiClient.post('/Auth/verify-reset-token', { token });
     return response.data;
   },
 };

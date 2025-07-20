@@ -50,79 +50,185 @@ const getDefaultImage = (disasterType: string): string => {
   }
 };
 
-// Create custom report marker with image
-const createReportMarker = (report: Report): L.DivIcon => {
+// Create enhanced report marker with modern styling
+const createEnhancedReportMarker = (report: Report): L.DivIcon => {
   const color = getSeverityColor(report.severity);
   const icon = getDisasterIcon(report.disasterType);
-  const imageUrl = report.photos && report.photos.length > 0 ? report.photos[0] : getDefaultImage(report.disasterType);
-  const size = 50;
+  const severity = report.severity;
+
+  // Enhanced size hierarchy for better visual distinction
+  const getMarkerSize = (severity: string) => {
+    switch (severity) {
+      case 'critical': return { outer: 56, inner: 48, pulse: 64 };
+      case 'high': return { outer: 48, inner: 40, pulse: 56 };
+      case 'medium': return { outer: 42, inner: 34, pulse: 50 };
+      case 'low': return { outer: 36, inner: 28, pulse: 44 };
+      default: return { outer: 36, inner: 28, pulse: 44 };
+    }
+  };
+
+  // Enhanced color system with gradients and blue theme integration
+  const getEnhancedColors = (severity: string) => {
+    switch (severity) {
+      case 'critical':
+        return {
+          primary: '#dc2626',
+          secondary: '#ef4444',
+          gradient: 'linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%)',
+          shadow: 'rgba(220, 38, 38, 0.4)',
+          glow: 'rgba(220, 38, 38, 0.6)'
+        };
+      case 'high':
+        return {
+          primary: '#ea580c',
+          secondary: '#f97316',
+          gradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 50%, #fb923c 100%)',
+          shadow: 'rgba(234, 88, 12, 0.4)',
+          glow: 'rgba(234, 88, 12, 0.6)'
+        };
+      case 'medium':
+        return {
+          primary: '#2563eb',
+          secondary: '#3b82f6',
+          gradient: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%)',
+          shadow: 'rgba(37, 99, 235, 0.4)',
+          glow: 'rgba(37, 99, 235, 0.6)'
+        };
+      case 'low':
+        return {
+          primary: '#059669',
+          secondary: '#10b981',
+          gradient: 'linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%)',
+          shadow: 'rgba(5, 150, 105, 0.4)',
+          glow: 'rgba(5, 150, 105, 0.6)'
+        };
+      default:
+        return {
+          primary: '#6b7280',
+          secondary: '#9ca3af',
+          gradient: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 50%, #d1d5db 100%)',
+          shadow: 'rgba(107, 114, 128, 0.4)',
+          glow: 'rgba(107, 114, 128, 0.6)'
+        };
+    }
+  };
+
+  const sizes = getMarkerSize(severity);
+  const colors = getEnhancedColors(severity);
+  const isPulse = severity === 'critical';
 
   return L.divIcon({
     html: `
-      <div style="
-        width: ${size}px;
-        height: ${size}px;
+      <div class="enhanced-marker-container" style="
         position: relative;
+        width: ${sizes.outer}px;
+        height: ${sizes.outer}px;
         cursor: pointer;
+        transform-origin: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       ">
-        <div style="
-          width: 100%;
-          height: 100%;
-          border-radius: 50%;
-          border: 3px solid ${color};
-          background: white;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          overflow: hidden;
-          position: relative;
-        ">
-          <img
-            src="${imageUrl}"
-            style="
-              width: 100%;
-              height: 100%;
-              object-fit: cover;
-              border-radius: 50%;
-            "
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-          />
-          <div style="
+        ${isPulse ? `
+          <div class="pulse-ring" style="
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: ${color};
-            display: none;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
+            top: 50%;
+            left: 50%;
+            width: ${sizes.pulse}px;
+            height: ${sizes.pulse}px;
+            transform: translate(-50%, -50%);
+            border: 2px solid ${colors.primary};
             border-radius: 50%;
-          ">
-            ${icon}
-          </div>
-        </div>
-        <div style="
-          position: absolute;
-          bottom: -2px;
-          right: -2px;
-          width: 18px;
-          height: 18px;
-          background: ${color};
-          border: 2px solid white;
+            opacity: 0;
+            animation: pulse-animation 2s infinite;
+          "></div>
+        ` : ''}
+
+        <div class="marker-main" style="
+          position: relative;
+          width: ${sizes.outer}px;
+          height: ${sizes.outer}px;
+          background: ${colors.gradient};
+          border: 3px solid white;
           border-radius: 50%;
+          box-shadow:
+            0 4px 12px ${colors.shadow},
+            0 2px 4px rgba(0, 0, 0, 0.1),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 10px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          backdrop-filter: blur(8px);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         ">
-          ${icon}
+          <div class="marker-icon" style="
+            font-size: ${Math.floor(sizes.inner * 0.5)}px;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+            transition: all 0.3s ease;
+          ">
+            ${icon}
+          </div>
+
+          <div class="severity-indicator" style="
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 16px;
+            height: 16px;
+            background: ${colors.primary};
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: white;
+            font-weight: bold;
+          ">
+            ${severity.charAt(0).toUpperCase()}
+          </div>
         </div>
       </div>
+
+      <style>
+        @keyframes pulse-animation {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.8);
+          }
+          50% {
+            opacity: 0.8;
+            transform: translate(-50%, -50%) scale(1.1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1.3);
+          }
+        }
+
+        .enhanced-marker-container:hover .marker-main {
+          transform: scale(1.15);
+          box-shadow:
+            0 8px 24px ${colors.shadow},
+            0 4px 8px rgba(0, 0, 0, 0.15),
+            0 0 0 4px ${colors.glow}33,
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .enhanced-marker-container:hover .marker-icon {
+          transform: scale(1.1);
+        }
+
+        .enhanced-marker-container:focus-within .marker-main {
+          outline: 3px solid ${colors.primary};
+          outline-offset: 2px;
+        }
+      </style>
     `,
-    className: 'report-marker',
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    className: 'enhanced-report-marker',
+    iconSize: [sizes.outer, sizes.outer],
+    iconAnchor: [sizes.outer / 2, sizes.outer / 2],
   });
 };
 
@@ -146,9 +252,11 @@ const ReportMap: React.FC<ReportMapProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const activeTooltipRef = useRef<L.Tooltip | null>(null);
   const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isMapLoading, setIsMapLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   // Map initialization
@@ -189,6 +297,7 @@ const ReportMap: React.FC<ReportMapProps> = ({
         // Ensure scroll wheel zoom is enabled after map is fully loaded
         map.whenReady(() => {
           setIsMapLoading(false);
+          setIsMapReady(true);
           map.scrollWheelZoom.enable();
 
           // Invalidate size to ensure proper rendering
@@ -231,154 +340,254 @@ const ReportMap: React.FC<ReportMapProps> = ({
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
+      setIsMapReady(false);
     };
   }, []);
 
-  // Add markers for reports
+  // Add enhanced markers for reports with new styling system
   useEffect(() => {
-    if (!mapInstanceRef.current) {
+    if (!mapInstanceRef.current || !isMapReady) {
       return;
     }
 
-    // Clear existing markers
+    // Clear existing markers and tooltips
     markersRef.current.forEach(marker => {
       mapInstanceRef.current?.removeLayer(marker);
     });
     markersRef.current = [];
 
-    // Add new markers with custom image pins
+    // Clear any active tooltip
+    if (activeTooltipRef.current && mapInstanceRef.current) {
+      mapInstanceRef.current.closeTooltip(activeTooltipRef.current);
+      activeTooltipRef.current = null;
+    }
+
+    // Add new enhanced markers with modern styling
     reports.forEach((report) => {
       const marker = L.marker(
         [report.location.coordinates.lat, report.location.coordinates.lng],
-        { icon: createReportMarker(report) }
+        { icon: createEnhancedReportMarker(report) }
       );
-      
-      // Create enhanced popup content with image
-      const imageUrl = report.photos && report.photos.length > 0 ? report.photos[0] : getDefaultImage(report.disasterType);
-      const severityColor = getSeverityColor(report.severity);
-      const disasterIcon = getDisasterIcon(report.disasterType);
 
+      // Add enhanced popup content
       const popupContent = `
-        <div class="p-0 max-w-sm overflow-hidden">
-          <!-- Image Header -->
-          <div class="relative h-32 bg-gray-100">
-            <img
-              src="${imageUrl}"
-              alt="${report.title}"
-              class="w-full h-full object-cover"
-              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-            />
-            <div class="absolute inset-0 bg-gradient-to-r from-gray-600 to-gray-800 flex items-center justify-center text-white text-2xl" style="display: none;">
-              ${disasterIcon}
+        <div class="enhanced-popup" style="
+          max-width: 320px;
+          font-family: system-ui, -apple-system, sans-serif;
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        ">
+          <div style="
+            padding: 20px;
+            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+            color: white;
+            text-align: center;
+          ">
+            <div style="font-size: 24px; margin-bottom: 8px;">${getDisasterIcon(report.disasterType)}</div>
+            <h3 style="
+              margin: 0;
+              font-size: 16px;
+              font-weight: 600;
+              line-height: 1.3;
+            ">${report.title}</h3>
+            <div style="
+              margin-top: 8px;
+              padding: 4px 12px;
+              background: rgba(255, 255, 255, 0.2);
+              border-radius: 20px;
+              font-size: 12px;
+              font-weight: 500;
+              display: inline-block;
+            ">
+              ${report.severity.toUpperCase()}
             </div>
-            <div class="absolute top-2 right-2">
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white" style="background-color: ${severityColor};">
-                ${report.severity.toUpperCase()}
-              </span>
-            </div>
-            ${report.photos && report.photos.length > 1 ? `
-              <div class="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white px-2 py-1 rounded text-xs font-medium flex items-center">
-                📷 ${report.photos.length} photos
-              </div>
-            ` : ''}
           </div>
 
-          <!-- Content -->
-          <div class="p-4">
-            <div class="flex items-start space-x-3 mb-3">
-              <div class="w-3 h-3 rounded-full mt-1.5 flex-shrink-0" style="background-color: ${severityColor};"></div>
-              <div class="flex-1 min-w-0">
-                <h3 class="font-semibold text-gray-900 text-sm leading-tight mb-1">${report.title}</h3>
-                <p class="text-xs text-gray-600 mb-2 flex items-center">
-                  📍 ${report.location.address}
-                </p>
-                <p class="text-xs text-gray-700 line-clamp-3">${report.description}</p>
-              </div>
+          <div style="padding: 20px;">
+            <div style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 12px;
+              color: #64748b;
+              font-size: 14px;
+            ">
+              <span>📍</span>
+              <span>${report.location.address}</span>
             </div>
 
-            <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-              <div class="text-xs text-gray-500">
-                📅 ${format(report.createdAt, 'MMM d, yyyy')}
-              </div>
-              <button
-                class="view-details-btn bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm"
-                data-report-id="${report.id}"
-              >
-                View Details
-              </button>
+            <div style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 12px;
+              color: #64748b;
+              font-size: 14px;
+            ">
+              <span>📅</span>
+              <span>${format(report.createdAt, 'MMM d, yyyy • HH:mm')}</span>
             </div>
+
+            <div style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 16px;
+              color: #64748b;
+              font-size: 14px;
+            ">
+              <span>👤</span>
+              <span>${report.reportedBy}</span>
+            </div>
+
+            ${report.description ? `
+              <p style="
+                margin: 0 0 16px 0;
+                color: #475569;
+                font-size: 14px;
+                line-height: 1.5;
+              ">${report.description.substring(0, 120)}${report.description.length > 120 ? '...' : ''}</p>
+            ` : ''}
+
+            <button
+              class="view-details-btn"
+              style="
+                width: 100%;
+                padding: 12px 16px;
+                background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+              "
+              onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 8px 12px -1px rgba(0, 0, 0, 0.15)'"
+              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(0, 0, 0, 0.1)'"
+              data-report-id="${report.id}"
+            >
+              View Full Report →
+            </button>
           </div>
         </div>
       `;
 
       marker.bindPopup(popupContent, {
-        className: 'custom-report-popup',
-        maxWidth: 320,
+        className: 'enhanced-report-popup',
+        maxWidth: 340,
         closeButton: true,
         autoPan: true,
+        offset: [0, -10]
       });
 
-      // Add hover tooltip
-      marker.bindTooltip(`
-        <div class="text-center">
-          <div class="font-semibold text-sm">${report.title}</div>
-          <div class="text-xs text-gray-600">${report.severity.toUpperCase()} • ${format(report.createdAt, 'MMM d')}</div>
-        </div>
-      `, {
-        permanent: false,
-        direction: 'top',
-        offset: [0, -25],
-        className: 'custom-report-tooltip'
-      });
-
-      // Add hover effects
+      // Add enhanced hover effects with manual tooltip management
       marker.on('mouseover', function() {
         const iconElement = this.getElement();
         if (iconElement) {
-          iconElement.style.transform = 'scale(1.1)';
           iconElement.style.zIndex = '1000';
-          iconElement.style.filter = 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))';
+        }
+
+        // Close any existing tooltip first
+        if (activeTooltipRef.current && mapInstanceRef.current) {
+          mapInstanceRef.current.closeTooltip(activeTooltipRef.current);
+          activeTooltipRef.current = null;
+        }
+
+        // Create and show new enhanced tooltip
+        if (mapInstanceRef.current) {
+          const tooltipContent = `
+            <div style="
+              text-align: center;
+              padding: 8px 12px;
+              background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+              color: white;
+              border-radius: 8px;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+              font-family: system-ui, -apple-system, sans-serif;
+            ">
+              <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">${report.title}</div>
+              <div style="font-size: 12px; opacity: 0.9;">
+                ${report.severity.toUpperCase()} • ${format(report.createdAt, 'MMM d')}
+              </div>
+            </div>
+          `;
+
+          const tooltip = L.tooltip({
+            permanent: false,
+            direction: 'top',
+            offset: [0, -15],
+            className: 'enhanced-report-tooltip'
+          })
+          .setContent(tooltipContent)
+          .setLatLng([report.location.coordinates.lat, report.location.coordinates.lng]);
+
+          tooltip.addTo(mapInstanceRef.current);
+          activeTooltipRef.current = tooltip;
         }
       });
 
       marker.on('mouseout', function() {
         const iconElement = this.getElement();
         if (iconElement) {
-          iconElement.style.transform = 'scale(1)';
           iconElement.style.zIndex = '400';
-          iconElement.style.filter = 'drop-shadow(0 4px 12px rgba(0,0,0,0.3))';
         }
-      });
 
-      // Add click handler for view details button
-      marker.on('popupopen', () => {
-        const popup = marker.getPopup();
-        if (popup && popup.getElement()) {
-          const viewBtn = popup.getElement()?.querySelector('.view-details-btn') as HTMLButtonElement;
-          if (viewBtn) {
-            viewBtn.onclick = () => {
-              if (onReportSelect) {
-                onReportSelect(report);
-              }
-            };
-          }
+        // Close tooltip on mouseout
+        if (activeTooltipRef.current && mapInstanceRef.current) {
+          mapInstanceRef.current.closeTooltip(activeTooltipRef.current);
+          activeTooltipRef.current = null;
         }
       });
 
       marker.addTo(mapInstanceRef.current!);
       markersRef.current.push(marker);
     });
-  }, [reports, onReportSelect]);
 
-  // Handle selected report
-  useEffect(() => {
-    if (selectedReport && mapInstanceRef.current) {
-      mapInstanceRef.current.setView(
-        [selectedReport.location.coordinates.lat, selectedReport.location.coordinates.lng],
-        10
-      );
+    // Fit map to show all markers if there are any
+    if (reports.length > 0 && markersRef.current.length > 0) {
+      try {
+        const group = new L.featureGroup(markersRef.current);
+        mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+      } catch (error) {
+        console.warn('Map bounds fitting error:', error);
+      }
     }
-  }, [selectedReport]);
+  }, [reports, onReportSelect, isMapReady]);
+
+  // Handle selected report with improved error handling
+  useEffect(() => {
+    if (selectedReport && mapInstanceRef.current && isMapReady) {
+      // Add a small delay to ensure map is fully ready
+      const timer = setTimeout(() => {
+        if (mapInstanceRef.current) {
+          try {
+            // Check if map container exists and is properly initialized
+            const container = mapInstanceRef.current.getContainer();
+            if (!container || !container.offsetParent) {
+              console.warn('Map container not ready for setView operation');
+              return;
+            }
+
+            // Use setView without animation to avoid positioning errors
+            mapInstanceRef.current.setView(
+              [selectedReport.location.coordinates.lat, selectedReport.location.coordinates.lng],
+              10,
+              { animate: false } // Disable animation to prevent _leaflet_pos errors
+            );
+          } catch (error) {
+            // Silently handle Leaflet positioning errors
+            console.warn('Map positioning error:', error);
+          }
+        }
+      }, 100); // Small delay to ensure map is ready
+
+      return () => clearTimeout(timer);
+    }
+  }, [selectedReport, isMapReady]);
 
   // Get current location with improved error handling
   const getCurrentLocation = () => {
@@ -393,7 +602,19 @@ const ReportMap: React.FC<ReportMapProps> = ({
         setCurrentLocation({ lat: latitude, lng: longitude });
 
         if (mapInstanceRef.current) {
-          mapInstanceRef.current.setView([latitude, longitude], 10);
+          try {
+            // Check if map container exists and is properly initialized
+            const container = mapInstanceRef.current.getContainer();
+            if (!container || !container.offsetParent) {
+              console.warn('Map container not ready for setView operation');
+              return;
+            }
+
+            mapInstanceRef.current.setView([latitude, longitude], 10, { animate: false });
+          } catch (error) {
+            // Silently handle Leaflet positioning errors
+            console.warn('Map positioning error:', error);
+          }
         }
       },
       (error) => {

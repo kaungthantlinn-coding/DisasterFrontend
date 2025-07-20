@@ -329,6 +329,13 @@ export const setupGlobalErrorHandlers = (): void => {
 
   // Handle unhandled JavaScript errors
   window.addEventListener('error', (event) => {
+    // Filter out known Leaflet positioning errors that are handled gracefully
+    if (event.message.includes('_leaflet_pos') ||
+        event.message.includes('Cannot read properties of undefined (reading \'_leaflet_pos\')')) {
+      // These are non-critical Leaflet animation errors that we handle gracefully
+      return;
+    }
+
     tracker.track(new Error(event.message), {
       component: 'Global',
       action: 'unhandled_error',

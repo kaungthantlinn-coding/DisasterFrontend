@@ -66,67 +66,67 @@ const Home: React.FC = () => {
   const heroImages = [
     {
       url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-      title: 'Emergency Response',
-      description: 'Rapid coordination when every second counts',
-      category: 'Response',
-      stats: { primary: '15K', secondary: 'Lives Saved', tertiary: '48hrs', quaternary: 'Response Time' }
+      title: t('home.heroImages.emergencyResponse.title'),
+      description: t('home.heroImages.emergencyResponse.description'),
+      category: t('home.heroImages.emergencyResponse.category'),
+      stats: { primary: '15K', secondary: t('home.heroImages.emergencyResponse.livesSaved'), tertiary: '48hrs', quaternary: t('home.heroImages.emergencyResponse.responseTime') }
     },
     {
       url: 'https://images.unsplash.com/photo-1504609813442-a8924e83f76e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-      title: 'Community Unity',
-      description: 'Bringing people together in times of crisis',
-      category: 'Community',
-      stats: { primary: '50K', secondary: 'Communities', tertiary: '24/7', quaternary: 'Support' }
+      title: t('home.heroImages.communityUnity.title'),
+      description: t('home.heroImages.communityUnity.description'),
+      category: t('home.heroImages.communityUnity.category'),
+      stats: { primary: '50K', secondary: t('home.heroImages.communityUnity.communities'), tertiary: '24/7', quaternary: t('home.heroImages.communityUnity.support') }
     },
     {
       url: 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2072&q=80',
-      title: 'Weather Monitoring',
-      description: 'Advanced early warning systems',
-      category: 'Prevention',
-      stats: { primary: '99.8%', secondary: 'Accuracy', tertiary: '12min', quaternary: 'Alert Time' }
+      title: t('home.heroImages.weatherMonitoring.title'),
+      description: t('home.heroImages.weatherMonitoring.description'),
+      category: t('home.heroImages.weatherMonitoring.category'),
+      stats: { primary: '99.8%', secondary: t('home.heroImages.weatherMonitoring.accuracy'), tertiary: '12min', quaternary: t('home.heroImages.weatherMonitoring.alertTime') }
     },
     {
       url: 'https://images.unsplash.com/photo-1574482620811-1aa16ffe3c82?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-      title: 'Recovery & Rebuild',
-      description: 'Supporting communities through recovery',
-      category: 'Recovery',
-      stats: { primary: '2.4M', secondary: 'People Helped', tertiary: '89', quaternary: 'Countries' }
+      title: t('home.heroImages.recoveryRebuild.title'),
+      description: t('home.heroImages.recoveryRebuild.description'),
+      category: t('home.heroImages.recoveryRebuild.category'),
+      stats: { primary: '2.4M', secondary: t('home.heroImages.recoveryRebuild.peopleHelped'), tertiary: '89', quaternary: t('home.heroImages.recoveryRebuild.countries') }
     }
   ];
 
   // Professional statistics with cohesive blue theme - refined color matching
   const stats = [
     {
-      label: "Active Disasters",
+      label: t('home.stats.activeDisasters'),
       value: statistics ? statistics.totalActive.toLocaleString() : (disastersLoading ? "..." : "0"),
       icon: AlertTriangle,
       gradient: "from-blue-600 to-blue-700",
       bgGradient: "from-blue-50 to-blue-100",
-      description: "Real-time incidents"
+      description: t('home.stats.realTimeIncidents')
     },
     {
-      label: "Critical Events",
+      label: t('home.stats.criticalEvents'),
       value: statistics ? statistics.critical.toLocaleString() : (disastersLoading ? "..." : "0"),
       icon: Heart,
       gradient: "from-blue-700 to-blue-800",
       bgGradient: "from-blue-100 to-blue-150",
-      description: "Urgent situations"
+      description: t('home.stats.urgentSituations')
     },
     {
-      label: "High Severity",
+      label: t('home.stats.highSeverity'),
       value: statistics ? statistics.high.toLocaleString() : (disastersLoading ? "..." : "0"),
       icon: CheckCircle,
       gradient: "from-blue-800 to-indigo-800",
       bgGradient: "from-blue-150 to-indigo-100",
-      description: "Major incidents"
+      description: t('home.stats.majorIncidents')
     },
     {
-      label: "Data Sources",
+      label: t('home.stats.dataSources'),
       value: "USGS",
       icon: Globe,
       gradient: "from-indigo-700 to-indigo-800",
       bgGradient: "from-indigo-50 to-indigo-100",
-      description: "Live monitoring"
+      description: t('home.stats.liveMonitoring')
     }
   ];
 
@@ -134,93 +134,63 @@ const Home: React.FC = () => {
   const safetyContent = [
     {
       id: 1,
-      title: "Emergency Kit Essentials",
-      description: "Prepare a comprehensive emergency kit with water, non-perishable food, flashlight, first aid supplies, and important documents. Keep enough supplies for at least 72 hours.",
+      title: t('home.safety.emergencyKit.title'),
+      description: t('home.safety.emergencyKit.description'),
       icon: Shield,
       image: "https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       gradient: "from-blue-500 to-cyan-500",
       bgGradient: "from-blue-50 to-cyan-50",
-      tips: [
-        "1 gallon of water per person per day",
-        "Non-perishable food for 3+ days",
-        "Battery-powered radio and flashlight",
-        "First aid kit and medications"
-      ]
+      tips: t('home.safety.emergencyKit.tips', { returnObjects: true }) as string[]
     },
     {
       id: 2,
-      title: "Evacuation Planning",
-      description: "Create and practice evacuation routes with your family. Know multiple ways to exit your home and neighborhood, and establish meeting points.",
+      title: t('home.safety.evacuationPlanning.title'),
+      description: t('home.safety.evacuationPlanning.description'),
       icon: MapPin,
       image: "https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       gradient: "from-green-500 to-emerald-500",
       bgGradient: "from-green-50 to-emerald-50",
-      tips: [
-        "Plan primary and alternate routes",
-        "Practice evacuation drills regularly",
-        "Identify safe meeting locations",
-        "Keep vehicle fuel tanks full"
-      ]
+      tips: t('home.safety.evacuationPlanning.tips', { returnObjects: true }) as string[]
     },
     {
       id: 3,
-      title: "Communication Strategy",
-      description: "Establish a family communication plan with out-of-state contacts. Ensure everyone knows how to reach each other during emergencies.",
+      title: t('home.safety.communicationStrategy.title'),
+      description: t('home.safety.communicationStrategy.description'),
       icon: Phone,
       image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       gradient: "from-purple-500 to-pink-500",
       bgGradient: "from-purple-50 to-pink-50",
-      tips: [
-        "Designate out-of-state contact person",
-        "Program emergency numbers in phones",
-        "Keep written contact information",
-        "Learn text messaging for emergencies"
-      ]
+      tips: t('home.safety.communicationStrategy.tips', { returnObjects: true }) as string[]
     },
     {
       id: 4,
-      title: "Home Safety Measures",
-      description: "Secure your home against disasters by installing smoke detectors, securing heavy furniture, and knowing utility shut-off locations.",
+      title: t('home.safety.homeSafety.title'),
+      description: t('home.safety.homeSafety.description'),
       icon: HomeIcon,
       image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       gradient: "from-orange-500 to-red-500",
       bgGradient: "from-orange-50 to-red-50",
-      tips: [
-        "Install smoke and carbon monoxide detectors",
-        "Secure heavy furniture and appliances",
-        "Know utility shut-off locations",
-        "Maintain fire extinguishers"
-      ]
+      tips: t('home.safety.homeSafety.tips', { returnObjects: true }) as string[]
     },
     {
       id: 5,
-      title: "Community Preparedness",
-      description: "Connect with neighbors and local emergency services. Join community emergency response teams and stay informed about local hazards.",
+      title: t('home.safety.communityPreparedness.title'),
+      description: t('home.safety.communityPreparedness.description'),
       icon: Users,
       image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       gradient: "from-teal-500 to-blue-500",
       bgGradient: "from-teal-50 to-blue-50",
-      tips: [
-        "Know your neighbors and their skills",
-        "Join local emergency response teams",
-        "Stay informed about local hazards",
-        "Participate in community drills"
-      ]
+      tips: t('home.safety.communityPreparedness.tips', { returnObjects: true }) as string[]
     },
     {
       id: 6,
-      title: "Digital Preparedness",
-      description: "Back up important documents digitally, keep devices charged, and download emergency apps for real-time alerts and information.",
+      title: t('home.safety.digitalPreparedness.title'),
+      description: t('home.safety.digitalPreparedness.description'),
       icon: Zap,
       image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       gradient: "from-indigo-500 to-purple-500",
       bgGradient: "from-indigo-50 to-purple-50",
-      tips: [
-        "Back up documents to cloud storage",
-        "Keep portable chargers ready",
-        "Download emergency alert apps",
-        "Store digital copies of IDs"
-      ]
+      tips: t('home.safety.digitalPreparedness.tips', { returnObjects: true }) as string[]
     }
   ];
 
@@ -358,7 +328,7 @@ const Home: React.FC = () => {
                   <div className="inline-flex items-center px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-sm font-semibold mb-6 hover:bg-white/15 transition-all duration-300">
                     <div className="w-2 h-2 bg-blue-400 rounded-full mr-3 animate-pulse"></div>
                     <Globe size={16} className="mr-2 text-blue-300" />
-                    <span className="text-white/90">Real-time disaster monitoring worldwide</span>
+                    <span className="text-white/90">{t('home.hero.trustBadge')}</span>
                   </div>
 
                   {/* Main Heading */}
@@ -376,9 +346,10 @@ const Home: React.FC = () => {
                     {t('home.hero.description')}
                   </p>
 
-                  {/* Action Buttons */}
+                  {/* Role-based Action Buttons */}
                   <div className="flex flex-col sm:flex-row gap-4 mb-12">
                     {canCreateReports ? (
+                      /* Emergency Reporting Button - For Admin/CJ Users */
                       <Link
                         to="/report/new"
                         className="group bg-red-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-red-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center"
@@ -388,19 +359,20 @@ const Home: React.FC = () => {
                         <ArrowRight size={20} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                       </Link>
                     ) : (
+                      /* Volunteer Registration Button - For Regular Users */
                       <Link
-                        to="/contact"
+                        to="/volunteer/register"
                         className="group bg-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center"
                       >
-                        <Phone size={20} className="mr-3 group-hover:scale-105 transition-transform duration-300" />
-                        <span>{t('home.hero.reportEmergency')}</span>
+                        <Heart size={20} className="mr-3 group-hover:scale-105 transition-transform duration-300" />
+                        <span>{t('home.hero.becomeVolunteer')}</span>
                         <ArrowRight size={20} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                       </Link>
                     )}
 
                     <button className="group bg-white/10 backdrop-blur-xl border border-white/30 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-white/20 hover:border-white/50 transition-all duration-300 flex items-center justify-center">
                       <Play size={20} className="mr-3 group-hover:scale-105 transition-transform duration-300" />
-                      <span>{t('home.hero.watchDemo')}</span>
+                      <span>{canCreateReports ? t('home.hero.watchEmergencyDemo') : t('home.hero.watchVolunteerStories')}</span>
                     </button>
                   </div>
 
@@ -408,15 +380,15 @@ const Home: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-6 text-sm text-white/80">
                     <div className="flex items-center space-x-2 hover:text-white transition-colors duration-300">
                       <Clock className="text-blue-300" size={16} />
-                      <span className="font-medium">24/7 Monitoring</span>
+                      <span className="font-medium">{t('home.hero.monitoring24x7')}</span>
                     </div>
                     <div className="flex items-center space-x-2 hover:text-white transition-colors duration-300">
                       <Shield className="text-green-300" size={16} />
-                      <span className="font-medium">Verified Data</span>
+                      <span className="font-medium">{t('home.hero.verifiedData')}</span>
                     </div>
                     <div className="flex items-center space-x-2 hover:text-white transition-colors duration-300">
                       <Users className="text-indigo-300" size={16} />
-                      <span className="font-medium">Global Network</span>
+                      <span className="font-medium">{t('home.hero.globalNetwork')}</span>
                     </div>
                   </div>
                 </div>
@@ -525,17 +497,15 @@ const Home: React.FC = () => {
             <div className="text-center mb-16">
               <div className="inline-flex items-center px-5 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold mb-6 hover:bg-blue-200 transition-colors duration-300">
                 <TrendingUp size={16} className="mr-2" />
-                Real-Time Impact Metrics
+                {t('home.stats.realTimeImpactMetrics')}
               </div>
               <h2 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Making a
-                <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-                  Real Impact
+                  {t('home.stats.makingRealImpact')}
                 </span>
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Our platform transforms disaster response globally, connecting communities and saving lives through advanced technology and seamless coordination.
+                {t('home.stats.impactDescription')}
               </p>
             </div>
 
@@ -579,18 +549,15 @@ const Home: React.FC = () => {
             <div className="text-center mb-12">
               <div className="inline-flex items-center px-5 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-sm font-semibold mb-6 text-white">
                 <Globe size={16} className="mr-2" />
-                Live Global Impact
+                {t('home.liveImpact.subtitle')}
               </div>
               <h2 className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-lg">
-                Making Real
-                <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300">
-                  Impact Worldwide
+                  {t('home.liveImpact.title')}
                 </span>
               </h2>
               <p className="text-lg text-blue-100 max-w-3xl mx-auto leading-relaxed drop-shadow-sm">
-                Our platform coordinates real-time disaster response across the globe. See live incidents,
-                active response teams, and communities we're helping right now.
+                {t('home.liveImpact.description')}
               </p>
             </div>
 
@@ -600,30 +567,30 @@ const Home: React.FC = () => {
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-xl">
                   {/* Map Header */}
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-white">Live Disaster Map</h3>
+                    <h3 className="text-xl font-semibold text-white">{t('home.liveImpact.liveDisasterMap')}</h3>
                     <div className="flex items-center space-x-3">
                       {!disastersLoading && !disastersError && (
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                          <span className="text-blue-300 text-sm font-medium">Live Updates</span>
+                          <span className="text-blue-300 text-sm font-medium">{t('home.liveImpact.liveUpdates')}</span>
                         </div>
                       )}
                       {disastersLoading && (
                         <div className="flex items-center space-x-2">
                           <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />
-                          <span className="text-blue-300 text-sm font-medium">Loading...</span>
+                          <span className="text-blue-300 text-sm font-medium">{t('home.liveImpact.loading')}</span>
                         </div>
                       )}
                       {disastersError && (
                         <div className="flex items-center space-x-2">
                           <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                          <span className="text-red-300 text-sm font-medium">Error</span>
+                          <span className="text-red-300 text-sm font-medium">{t('home.liveImpact.error')}</span>
                         </div>
                       )}
                       <button
                         onClick={refresh}
                         className="bg-white/20 backdrop-blur-sm text-white p-2 rounded-lg hover:bg-white/30 transition-colors"
-                        title="Refresh data"
+                        title={t('home.liveImpact.refreshData')}
                       >
                         <RefreshCw className="w-4 h-4" />
                       </button>
@@ -636,13 +603,13 @@ const Home: React.FC = () => {
                       <div className="bg-slate-800 rounded-2xl h-80 flex items-center justify-center">
                         <div className="text-center text-white">
                           <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
-                          <p className="text-lg font-semibold mb-2">Unable to load disaster data</p>
+                          <p className="text-lg font-semibold mb-2">{t('home.liveImpact.unableToLoad')}</p>
                           <p className="text-sm text-gray-300 mb-4">{disastersError}</p>
                           <button
                             onClick={refresh}
                             className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                           >
-                            Try Again
+                            {t('home.liveImpact.tryAgain')}
                           </button>
                         </div>
                       </div>
@@ -660,19 +627,19 @@ const Home: React.FC = () => {
                       <div className="space-y-2 text-xs">
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-red-600 rounded-full"></div>
-                          <span className="text-white">Critical</span>
+                          <span className="text-white">{t('home.liveImpact.critical')}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-indigo-600 rounded-full"></div>
-                          <span className="text-white">High</span>
+                          <span className="text-white">{t('home.liveImpact.high')}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-amber-600 rounded-full"></div>
-                          <span className="text-white">Medium</span>
+                          <span className="text-white">{t('home.liveImpact.medium')}</span>
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className="w-2 h-2 bg-lime-600 rounded-full"></div>
-                          <span className="text-white">Low</span>
+                          <span className="text-white">{t('home.liveImpact.low')}</span>
                         </div>
                       </div>
                     </div>
@@ -787,7 +754,7 @@ const Home: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Quick Actions */}
+                {/* Role-based Quick Actions */}
                 <div className="flex space-x-4">
                   <Link
                     to="/reports"
@@ -799,18 +766,18 @@ const Home: React.FC = () => {
                   {canCreateReports ? (
                     <Link
                       to="/report/new"
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 rounded-2xl font-bold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center group"
+                      className="flex-1 bg-gradient-to-r from-red-600 to-orange-600 text-white px-6 py-4 rounded-2xl font-bold hover:from-red-700 hover:to-orange-700 transition-all duration-300 flex items-center justify-center group"
                     >
                       <AlertTriangle size={20} className="mr-2 group-hover:rotate-12 transition-transform" />
                       Report Now
                     </Link>
                   ) : (
                     <Link
-                      to="/contact"
-                      className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-4 rounded-2xl font-bold hover:from-blue-600 hover:to-purple-600 transition-all duration-300 flex items-center justify-center group"
+                      to="/volunteer/opportunities"
+                      className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-4 rounded-2xl font-bold hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 flex items-center justify-center group"
                     >
-                      <Phone size={20} className="mr-2 group-hover:scale-110 transition-transform" />
-                      Get Help
+                      <Heart size={20} className="mr-2 group-hover:scale-110 transition-transform" />
+                      Volunteer Now
                     </Link>
                   )}
                 </div>
@@ -1178,17 +1145,15 @@ const Home: React.FC = () => {
             <div className="text-center mb-16">
               <div className="inline-flex items-center px-6 py-3 rounded-full bg-blue-100 border border-blue-200 text-sm font-bold mb-8 text-blue-700">
                 <Shield size={18} className="mr-2" />
-                Emergency Preparedness
+                {t('home.safety.subtitle')}
               </div>
               <h2 className="text-4xl lg:text-6xl font-black text-gray-900 mb-8 leading-tight">
-                Stay Safe &
-                <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-800">
-                  Be Prepared
+                  {t('home.safety.title')}
                 </span>
               </h2>
               <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-                Essential safety tips and emergency preparedness guidelines to protect you and your loved ones during disasters. Knowledge saves lives.
+                {t('home.safety.description')}
               </p>
             </div>
 
@@ -1334,85 +1299,145 @@ const Home: React.FC = () => {
           </div>
         </section>
 
-        {/* Professional Call to Action - Refined Color Harmony */}
-        <section className="py-20 bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-800 relative overflow-hidden">
-          {/* Enhanced Background Elements */}
-          <div className="absolute inset-0">
-            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/8 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-300/12 rounded-full blur-3xl animate-pulse delay-1000"></div>
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/3 rounded-full blur-2xl"></div>
-          </div>
-
-          <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center">
-            <div className="inline-flex items-center px-6 py-3 rounded-full bg-blue-600/20 backdrop-blur-xl border border-blue-400/30 text-sm font-semibold mb-6 text-blue-100 shadow-lg">
-              <Target size={16} className="mr-2 text-blue-300" />
-              Join the Movement
+        {/* Role-based Call to Action Section */}
+        {canCreateReports ? (
+          /* Emergency Reporting Section - For Admin/CJ Users */
+          <section className="py-20 bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-800 relative overflow-hidden">
+            {/* Enhanced Background Elements */}
+            <div className="absolute inset-0">
+              <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/8 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-300/12 rounded-full blur-3xl animate-pulse delay-1000"></div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/3 rounded-full blur-2xl"></div>
             </div>
 
-            <h2 className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-xl">
-              Ready to Make a
-              <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-100 via-blue-200 to-indigo-100">
-                Difference?
-              </span>
-            </h2>
+            <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center">
+              <div className="inline-flex items-center px-6 py-3 rounded-full bg-red-600/20 backdrop-blur-xl border border-red-400/30 text-sm font-semibold mb-6 text-red-100 shadow-lg">
+                <AlertTriangle size={16} className="mr-2 text-red-300" />
+                {t('home.cta.emergencyResponse.subtitle')}
+              </div>
 
-            <p className="text-xl text-blue-50 mb-16 max-w-4xl mx-auto leading-relaxed drop-shadow-lg">
-              Join thousands of communities worldwide in building a safer, more connected world. Every second counts in disaster response.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-8 justify-center mb-20">
-              {canCreateReports ? (
+              <h2 className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-xl">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-100 via-orange-200 to-red-100">
+                  {t('home.cta.emergencyResponse.title')}
+                </span>
+              </h2>
+
+              <p className="text-xl text-blue-50 mb-16 max-w-4xl mx-auto leading-relaxed drop-shadow-lg">
+                {t('home.cta.emergencyResponse.description')}
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-8 justify-center mb-20">
                 <Link
                   to="/report/new"
-                  className="group bg-white text-blue-700 px-12 py-5 rounded-2xl text-lg font-bold hover:bg-blue-50 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-xl"
+                  className="group bg-red-600 text-white px-12 py-5 rounded-2xl text-lg font-bold hover:bg-red-700 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-xl"
                 >
                   <AlertTriangle size={22} className="mr-3 group-hover:scale-110 transition-transform duration-300" />
-                  Report Emergency
+                  {t('home.cta.emergencyResponse.reportEmergency')}
                   <ArrowRight size={22} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                 </Link>
-              ) : (
+
                 <Link
-                  to="/contact"
+                  to="/reports"
+                  className="group bg-blue-600/20 backdrop-blur-xl border border-blue-400/40 text-blue-100 px-12 py-5 rounded-2xl text-lg font-bold hover:bg-blue-500/30 hover:border-blue-300/60 hover:text-white hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-lg"
+                >
+                  <Eye size={22} className="mr-3 group-hover:scale-110 transition-transform duration-300" />
+                  {t('home.cta.emergencyResponse.viewReports')}
+                </Link>
+              </div>
+            </div>
+          </section>
+        ) : (
+          /* Volunteer Hero Section - For Regular Users */
+          <section className="py-20 bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-800 relative overflow-hidden">
+            {/* Enhanced Background Elements */}
+            <div className="absolute inset-0">
+              <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/8 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-300/12 rounded-full blur-3xl animate-pulse delay-1000"></div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/3 rounded-full blur-2xl"></div>
+            </div>
+
+            <div className="relative max-w-7xl mx-auto px-6 lg:px-8 text-center">
+              <div className="inline-flex items-center px-6 py-3 rounded-full bg-blue-600/20 backdrop-blur-xl border border-blue-400/30 text-sm font-semibold mb-6 text-blue-100 shadow-lg">
+                <Heart size={16} className="mr-2 text-blue-300" />
+                {t('home.cta.volunteer.subtitle')}
+              </div>
+
+              <h2 className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-xl">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-100 via-blue-200 to-indigo-100">
+                  {t('home.cta.volunteer.title')}
+                </span>
+              </h2>
+
+              <p className="text-xl text-blue-50 mb-16 max-w-4xl mx-auto leading-relaxed drop-shadow-lg">
+                {t('home.cta.volunteer.description')}
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-8 justify-center mb-20">
+                <Link
+                  to="/volunteer/register"
                   className="group bg-white text-blue-700 px-12 py-5 rounded-2xl text-lg font-bold hover:bg-blue-50 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-xl"
                 >
-                  <Phone size={22} className="mr-3 group-hover:scale-110 transition-transform duration-300" />
-                  Get Emergency Help
+                  <Heart size={22} className="mr-3 group-hover:scale-110 transition-transform duration-300" />
+                  {t('home.cta.volunteer.becomeVolunteer')}
                   <ArrowRight size={22} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                 </Link>
+
+                <Link
+                  to="/volunteer/opportunities"
+                  className="group bg-blue-600/20 backdrop-blur-xl border border-blue-400/40 text-blue-100 px-12 py-5 rounded-2xl text-lg font-bold hover:bg-blue-500/30 hover:border-blue-300/60 hover:text-white hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-lg"
+                >
+                  <Users size={22} className="mr-3 group-hover:scale-110 transition-transform duration-300" />
+                  {t('home.cta.volunteer.viewOpportunities')}
+                </Link>
+              </div>
+
+              {/* Role-based Contact/Support Grid */}
+              {canCreateReports ? (
+                /* Emergency Contact Grid - For Admin/CJ Users */
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="group bg-blue-600/15 backdrop-blur-xl rounded-2xl p-8 border border-blue-400/25 hover:bg-blue-500/20 hover:border-blue-300/40 hover:scale-105 transition-all duration-300 shadow-lg">
+                    <Phone className="mx-auto mb-4 text-blue-200 group-hover:text-blue-100 group-hover:scale-110 transition-all duration-300" size={36} />
+                    <h3 className="text-xl font-bold text-white mb-3">{t('home.cta.emergencyResponse.emergencyLine')}</h3>
+                    <p className="text-blue-100 text-base font-semibold">+1 (555) 123-4567</p>
+                  </div>
+
+                  <div className="group bg-blue-600/15 backdrop-blur-xl rounded-2xl p-8 border border-blue-400/25 hover:bg-blue-500/20 hover:border-blue-300/40 hover:scale-105 transition-all duration-300 shadow-lg">
+                    <Mail className="mx-auto mb-4 text-blue-200 group-hover:text-blue-100 group-hover:scale-110 transition-all duration-300" size={36} />
+                    <h3 className="text-xl font-bold text-white mb-3">{t('home.cta.emergencyResponse.emergencyCoordination')}</h3>
+                    <p className="text-blue-100 text-base font-semibold">emergency@disasterwatch.com</p>
+                  </div>
+
+                  <div className="group bg-blue-600/15 backdrop-blur-xl rounded-2xl p-8 border border-blue-400/25 hover:bg-blue-500/20 hover:border-blue-300/40 hover:scale-105 transition-all duration-300 shadow-lg">
+                    <Headphones className="mx-auto mb-4 text-blue-200 group-hover:text-blue-100 group-hover:scale-110 transition-all duration-300" size={36} />
+                    <h3 className="text-xl font-bold text-white mb-3">{t('home.cta.emergencyResponse.commandCenter')}</h3>
+                    <p className="text-blue-100 text-base font-semibold">{t('home.cta.emergencyResponse.available24x7')}</p>
+                  </div>
+                </div>
+              ) : (
+                /* Volunteer Support Grid - For Regular Users */
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="group bg-blue-600/15 backdrop-blur-xl rounded-2xl p-8 border border-blue-400/25 hover:bg-blue-500/20 hover:border-blue-300/40 hover:scale-105 transition-all duration-300 shadow-lg">
+                    <Phone className="mx-auto mb-4 text-blue-200 group-hover:text-blue-100 group-hover:scale-110 transition-all duration-300" size={36} />
+                    <h3 className="text-xl font-bold text-white mb-3">{t('home.cta.volunteer.volunteerHotline')}</h3>
+                    <p className="text-blue-100 text-base font-semibold">+1 (555) 987-6543</p>
+                  </div>
+
+                  <div className="group bg-blue-600/15 backdrop-blur-xl rounded-2xl p-8 border border-blue-400/25 hover:bg-blue-500/20 hover:border-blue-300/40 hover:scale-105 transition-all duration-300 shadow-lg">
+                    <Mail className="mx-auto mb-4 text-blue-200 group-hover:text-blue-100 group-hover:scale-110 transition-all duration-300" size={36} />
+                    <h3 className="text-xl font-bold text-white mb-3">{t('home.cta.volunteer.volunteerSupport')}</h3>
+                    <p className="text-blue-100 text-base font-semibold">volunteers@disasterwatch.com</p>
+                  </div>
+
+                  <div className="group bg-blue-600/15 backdrop-blur-xl rounded-2xl p-8 border border-blue-400/25 hover:bg-blue-500/20 hover:border-blue-300/40 hover:scale-105 transition-all duration-300 shadow-lg">
+                    <Headphones className="mx-auto mb-4 text-blue-200 group-hover:text-blue-100 group-hover:scale-110 transition-all duration-300" size={36} />
+                    <h3 className="text-xl font-bold text-white mb-3">{t('home.cta.volunteer.trainingSupport')}</h3>
+                    <p className="text-blue-100 text-base font-semibold">{t('home.cta.volunteer.availableMonFri')}</p>
+                  </div>
+                </div>
               )}
-
-              <Link
-                to="/reports"
-                className="group bg-blue-600/20 backdrop-blur-xl border border-blue-400/40 text-blue-100 px-12 py-5 rounded-2xl text-lg font-bold hover:bg-blue-500/30 hover:border-blue-300/60 hover:text-white hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-lg"
-              >
-                <Eye size={22} className="mr-3 group-hover:scale-110 transition-transform duration-300" />
-                View Reports
-              </Link>
             </div>
-
-            {/* Contact Grid - Enhanced Design */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="group bg-blue-600/15 backdrop-blur-xl rounded-2xl p-8 border border-blue-400/25 hover:bg-blue-500/20 hover:border-blue-300/40 hover:scale-105 transition-all duration-300 shadow-lg">
-                <Phone className="mx-auto mb-4 text-blue-200 group-hover:text-blue-100 group-hover:scale-110 transition-all duration-300" size={36} />
-                <h3 className="text-xl font-bold text-white mb-3">24/7 Emergency Line</h3>
-                <p className="text-blue-100 text-base font-semibold">+1 (555) 123-4567</p>
-              </div>
-
-              <div className="group bg-blue-600/15 backdrop-blur-xl rounded-2xl p-8 border border-blue-400/25 hover:bg-blue-500/20 hover:border-blue-300/40 hover:scale-105 transition-all duration-300 shadow-lg">
-                <Mail className="mx-auto mb-4 text-blue-200 group-hover:text-blue-100 group-hover:scale-110 transition-all duration-300" size={36} />
-                <h3 className="text-xl font-bold text-white mb-3">Email Support</h3>
-                <p className="text-blue-100 text-base font-semibold">emergency@disasterwatch.com</p>
-              </div>
-
-              <div className="group bg-blue-600/15 backdrop-blur-xl rounded-2xl p-8 border border-blue-400/25 hover:bg-blue-500/20 hover:border-blue-300/40 hover:scale-105 transition-all duration-300 shadow-lg">
-                <Headphones className="mx-auto mb-4 text-blue-200 group-hover:text-blue-100 group-hover:scale-110 transition-all duration-300" size={36} />
-                <h3 className="text-xl font-bold text-white mb-3">Live Chat</h3>
-                <p className="text-blue-100 text-base font-semibold">Available 24/7</p>
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
 
       <Footer />

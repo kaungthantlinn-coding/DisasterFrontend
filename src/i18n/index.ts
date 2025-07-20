@@ -10,7 +10,16 @@ const resources = {
   en: {
     translation: enTranslations
   },
+  'en-US': {
+    translation: enTranslations
+  },
+  'en-GB': {
+    translation: enTranslations
+  },
   my: {
+    translation: myTranslations
+  },
+  'my-MM': {
     translation: myTranslations
   }
 };
@@ -22,17 +31,20 @@ i18n
     resources,
     fallbackLng: 'en',
     debug: process.env.NODE_ENV === 'development',
-    
+
+    // Handle language variants (en-US -> en, my-MM -> my)
+    load: 'languageOnly',
+
     interpolation: {
       escapeValue: false, // React already does escaping
     },
-    
+
     detection: {
       order: ['localStorage', 'navigator', 'htmlTag'],
       caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
     },
-    
+
     react: {
       useSuspense: false,
     },

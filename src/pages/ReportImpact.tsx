@@ -457,7 +457,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <main className="pt-20 pb-12">
+      <main className="navbar-spacing pb-12">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
           {/* Clean Header */}
           <div className="text-center mb-12">

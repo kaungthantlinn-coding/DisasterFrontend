@@ -569,23 +569,7 @@
     box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.2);
   }
 
-  /* Skip link for screen readers */
-  .skip-link {
-    position: absolute;
-    top: -40px;
-    left: 6px;
-    background: rgb(59, 130, 246);
-    color: white;
-    padding: 8px;
-    text-decoration: none;
-    border-radius: 4px;
-    z-index: 1000;
-    font-weight: 600;
-  }
 
-  .skip-link:focus {
-    top: 6px;
-  }
 
   /* Screen reader only content */
   .sr-only {
@@ -828,7 +812,56 @@
     border-top-color: rgba(17, 24, 39, 0.95) !important;
   }
 
-  /* Report Marker Styles */
+  /* Enhanced Report Marker Styles */
+  .enhanced-report-marker {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+  }
+
+  .enhanced-report-marker:hover {
+    filter: drop-shadow(0 8px 20px rgba(0,0,0,0.4));
+    z-index: 1000;
+  }
+
+  /* Enhanced Popup Styles */
+  .enhanced-report-popup .leaflet-popup-content-wrapper {
+    background: transparent;
+    border-radius: 12px;
+    box-shadow: none;
+    padding: 0;
+    border: none;
+  }
+
+  .enhanced-report-popup .leaflet-popup-content {
+    margin: 0;
+    line-height: 1.4;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .enhanced-report-popup .leaflet-popup-tip {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Enhanced Tooltip Styles */
+  .enhanced-report-tooltip {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .enhanced-report-tooltip .leaflet-tooltip-content {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* Legacy Report Marker Styles (for backward compatibility) */
   .report-marker {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
@@ -900,6 +933,187 @@
 
   .navbar-gradient-shine:hover::before {
     left: 100%;
+  }
+
+  /* Fix for navbar spacing - ensure proper top padding */
+  :root {
+    --navbar-spacing-mobile: 4rem;
+    --navbar-spacing-tablet: 4.5rem;
+    --navbar-spacing-desktop: 5rem;
+  }
+
+  .navbar-spacing {
+    padding-top: var(--navbar-spacing-mobile) !important; /* 64px for mobile */
+  }
+
+  @media (min-width: 640px) {
+    .navbar-spacing {
+      padding-top: var(--navbar-spacing-tablet) !important; /* 72px for tablet */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .navbar-spacing {
+      padding-top: var(--navbar-spacing-desktop) !important; /* 80px for desktop */
+    }
+  }
+
+  /* Alternative utility classes with higher specificity */
+  .pt-navbar-mobile {
+    padding-top: 4rem !important;
+  }
+
+  .pt-navbar-tablet {
+    padding-top: 4.5rem !important;
+  }
+
+  .pt-navbar-desktop {
+    padding-top: 5rem !important;
+  }
+
+  /* Ensure these override any conflicting styles */
+  main.navbar-spacing,
+  section.navbar-spacing,
+  div main.navbar-spacing {
+    padding-top: var(--navbar-spacing-mobile) !important;
+  }
+
+  @media (min-width: 640px) {
+    main.navbar-spacing,
+    section.navbar-spacing,
+    div main.navbar-spacing {
+      padding-top: var(--navbar-spacing-tablet) !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    main.navbar-spacing,
+    section.navbar-spacing,
+    div main.navbar-spacing {
+      padding-top: var(--navbar-spacing-desktop) !important;
+    }
+  }
+
+  /* Force override any Tailwind utilities */
+  .navbar-spacing[class*="pt-"],
+  .navbar-spacing.pt-16,
+  .navbar-spacing.sm\:pt-18,
+  .navbar-spacing.lg\:pt-20 {
+    padding-top: 4rem !important;
+  }
+
+  @media (min-width: 640px) {
+    .navbar-spacing[class*="pt-"],
+    .navbar-spacing.pt-16,
+    .navbar-spacing.sm\:pt-18,
+    .navbar-spacing.lg\:pt-20 {
+      padding-top: 4.5rem !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .navbar-spacing[class*="pt-"],
+    .navbar-spacing.pt-16,
+    .navbar-spacing.sm\:pt-18,
+    .navbar-spacing.lg\:pt-20 {
+      padding-top: 5rem !important;
+    }
+  }
+
+  /* Ultimate override - highest specificity */
+  html body div main.navbar-spacing,
+  html body div main.navbar-spacing[style],
+  html body div main.navbar-spacing[class] {
+    padding-top: 4rem !important;
+  }
+
+  @media (min-width: 640px) {
+    html body div main.navbar-spacing,
+    html body div main.navbar-spacing[style],
+    html body div main.navbar-spacing[class] {
+      padding-top: 4.5rem !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    html body div main.navbar-spacing,
+    html body div main.navbar-spacing[style],
+    html body div main.navbar-spacing[class] {
+      padding-top: 5rem !important;
+    }
+  }
+
+  /* Nuclear option - override everything */
+  .navbar-spacing {
+    padding-top: 4rem !important;
+    margin-top: 0 !important;
+  }
+
+  @media (min-width: 640px) {
+    .navbar-spacing {
+      padding-top: 4.5rem !important;
+      margin-top: 0 !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .navbar-spacing {
+      padding-top: 5rem !important;
+      margin-top: 0 !important;
+    }
+  }
+
+  /* Force override any potential conflicts */
+  [class*="navbar-spacing"] {
+    padding-top: 4rem !important;
+  }
+
+  @media (min-width: 640px) {
+    [class*="navbar-spacing"] {
+      padding-top: 4.5rem !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    [class*="navbar-spacing"] {
+      padding-top: 5rem !important;
+    }
+  }
+
+  /* Specific class for guaranteed spacing */
+  .fixed-navbar-spacing {
+    padding-top: 4rem !important;
+    box-sizing: border-box !important;
+  }
+
+  @media (min-width: 640px) {
+    .fixed-navbar-spacing {
+      padding-top: 4.5rem !important;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .fixed-navbar-spacing {
+      padding-top: 5rem !important;
+    }
+  }
+
+  /* Absolute override for desktop */
+  @media screen and (min-width: 1024px) {
+    main.fixed-navbar-spacing,
+    .fixed-navbar-spacing,
+    main[class*="fixed-navbar-spacing"] {
+      padding-top: 5rem !important;
+      margin-top: 0 !important;
+    }
+  }
+
+  /* No navbar spacing - content directly under navbar */
+  .no-navbar-spacing,
+  main.no-navbar-spacing,
+  html body div main.no-navbar-spacing {
+    padding-top: 0rem !important;
+    margin-top: 0 !important;
   }
 }
 

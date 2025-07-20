@@ -99,7 +99,18 @@ export const apiService = {
       const response = await api.post('/Auth/login', { email, password });
       return response.data;
     },
-    
+
+    signup: async (fullName: string, email: string, password: string, confirmPassword: string, agreeToTerms: boolean) => {
+      const response = await api.post('/Auth/signup', {
+        fullName,
+        email,
+        password,
+        confirmPassword,
+        agreeToTerms
+      });
+      return response.data;
+    },
+
     googleLogin: async (credential: string) => {
       const response = await api.post('/Auth/google-login', { idToken: credential });
       return response.data;
