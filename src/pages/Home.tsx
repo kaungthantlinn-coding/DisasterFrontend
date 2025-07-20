@@ -359,13 +359,13 @@ const Home: React.FC = () => {
                         <ArrowRight size={20} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                       </Link>
                     ) : (
-                      /* Volunteer Registration Button - For Regular Users */
+                      /* View Reports Button - For Regular Users */
                       <Link
-                        to="/volunteer/register"
+                        to="/reports"
                         className="group bg-blue-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-blue-700 hover:shadow-lg transition-all duration-300 flex items-center justify-center"
                       >
                         <Heart size={20} className="mr-3 group-hover:scale-105 transition-transform duration-300" />
-                        <span>{t('home.hero.becomeVolunteer')}</span>
+                        <span>View Reports</span>
                         <ArrowRight size={20} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                       </Link>
                     )}
@@ -1374,20 +1374,20 @@ const Home: React.FC = () => {
 
               <div className="flex flex-col sm:flex-row gap-8 justify-center mb-20">
                 <Link
-                  to="/volunteer/register"
+                  to="/contact"
                   className="group bg-white text-blue-700 px-12 py-5 rounded-2xl text-lg font-bold hover:bg-blue-50 hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-xl"
                 >
                   <Heart size={22} className="mr-3 group-hover:scale-110 transition-transform duration-300" />
-                  {t('home.cta.volunteer.becomeVolunteer')}
+                  Get Involved
                   <ArrowRight size={22} className="ml-3 group-hover:translate-x-1 transition-transform duration-300" />
                 </Link>
 
                 <Link
-                  to="/volunteer/opportunities"
+                  to="/reports"
                   className="group bg-blue-600/20 backdrop-blur-xl border border-blue-400/40 text-blue-100 px-12 py-5 rounded-2xl text-lg font-bold hover:bg-blue-500/30 hover:border-blue-300/60 hover:text-white hover:scale-105 transition-all duration-300 flex items-center justify-center shadow-lg"
                 >
                   <Users size={22} className="mr-3 group-hover:scale-110 transition-transform duration-300" />
-                  {t('home.cta.volunteer.viewOpportunities')}
+                  View Reports
                 </Link>
               </div>
 

@@ -613,7 +613,7 @@ const GetInvolved: React.FC = () => {
               >
                 <span className="flex items-center justify-center">
                   <UserPlus size={20} className="mr-2" />
-                  Apply to Volunteer
+                  Contact Us
                 </span>
               </Link>
               <button

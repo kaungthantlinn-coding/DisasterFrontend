@@ -22,7 +22,7 @@ const Footer: React.FC = () => {
       links: [
         { name: 'Safety Guidelines', path: '/safety' },
         { name: 'Emergency Preparedness', path: '/preparedness' },
-        { name: 'Community Resources', path: '/resources' },
+        { name: 'Community Support', path: '/support' },
         { name: 'Training Materials', path: '/training' },
       ],
     },

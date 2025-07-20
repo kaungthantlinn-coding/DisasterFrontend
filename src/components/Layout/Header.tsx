@@ -56,10 +56,7 @@ const Header: React.FC = () => {
       { name: t('navigation.about'), path: '/about' }
     ];
 
-    // Add "Volunteer" only if user is not CJ role
-    if (!isCj()) {
-      baseItems.push({ name: 'Volunteer', path: '/volunteer/opportunities' });
-    }
+
 
     // Add "Contact" only if user is not CJ role
     if (!isCj()) {

@@ -17,15 +17,9 @@ import AdminPanel from './pages/admin/AdminPanel';
 import About from './pages/About';
 import WhatWeDo from './pages/WhatWeDo';
 import GetInvolved from './pages/GetInvolved';
-import News from './pages/News';
-import Resources from './pages/Resources';
 import Contact from './pages/Contact';
 import Donate from './pages/Donate';
-import Leadership from './pages/Leadership';
 import Partnership from './pages/Partnership';
-import VolunteerPage from './pages/volunteer/VolunteerPage';
-import VolunteerRegisterStreamlined from './pages/volunteer/VolunteerRegisterStreamlined';
-import VolunteerOpportunities from './pages/volunteer/VolunteerOpportunities';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -71,11 +65,8 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/what-we-do" element={<WhatWeDo />} />
               <Route path="/get-involved" element={<GetInvolved />} />
-              <Route path="/news" element={<News />} />
-              <Route path="/resources" element={<Resources />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/donate" element={<Donate />} />
-              <Route path="/leadership" element={<Leadership />} />
               <Route path="/partnership" element={<Partnership />} />
               {/* Reports routes - accessible to all authenticated users */}
               <Route
@@ -114,11 +105,7 @@ function App() {
               <Route path="/assistance/:id" element={<ReportDetail />} />
               <Route path="/assistance/received/:id" element={<ReportDetail />} />
 
-              {/* Volunteer routes */}
-              <Route path="/volunteer" element={<VolunteerPage />} />
-              <Route path="/volunteer/register" element={<VolunteerRegisterStreamlined />} />
-              <Route path="/volunteer/opportunities" element={<VolunteerOpportunities />} />
-              
+
               {/* Admin routes */}
               <Route
                 path="/admin/*"
