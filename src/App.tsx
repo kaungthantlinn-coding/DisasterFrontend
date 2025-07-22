@@ -20,6 +20,7 @@ import GetInvolved from './pages/GetInvolved';
 import Contact from './pages/Contact';
 import Donate from './pages/Donate';
 import Partnership from './pages/Partnership';
+
 import AvatarDebug from './components/Debug/AvatarDebug';
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -69,6 +70,7 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/donate" element={<Donate />} />
               <Route path="/partnership" element={<Partnership />} />
+
               <Route path="/debug/avatar" element={<AvatarDebug />} />
               {/* Reports routes - accessible to all authenticated users */}
               <Route
@@ -142,22 +144,54 @@ function App() {
         <Toaster
           position="top-right"
           toastOptions={{
-            duration: 4000,
+            duration: 4500,
             style: {
-              background: '#363636',
-              color: '#fff',
+              background: 'rgba(255, 255, 255, 0.95)',
+              color: '#1f2937',
+              border: '1px solid rgba(229, 231, 235, 0.3)',
+              borderRadius: '16px',
+              boxShadow: '0 12px 28px rgba(0, 0, 0, 0.15), 0 6px 12px rgba(0, 0, 0, 0.08)',
+              backdropFilter: 'blur(16px) saturate(1.3)',
+              WebkitBackdropFilter: 'blur(16px) saturate(1.3)',
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
+              fontSize: '15px',
+              fontWeight: '500',
+              padding: '16px 20px',
+              minHeight: '72px',
             },
             success: {
-              duration: 3000,
+              duration: 4500,
+              style: {
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%)',
+                borderLeft: '5px solid rgb(16, 185, 129)',
+                color: '#065f46',
+              },
               iconTheme: {
-                primary: '#4ade80',
+                primary: 'rgb(16, 185, 129)',
                 secondary: '#fff',
               },
             },
             error: {
-              duration: 4000,
+              duration: 5500,
+              style: {
+                background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%)',
+                borderLeft: '5px solid rgb(220, 38, 38)',
+                color: '#7f1d1d',
+              },
               iconTheme: {
-                primary: '#ef4444',
+                primary: 'rgb(220, 38, 38)',
+                secondary: '#fff',
+              },
+            },
+            loading: {
+              duration: Infinity,
+              style: {
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%)',
+                borderLeft: '5px solid rgb(59, 130, 246)',
+                color: '#1e3a8a',
+              },
+              iconTheme: {
+                primary: 'rgb(59, 130, 246)',
                 secondary: '#fff',
               },
             },

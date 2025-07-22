@@ -1,6 +1,7 @@
 import { apiService } from './api';
 import { errorHandler, Result, ErrorTracker } from '../utils/errorHandler';
 import { User } from '../types';
+import { extractPhotoUrl } from '../utils/avatarUtils';
 
 export interface ApiUser {
   userId?: string;    // Direct userId field from API
@@ -48,30 +49,8 @@ const mapApiUserToUser = (apiUser: ApiUser): User => {
     roles = ['user']; // Default role
   }
   
-  // Extract photoUrl from multiple possible fields
-  const extractPhotoUrl = (): string | undefined => {
-    // Try different possible photo URL fields from various OAuth providers
-    const possibleFields = [
-      apiUser.photoUrl,
-      apiUser.photo_url, 
-      apiUser.picture, // Google OAuth standard field
-      apiUser.avatar,
-      apiUser.profile_picture
-    ];
-    
-    const photoUrl = possibleFields.find(field => field && typeof field === 'string' && field.trim() !== '');
-    
-    if (photoUrl) {
-      // Ensure HTTPS and optimize image size for better performance
-      return photoUrl
-        .replace('http://', 'https://')
-        .replace('=s96-c', '=s128-c'); // Increase Google profile image size
-    }
-    
-    return undefined;
-  };
-  
-  const photoUrl = extractPhotoUrl();
+  // Use the centralized photo URL extraction utility
+  const photoUrl = extractPhotoUrl(apiUser);
   
   return {
     userId,

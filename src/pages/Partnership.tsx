@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Header } from '../components/Layout';
 import { Handshake, Building, Users, Globe, CheckCircle, ArrowRight, Mail, Phone } from 'lucide-react';
+import { showSuccessToast, showErrorToast } from '../utils/notifications';
 
 interface PartnershipType {
   title: string;
@@ -84,9 +85,29 @@ const Partnership: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Basic validation
+    if (!formData.organizationName || !formData.contactName || !formData.email || !formData.partnershipType) {
+      showErrorToast('Please fill in all required fields.', 'Form Validation Error');
+      return;
+    }
+
     // Handle form submission
     console.log('Partnership application submitted:', formData);
-    alert('Thank you for your interest! We will contact you within 48 hours.');
+    showSuccessToast(
+      'Thank you for your interest in partnering with us! We will review your application and contact you within 48 hours.',
+      'Partnership Application Submitted'
+    );
+
+    // Reset form
+    setFormData({
+      organizationName: '',
+      contactName: '',
+      email: '',
+      phone: '',
+      partnershipType: '',
+      message: ''
+    });
   };
 
   return (

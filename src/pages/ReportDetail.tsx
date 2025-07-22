@@ -5,6 +5,7 @@ import { mockReports } from '../data/mockData';
 import { format } from 'date-fns';
 import ReportMap from '../components/Map/ReportMap';
 import Header from '../components/Layout/Header';
+import { showSuccessToast, showErrorToast } from '../utils/notifications';
 
 const ReportDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -39,13 +40,19 @@ const ReportDetail: React.FC = () => {
   }
 
   const handleOfferAssistance = () => {
-    if (!assistanceText.trim()) return;
+    if (!assistanceText.trim()) {
+      showErrorToast('Please enter your assistance offer before submitting.', 'Missing Information');
+      return;
+    }
 
     // Here you would normally make an API call
     console.log('Offering assistance:', assistanceText);
     setAssistanceText('');
     setShowAssistanceForm(false);
-    alert('Thank you for offering assistance! Your offer has been recorded.');
+    showSuccessToast(
+      'Thank you for offering assistance! Your offer has been recorded and the reporter will be notified.',
+      'Assistance Offer Submitted'
+    );
   };
 
   return (

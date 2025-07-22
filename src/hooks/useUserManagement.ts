@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-hot-toast';
 import {
   userManagementApi,
   UserFilterParams,
@@ -99,10 +98,11 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['userManagementStats'] });
-      toast.success('User created successfully');
+      // Note: Toast notifications are handled in the component for better control
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to create user');
+      // Note: Error notifications are handled in the component for better control
+      console.error('Failed to create user:', error);
     },
   });
 
@@ -111,10 +111,11 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
       userManagementApi.updateUser(userId, userData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('User updated successfully');
+      // Note: Toast notifications are handled in the component for better control
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to update user');
+      // Note: Error notifications are handled in the component for better control
+      console.error('Failed to update user:', error);
     },
   });
 
@@ -123,10 +124,11 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['userManagementStats'] });
-      toast.success('User deleted successfully');
+      // Note: Toast notifications are handled in the component for better control
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete user');
+      // Note: Error notifications are handled in the component for better control
+      console.error('Failed to delete user:', error);
     },
   });
 
@@ -135,10 +137,11 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['userManagementStats'] });
-      toast.success('User blacklisted successfully');
+      // Note: Toast notifications are handled in the component for better control
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to blacklist user');
+      // Note: Error notifications are handled in the component for better control
+      console.error('Failed to blacklist user:', error);
     },
   });
 
@@ -147,10 +150,11 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['userManagementStats'] });
-      toast.success('User unblacklisted successfully');
+      // Note: Toast notifications are handled in the component for better control
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Failed to unblacklist user');
+      // Note: Error notifications are handled in the component for better control
+      console.error('Failed to unblacklist user:', error);
     },
   });
 

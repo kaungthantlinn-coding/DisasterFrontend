@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
 import { User } from 'lucide-react';
+import {
+  isValidImageUrl,
+  optimizeAvatarUrl,
+  getInitials,
+  getAvatarBackgroundColor,
+  getAvatarTextColor
+} from '../../utils/avatarUtils';
 
 interface AvatarProps {
   src?: string;
@@ -9,15 +16,20 @@ interface AvatarProps {
   className?: string;
 }
 
-const Avatar: React.FC<AvatarProps> = ({ 
-  src, 
-  alt, 
-  name, 
-  size = 'md', 
-  className = '' 
+const Avatar: React.FC<AvatarProps> = ({
+  src,
+  alt,
+  name,
+  size = 'md',
+  className = ''
 }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+
+  // Optimize the image URL for better performance and reliability
+  const optimizedSrc = src ? optimizeAvatarUrl(src) : undefined;
+
+
 
   const sizeClasses = {
     sm: 'w-6 h-6',
@@ -33,42 +45,37 @@ const Avatar: React.FC<AvatarProps> = ({
     xl: 24
   };
 
-  const getInitials = (name?: string): string => {
-    if (!name) return '';
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   const handleImageLoad = () => {
     setImageLoading(false);
   };
 
   const handleImageError = () => {
-    console.warn('Avatar image failed to load:', src);
+    // Silently handle image errors to avoid console spam
+    // Google profile images often fail due to privacy settings or expired tokens
     setImageError(true);
     setImageLoading(false);
   };
 
   const baseClasses = `${sizeClasses[size]} rounded-full object-cover ${className}`;
 
-  // Show image if src exists and no error occurred
+  // Get dynamic background and text colors based on name
+  const backgroundColor = getAvatarBackgroundColor(name);
+  const textColor = getAvatarTextColor(backgroundColor);
+
+  // Show image if src exists and no error occurred (temporarily bypass validation)
   if (src && !imageError) {
     return (
       <div className="relative">
         <img
-          src={src}
+          src={optimizedSrc || src}
           alt={alt || name || 'User avatar'}
           className={baseClasses}
           onLoad={handleImageLoad}
           onError={handleImageError}
         />
         {imageLoading && (
-          <div className={`${baseClasses} bg-gray-200 animate-pulse flex items-center justify-center absolute inset-0`}>
-            <User size={iconSizes[size]} className="text-gray-400" />
+          <div className={`${baseClasses} ${backgroundColor} animate-pulse flex items-center justify-center absolute inset-0`}>
+            <User size={iconSizes[size]} className={textColor.replace('text-', 'text-').replace('-600', '-400')} />
           </div>
         )}
       </div>
@@ -78,7 +85,7 @@ const Avatar: React.FC<AvatarProps> = ({
   // Show initials if name is available
   if (name && getInitials(name)) {
     return (
-      <div className={`${baseClasses} bg-blue-100 flex items-center justify-center text-blue-600 font-medium`}>
+      <div className={`${baseClasses} ${backgroundColor} flex items-center justify-center ${textColor} font-medium`}>
         <span className={`text-${size === 'sm' ? 'xs' : size === 'md' ? 'sm' : 'base'}`}>
           {getInitials(name)}
         </span>
@@ -88,8 +95,8 @@ const Avatar: React.FC<AvatarProps> = ({
 
   // Fallback to default user icon
   return (
-    <div className={`${baseClasses} bg-blue-100 flex items-center justify-center`}>
-      <User size={iconSizes[size]} className="text-blue-600" />
+    <div className={`${baseClasses} ${backgroundColor} flex items-center justify-center`}>
+      <User size={iconSizes[size]} className={textColor} />
     </div>
   );
 };

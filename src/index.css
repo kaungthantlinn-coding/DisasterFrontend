@@ -1,5 +1,6 @@
 @import "./styles/i18n.css";
 @import "./styles/image-cards.css";
+@import "./styles/react-hot-toast-custom.css";
 
 @tailwind base;
 @tailwind components;

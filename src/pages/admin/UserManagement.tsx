@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ViewProfileModal from '../../components/modals/ViewProfileModal';
 import EditUserModal from '../../components/modals/EditUserModal';
@@ -25,10 +25,27 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  Loader2
+  Loader2,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Info,
+  Calendar,
+  Mail,
+  Phone
 } from 'lucide-react';
 import { useUserManagement } from '../../hooks/useUserManagement';
+import { useConfirmationModal } from '../../hooks/useConfirmationModal';
 import Avatar from '../../components/Common/Avatar';
+import { extractPhotoUrl } from '../../utils/avatarUtils';
+import {
+  showSuccessToast,
+  showErrorToast,
+  showLoading,
+  closeAlert
+} from '../../utils/notifications';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 
 // Map API user to local user interface
 interface User {
@@ -45,6 +62,22 @@ interface User {
   avatar?: string;
 }
 
+// Enhanced sorting and filtering types for professional table management
+type SortField = 'name' | 'email' | 'role' | 'status' | 'joinDate' | 'lastActive' | 'reportsCount';
+type SortDirection = 'asc' | 'desc';
+
+interface SortConfig {
+  field: SortField;
+  direction: SortDirection;
+}
+
+interface FilterConfig {
+  search: string;
+  role: string;
+  status: string;
+  dateRange: string;
+}
+
 // Helper function to map API user to local user
 const mapApiUserToLocal = (apiUser: any): User => {
   // Determine primary role
@@ -55,27 +88,7 @@ const mapApiUserToLocal = (apiUser: any): User => {
   const status = apiUser.isBlacklisted ? 'suspended' :
                  apiUser.status ? apiUser.status : 'active';
 
-  // Extract photo URL from multiple possible fields
-  const extractPhotoUrl = (): string | undefined => {
-    const possibleFields = [
-      apiUser.photoUrl,
-      apiUser.photo_url,
-      apiUser.picture, // Google OAuth standard field
-      apiUser.avatar,
-      apiUser.profile_picture
-    ];
-
-    const photoUrl = possibleFields.find(field => field && typeof field === 'string' && field.trim() !== '');
-
-    if (photoUrl) {
-      // Ensure HTTPS and optimize image size for better performance
-      return photoUrl
-        .replace('http://', 'https://')
-        .replace('=s96-c', '=s128-c'); // Increase Google profile image size
-    }
-
-    return undefined;
-  };
+  // Use the centralized photo URL extraction utility
 
   return {
     id: apiUser.userId,
@@ -92,7 +105,7 @@ const mapApiUserToLocal = (apiUser: any): User => {
     location: apiUser.location,
     reportsCount: apiUser.reportsCount || 0,
     lastActive: apiUser.lastActive || 'Unknown',
-    avatar: extractPhotoUrl()
+    avatar: extractPhotoUrl(apiUser)
   };
 };
 
@@ -136,42 +149,69 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
   };
 
   return (
-    <tr className="hover:bg-blue-50/30 transition-all duration-200 group">
-      <td className="px-6 py-4 whitespace-nowrap">
+    <tr className="hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/30 transition-all duration-200 group border-b border-gray-100 hover:border-blue-200">
+      {/* Enhanced User Column */}
+      <td className="px-6 py-5 whitespace-nowrap">
         <div className="flex items-center">
           <Avatar
             src={user.avatar}
             alt={user.name}
             name={user.name}
             size="lg"
-            className="shadow-md group-hover:shadow-lg transition-shadow duration-200"
+            className="shadow-md group-hover:shadow-lg transition-all duration-200 ring-2 ring-white group-hover:ring-blue-200"
           />
-          <div className="ml-4">
-            <div className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200">{user.name}</div>
-            <div className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-200">{user.email}</div>
+          <div className="ml-4 min-w-0 flex-1">
+            <div className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 truncate">
+              {user.name}
+            </div>
+            <div className="text-sm text-gray-500 group-hover:text-gray-600 transition-colors duration-200 truncate flex items-center">
+              <Mail className="w-3 h-3 mr-1 flex-shrink-0" />
+              {user.email}
+            </div>
+            {user.phone && (
+              <div className="text-xs text-gray-400 group-hover:text-gray-500 transition-colors duration-200 truncate flex items-center mt-1">
+                <Phone className="w-3 h-3 mr-1 flex-shrink-0" />
+                {user.phone}
+              </div>
+            )}
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
+
+      {/* Enhanced Role Column */}
+      <td className="px-6 py-5 whitespace-nowrap">
+        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm border transition-all duration-200 group-hover:shadow-md ${getRoleColor(user.role)}`}>
+          <Shield className="w-3 h-3 mr-1.5" />
           {user.role.toUpperCase()}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}>
+
+      {/* Enhanced Status Column */}
+      <td className="px-6 py-5 whitespace-nowrap">
+        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm border transition-all duration-200 group-hover:shadow-md ${getStatusColor(user.status)}`}>
           {getStatusIcon(user.status)}
-          <span className="ml-1">{user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
+          <span className="ml-1.5">{user.status.charAt(0).toUpperCase() + user.status.slice(1)}</span>
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center space-x-2">
+
+      {/* Enhanced Join Date Column */}
+      <td className="px-6 py-5 whitespace-nowrap">
+        <div className="flex items-center text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-200">
+          <Calendar className="w-4 h-4 mr-2 text-gray-400" />
+          <span className="font-medium">{user.joinDate}</span>
+        </div>
+      </td>
+
+      {/* Enhanced Reports Activity Column */}
+      <td className="px-6 py-5 whitespace-nowrap">
+        <div className="flex items-center space-x-3">
           {user.role === 'cj' ? (
             <>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold text-gray-900">{user.reportsCount}</span>
+                <span className="text-sm font-bold text-gray-900">{user.reportsCount}</span>
                 <span className="text-xs text-blue-600 font-medium">Verified</span>
               </div>
-              <div className={`w-2 h-2 rounded-full ${
+              <div className={`w-3 h-3 rounded-full shadow-sm ${
                 user.reportsCount > 50 ? 'bg-green-500' :
                 user.reportsCount > 25 ? 'bg-yellow-500' :
                 user.reportsCount > 0 ? 'bg-blue-500' : 'bg-gray-300'
@@ -179,7 +219,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
             </>
           ) : (
             <div className="flex flex-col">
-              <span className="text-sm text-gray-400">N/A</span>
+              <span className="text-sm text-gray-400 font-medium">N/A</span>
               <span className="text-xs text-gray-400">
                 {user.role === 'admin' ? 'No report duties' : 'No report duties'}
               </span>
@@ -187,52 +227,62 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
           )}
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+      {/* Enhanced Actions Column */}
+      <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
         <div className="relative">
           <button
             onClick={() => setShowActions(!showActions)}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-blue-100 rounded-lg transition-all duration-200 group-hover:bg-blue-50"
+            className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 rounded-lg transition-all duration-200 group-hover:bg-blue-50 shadow-sm hover:shadow-md"
+            title="More actions"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
           {showActions && (
-            <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-[180px] overflow-hidden">
-              <div className="py-1">
+            <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-2xl z-30 min-w-[200px] overflow-hidden backdrop-blur-sm">
+              <div className="py-2">
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 bg-gray-50">
+                  User Actions
+                </div>
                 <button
                   onClick={() => { onViewProfile(user); setShowActions(false); }}
-                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-3 transition-all duration-200 border-b border-gray-100"
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:text-blue-700 flex items-center space-x-3 transition-all duration-200"
                 >
                   <Eye className="w-4 h-4 text-blue-500" />
                   <span className="font-medium">View Profile</span>
                 </button>
                 <button
                   onClick={() => { onEdit(user); setShowActions(false); }}
-                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 flex items-center space-x-3 transition-all duration-200 border-b border-gray-100"
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-green-100 hover:text-green-700 flex items-center space-x-3 transition-all duration-200"
                 >
                   <Edit className="w-4 h-4 text-green-500" />
                   <span className="font-medium">Edit User</span>
                 </button>
-                {/* Conditional Blacklist/Unblacklist Button */}
+                <div className="border-t border-gray-100 my-1"></div>
+
+                {/* Enhanced Conditional Blacklist/Unblacklist Button */}
                 {user.status === 'suspended' ? (
                   <button
                     onClick={() => { onUnblacklist(user.id); setShowActions(false); }}
-                    className="w-full text-left px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700 flex items-center space-x-3 transition-all duration-200 border-b border-gray-100"
+                    className="w-full text-left px-4 py-3 text-sm text-blue-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:text-blue-700 flex items-center space-x-3 transition-all duration-200"
                   >
                     <UserCheck className="w-4 h-4 text-blue-500" />
-                    <span className="font-medium">Unblacklist User</span>
+                    <span className="font-medium">Restore Access</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => { onBlacklist(user.id); setShowActions(false); }}
-                    className="w-full text-left px-4 py-3 text-sm text-orange-600 hover:bg-orange-50 hover:text-orange-700 flex items-center space-x-3 transition-all duration-200 border-b border-gray-100"
+                    className="w-full text-left px-4 py-3 text-sm text-orange-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 hover:text-orange-700 flex items-center space-x-3 transition-all duration-200"
                   >
                     <Ban className="w-4 h-4 text-orange-500" />
-                    <span className="font-medium">Blacklist User</span>
+                    <span className="font-medium">Suspend Access</span>
                   </button>
                 )}
+
+                <div className="border-t border-gray-100 my-1"></div>
+
                 <button
                   onClick={() => { onDelete(user.id); setShowActions(false); }}
-                  className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center space-x-3 transition-all duration-200"
+                  className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-red-100 hover:text-red-700 flex items-center space-x-3 transition-all duration-200"
                 >
                   <Trash2 className="w-4 h-4 text-red-500" />
                   <span className="font-medium">Delete User</span>
@@ -293,16 +343,57 @@ const UserManagement: React.FC = () => {
     autoRefresh: false
   });
 
+  // Use the confirmation modal hook
+  const {
+    modalProps,
+    showBlacklistConfirmation,
+    showUnblacklistConfirmation,
+    showDeleteConfirmation
+  } = useConfirmationModal();
+
   // Convert API users to local format - handle undefined/null apiUsers
   const users: User[] = (apiUsers || []).map(mapApiUserToLocal);
 
-  // Debug: Log user data to console
-  React.useEffect(() => {
-    if (apiUsers && apiUsers.length > 0) {
-      console.log('API Users:', apiUsers);
-      console.log('Mapped Users:', users);
-    }
-  }, [apiUsers, users]);
+  // Enhanced sorting state
+  const [localSortConfig, setLocalSortConfig] = useState<SortConfig>({
+    field: 'name',
+    direction: 'asc'
+  });
+
+  // Sorting function
+  const handleSort = useCallback((field: SortField) => {
+    setLocalSortConfig(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  }, []);
+
+  // Sort users based on current sort configuration
+  const sortedUsers = useMemo(() => {
+    if (!users.length) return [];
+
+    return [...users].sort((a, b) => {
+      const { field, direction } = localSortConfig;
+      let aValue = a[field];
+      let bValue = b[field];
+
+      // Handle different data types
+      if (field === 'reportsCount') {
+        aValue = Number(aValue) || 0;
+        bValue = Number(bValue) || 0;
+      } else if (field === 'joinDate' || field === 'lastActive') {
+        aValue = new Date(aValue || 0).getTime();
+        bValue = new Date(bValue || 0).getTime();
+      } else {
+        aValue = String(aValue || '').toLowerCase();
+        bValue = String(bValue || '').toLowerCase();
+      }
+
+      if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [users, localSortConfig]);
 
   const handleViewProfile = (user: User) => {
     setViewProfileModal({
@@ -347,14 +438,20 @@ const UserManagement: React.FC = () => {
     const user = users.find(u => u.id === userId);
     const userName = user?.name || 'this user';
 
-    if (window.confirm(`Are you sure you want to blacklist ${userName}? They will be suspended and unable to access the system.`)) {
+    const result = await showBlacklistConfirmation(userName);
+
+    if (result.isConfirmed) {
+      showLoading('Blacklisting user...');
+
       try {
         await blacklistUser(userId);
+        closeAlert();
+        showSuccessToast(`${userName} has been blacklisted successfully`, 'User Blacklisted');
         console.log('✅ User blacklisted successfully:', userName);
-        // The UI will automatically update due to the API response
       } catch (error) {
+        closeAlert();
         console.error('❌ Failed to blacklist user:', error);
-        alert('Failed to blacklist user. Please try again.');
+        showErrorToast('Failed to blacklist user. Please try again.', 'Blacklist Failed');
       }
     }
   };
@@ -363,24 +460,45 @@ const UserManagement: React.FC = () => {
     const user = users.find(u => u.id === userId);
     const userName = user?.name || 'this user';
 
-    if (window.confirm(`Are you sure you want to unblacklist ${userName}? They will regain access to the system.`)) {
+    const result = await showUnblacklistConfirmation(userName);
+
+    if (result.isConfirmed) {
+      showLoading('Restoring user access...');
+
       try {
         await unblacklistUser(userId);
+        closeAlert();
+        showSuccessToast(`${userName}'s access has been restored successfully`, 'Access Restored');
         console.log('✅ User unblacklisted successfully:', userName);
-        // The UI will automatically update due to the API response
       } catch (error) {
+        closeAlert();
         console.error('❌ Failed to unblacklist user:', error);
-        alert('Failed to unblacklist user. Please try again.');
+        showErrorToast('Failed to restore user access. Please try again.', 'Restore Failed');
       }
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    const user = users.find(u => u.id === userId);
+    const userName = user?.name || 'this user';
+
+    const result = await showDeleteConfirmation(
+      userName,
+      'user',
+      'This will permanently remove all user data, reports, and activity history.'
+    );
+
+    if (result.isConfirmed) {
+      showLoading('Deleting user...');
+
       try {
         await deleteUser(userId);
+        closeAlert();
+        showSuccessToast(`${userName} has been deleted successfully`, 'User Deleted');
       } catch (error) {
+        closeAlert();
         console.error('Failed to delete user:', error);
+        showErrorToast('Failed to delete user. Please try again.', 'Delete Failed');
       }
     }
   };
@@ -523,20 +641,28 @@ const UserManagement: React.FC = () => {
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <div className="relative group">
+                <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200" />
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder="Search by name, email, or phone..."
                   value={filters.searchTerm || ''}
                   onChange={(e) => {
                     console.log('Search term changed:', e.target.value);
                     setSearchTerm(e.target.value);
                   }}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
+                  className="pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-80 text-sm placeholder-gray-500 transition-all duration-200 shadow-sm focus:shadow-md"
                 />
                 {isLoading && (
-                  <Loader2 className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 animate-spin" />
+                  <Loader2 className="w-4 h-4 absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-500 animate-spin" />
+                )}
+                {filters.searchTerm && !isLoading && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 )}
               </div>
               <select
@@ -593,25 +719,119 @@ const UserManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Enhanced Professional Users Table */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-lg">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gradient-to-r from-gray-50 to-blue-50">
+              <thead className="bg-gradient-to-r from-slate-50 to-blue-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    User
+                  {/* User Column with Sorting */}
+                  <th className="group px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('name')}
+                      className="flex items-center space-x-2 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-blue-600 transition-colors duration-200"
+                    >
+                      <span>User</span>
+                      <div className="flex flex-col">
+                        {localSortConfig.field === 'name' ? (
+                          localSortConfig.direction === 'asc' ? (
+                            <ArrowUp className="w-3 h-3 text-blue-600" />
+                          ) : (
+                            <ArrowDown className="w-3 h-3 text-blue-600" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-gray-400 group-hover:text-blue-600" />
+                        )}
+                      </div>
+                    </button>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Role
+
+                  {/* Role Column with Sorting */}
+                  <th className="group px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('role')}
+                      className="flex items-center space-x-2 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-blue-600 transition-colors duration-200"
+                    >
+                      <span>Role</span>
+                      <div className="flex flex-col">
+                        {localSortConfig.field === 'role' ? (
+                          localSortConfig.direction === 'asc' ? (
+                            <ArrowUp className="w-3 h-3 text-blue-600" />
+                          ) : (
+                            <ArrowDown className="w-3 h-3 text-blue-600" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-gray-400 group-hover:text-blue-600" />
+                        )}
+                      </div>
+                    </button>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Status
+
+                  {/* Status Column with Sorting */}
+                  <th className="group px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('status')}
+                      className="flex items-center space-x-2 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-blue-600 transition-colors duration-200"
+                    >
+                      <span>Status</span>
+                      <div className="flex flex-col">
+                        {localSortConfig.field === 'status' ? (
+                          localSortConfig.direction === 'asc' ? (
+                            <ArrowUp className="w-3 h-3 text-blue-600" />
+                          ) : (
+                            <ArrowDown className="w-3 h-3 text-blue-600" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-gray-400 group-hover:text-blue-600" />
+                        )}
+                      </div>
+                    </button>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Reports Activity
+
+                  {/* Join Date Column with Sorting */}
+                  <th className="group px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('joinDate')}
+                      className="flex items-center space-x-2 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-blue-600 transition-colors duration-200"
+                    >
+                      <span>Joined</span>
+                      <div className="flex flex-col">
+                        {localSortConfig.field === 'joinDate' ? (
+                          localSortConfig.direction === 'asc' ? (
+                            <ArrowUp className="w-3 h-3 text-blue-600" />
+                          ) : (
+                            <ArrowDown className="w-3 h-3 text-blue-600" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-gray-400 group-hover:text-blue-600" />
+                        )}
+                      </div>
+                    </button>
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+
+                  {/* Reports Activity Column with Sorting */}
+                  <th className="group px-6 py-4 text-left">
+                    <button
+                      onClick={() => handleSort('reportsCount')}
+                      className="flex items-center space-x-2 text-xs font-semibold text-gray-700 uppercase tracking-wider hover:text-blue-600 transition-colors duration-200"
+                    >
+                      <span>Reports</span>
+                      <div className="flex flex-col">
+                        {localSortConfig.field === 'reportsCount' ? (
+                          localSortConfig.direction === 'asc' ? (
+                            <ArrowUp className="w-3 h-3 text-blue-600" />
+                          ) : (
+                            <ArrowDown className="w-3 h-3 text-blue-600" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-gray-400 group-hover:text-blue-600" />
+                        )}
+                      </div>
+                    </button>
+                  </th>
+
+                  {/* Actions Column */}
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -678,8 +898,8 @@ const UserManagement: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  // Data state
-                  users.map((user) => (
+                  // Data state with sorted users
+                  sortedUsers.map((user, index) => (
                     <UserRow
                       key={user.id}
                       user={user}
@@ -696,8 +916,8 @@ const UserManagement: React.FC = () => {
           </div>
         </div>
 
-        {/* Pagination */}
-        {users.length > 0 && (
+        {/* Enhanced Pagination */}
+        {sortedUsers.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 mt-6 px-6 py-5 shadow-sm">
             <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
               {/* Pagination Info */}
@@ -814,6 +1034,9 @@ const UserManagement: React.FC = () => {
         availableRoles={availableRoles}
         isLoading={false}
       />
+
+      {/* Beautiful Confirmation Modal */}
+      <ConfirmationModal {...modalProps} />
     </div>
   );
 };

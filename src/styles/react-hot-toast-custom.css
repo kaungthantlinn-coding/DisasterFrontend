@@ -1,0 +1,242 @@
+/* Enhanced react-hot-toast styles for DisasterWatch application */
+/* Professional disaster management styling with enhanced visual design and i18n support */
+
+/* Import fonts for consistency */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@300;400;500;600;700&display=swap');
+
+/* CSS Custom Properties for Disaster Management Theme */
+:root {
+  --dm-primary-blue: rgb(37, 99, 235);
+  --dm-secondary-blue: rgb(59, 130, 246);
+  --dm-safety-green: rgb(16, 185, 129);
+  --dm-emergency-green: rgb(34, 197, 94);
+  --dm-alert-red: rgb(220, 38, 38);
+  --dm-warning-amber: rgb(245, 158, 11);
+  --dm-neutral-gray: rgb(75, 85, 99);
+  --dm-trust-purple: rgb(99, 102, 241);
+  
+  /* Enhanced shadows */
+  --dm-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --dm-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --dm-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+  --dm-shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.2);
+  
+  /* Enhanced border radius */
+  --dm-radius-sm: 8px;
+  --dm-radius-md: 12px;
+  --dm-radius-lg: 16px;
+  --dm-radius-xl: 20px;
+}
+
+/* Global toast container styling */
+.react-hot-toast {
+  z-index: 9999;
+}
+
+/* Enhanced toast styling */
+.react-hot-toast > div {
+  animation: toast-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.react-hot-toast > div[data-visible="false"] {
+  animation: toast-exit 0.3s ease-in forwards;
+}
+
+/* Toast animations */
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toast-exit {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.8);
+  }
+}
+
+/* Enhanced hover effects */
+.react-hot-toast > div:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.2), 0 8px 16px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Success toast enhancements */
+.react-hot-toast > div[data-type="success"] {
+  position: relative;
+  overflow: hidden;
+}
+
+.react-hot-toast > div[data-type="success"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(16, 185, 129, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 100%);
+  border-radius: var(--dm-radius-lg);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Error toast enhancements */
+.react-hot-toast > div[data-type="error"] {
+  position: relative;
+  overflow: hidden;
+}
+
+.react-hot-toast > div[data-type="error"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(220, 38, 38, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 100%);
+  border-radius: var(--dm-radius-lg);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Loading toast enhancements */
+.react-hot-toast > div[data-type="loading"] {
+  position: relative;
+  overflow: hidden;
+}
+
+.react-hot-toast > div[data-type="loading"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 100%);
+  border-radius: var(--dm-radius-lg);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Myanmar language support */
+html[lang="my"] .react-hot-toast > div {
+  font-family: 'Noto Sans Myanmar', 'Myanmar Text', 'Padauk', sans-serif !important;
+  line-height: 1.8 !important;
+  letter-spacing: 0.025em !important;
+}
+
+html[lang="my"] .react-hot-toast > div > div:first-child {
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+/* Enhanced responsive design */
+@media (max-width: 640px) {
+  .react-hot-toast > div {
+    margin: 12px !important;
+    max-width: calc(100% - 24px) !important;
+    padding: 16px 20px !important;
+    font-size: 14px !important;
+  }
+
+  /* Myanmar language mobile adjustments */
+  html[lang="my"] .react-hot-toast > div {
+    font-size: 13px !important;
+    line-height: 1.7 !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .react-hot-toast > div {
+    background: rgba(31, 41, 55, 0.95) !important;
+    color: #f9fafb !important;
+    border-color: rgba(75, 85, 99, 0.6) !important;
+  }
+
+  .react-hot-toast > div[data-type="success"] {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(31, 41, 55, 0.95) 100%) !important;
+    color: #a7f3d0 !important;
+  }
+
+  .react-hot-toast > div[data-type="error"] {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(31, 41, 55, 0.95) 100%) !important;
+    color: #fca5a5 !important;
+  }
+
+  .react-hot-toast > div[data-type="loading"] {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(31, 41, 55, 0.95) 100%) !important;
+    color: #93c5fd !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .react-hot-toast > div {
+    border: 2px solid #000 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .react-hot-toast > div[data-type="success"] {
+    border-color: var(--dm-safety-green) !important;
+  }
+
+  .react-hot-toast > div[data-type="error"] {
+    border-color: var(--dm-alert-red) !important;
+  }
+
+  .react-hot-toast > div[data-type="loading"] {
+    border-color: var(--dm-secondary-blue) !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .react-hot-toast > div {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .react-hot-toast > div:hover {
+    transform: none !important;
+  }
+}
+
+/* Enhanced accessibility */
+.react-hot-toast > div:focus-visible {
+  outline: 3px solid var(--dm-secondary-blue) !important;
+  outline-offset: 3px !important;
+}
+
+/* Custom warning toast styling (for custom implementation) */
+.toast-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
+  border-left: 5px solid rgb(245, 158, 11) !important;
+  color: #78350f !important;
+}
+
+/* Custom info toast styling (for custom implementation) */
+.toast-info {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
+  border-left: 5px solid rgb(99, 102, 241) !important;
+  color: #3730a3 !important;
+}

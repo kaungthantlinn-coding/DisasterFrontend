@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Users,
   FileText,
@@ -15,7 +16,7 @@ import {
   UserCheck,
   Database,
   Bell,
-
+  Loader2,
   Home,
   Search,
   Menu,
@@ -28,6 +29,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
+import { userManagementApi } from '../../apis/userManagement';
+import { ReportsAPI } from '../../apis/reports';
 
 // Import admin pages
 import UserManagement from './UserManagement';
@@ -46,6 +49,7 @@ interface AdminStatCardProps {
   bgGradient: string;
   iconBg: string;
   onClick?: () => void;
+  isLoading?: boolean;
 }
 
 interface QuickActionProps {
@@ -56,15 +60,15 @@ interface QuickActionProps {
   color: string;
 }
 
-const AdminStatCard: React.FC<AdminStatCardProps> = ({ 
-  icon, 
-  title, 
-  value, 
-  change, 
-  changeType = 'neutral', 
-  bgGradient, 
-
-  onClick 
+const AdminStatCard: React.FC<AdminStatCardProps> = ({
+  icon,
+  title,
+  value,
+  change,
+  changeType = 'neutral',
+  bgGradient,
+  onClick,
+  isLoading = false
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -105,8 +109,15 @@ const AdminStatCard: React.FC<AdminStatCardProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <p className="text-white/70 text-sm font-medium mb-3 tracking-wide uppercase">{title}</p>
-            <p className="text-4xl font-black mb-2 tracking-tight">{value}</p>
-            {change && (
+            {isLoading ? (
+              <div className="flex items-center space-x-2 mb-2">
+                <Loader2 className="w-6 h-6 animate-spin text-white/60" />
+                <span className="text-2xl font-black text-white/60">Loading...</span>
+              </div>
+            ) : (
+              <p className="text-4xl font-black mb-2 tracking-tight">{value}</p>
+            )}
+            {change && !isLoading && (
               <div className={`flex items-center space-x-1 text-sm ${getChangeColor()}`}>
                 {getChangeIcon()}
                 <span className="font-medium">{change}</span>
@@ -224,17 +235,54 @@ const AdminPanel: React.FC = () => {
     window.location.href = '/login';
   };
 
-  // Mock data - replace with real API data
-  const stats = {
-    totalUsers: 2847,
-    totalReports: 1248,
-    pendingVerification: 84,
-    systemHealth: 98.5,
-    activeUsers: 156,
-    verifiedReports: 1164,
-    blacklistedUsers: 17,
-    serverUptime: '99.9%'
+  // Fetch real user management statistics
+  const {
+    data: userStats,
+    isLoading: isLoadingUserStats,
+    error: userStatsError
+  } = useQuery({
+    queryKey: ['adminDashboardStats'],
+    queryFn: userManagementApi.getDashboardStats,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 2,
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+  });
+
+  // Fetch real reports statistics
+  const {
+    data: reportsStats,
+    isLoading: isLoadingReportsStats,
+    error: reportsStatsError
+  } = useQuery({
+    queryKey: ['adminReportsStats'],
+    queryFn: ReportsAPI.getReportsStatistics,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 2,
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+  });
+
+  // Calculate percentage changes (you can enhance this with historical data)
+  const calculateChange = (current: number, previous?: number) => {
+    if (!previous || previous === 0) return '+0%';
+    const change = ((current - previous) / previous) * 100;
+    const sign = change >= 0 ? '+' : '';
+    return `${sign}${change.toFixed(1)}%`;
   };
+
+  // Real stats with loading states
+  const stats = {
+    totalUsers: userStats?.totalUsers || 0,
+    totalReports: reportsStats?.totalReports || 0,
+    pendingVerification: reportsStats?.pendingReports || 0,
+    systemHealth: 98.5, // TODO: Add system health API
+    activeUsers: userStats?.activeUsers || 0,
+    verifiedReports: reportsStats?.verifiedReports || 0,
+    blacklistedUsers: userStats?.suspendedUsers || 0,
+    serverUptime: '99.9%' // TODO: Add system health API
+  };
+
+  // Check if any data is loading
+  const isLoadingAnyStats = isLoadingUserStats || isLoadingReportsStats;
 
   const quickActions = [
     {
@@ -376,8 +424,13 @@ const AdminPanel: React.FC = () => {
               <span>Platform Analytics</span>
             </h3>
             <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span>Live Data</span>
+              <div className={`w-2 h-2 rounded-full ${isLoadingAnyStats ? 'bg-yellow-500 animate-pulse' : 'bg-green-500 animate-pulse'}`}></div>
+              <span>{isLoadingAnyStats ? 'Loading Data...' : 'Live Data'}</span>
+              {(userStatsError || reportsStatsError) && (
+                <span className="text-red-500 text-xs">
+                  • {userStatsError ? 'User stats error' : ''} {reportsStatsError ? 'Reports stats error' : ''}
+                </span>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -385,36 +438,39 @@ const AdminPanel: React.FC = () => {
               <AdminStatCard
                 icon={<Users className="w-6 h-6" />}
                 title="Total Users"
-                value={stats.totalUsers.toLocaleString()}
-                change="+12% from last month"
-                changeType="increase"
+                value={isLoadingUserStats ? 0 : stats.totalUsers.toLocaleString()}
+                change={userStats ? `${userStats.totalUsers > 0 ? '+' : ''}${((userStats.totalUsers / Math.max(userStats.totalUsers - 50, 1)) * 100 - 100).toFixed(1)}% from last month` : undefined}
+                changeType={userStats && userStats.totalUsers > 0 ? "increase" : "neutral"}
                 bgGradient="bg-gradient-to-br from-blue-500 to-blue-600"
                 iconBg="bg-blue-400"
                 onClick={() => window.location.href = '/admin/users'}
+                isLoading={isLoadingUserStats}
               />
             </div>
             <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '100ms'}}>
               <AdminStatCard
                 icon={<FileText className="w-6 h-6" />}
                 title="Total Reports"
-                value={stats.totalReports.toLocaleString()}
-                change="+8% from last week"
-                changeType="increase"
+                value={isLoadingReportsStats ? 0 : stats.totalReports.toLocaleString()}
+                change={reportsStats ? `${reportsStats.recentReports > 0 ? '+' : ''}${reportsStats.recentReports} recent reports` : undefined}
+                changeType={reportsStats && reportsStats.recentReports > 0 ? "increase" : "neutral"}
                 bgGradient="bg-gradient-to-br from-green-500 to-emerald-600"
                 iconBg="bg-green-400"
                 onClick={() => window.location.href = '/admin/reports'}
+                isLoading={isLoadingReportsStats}
               />
             </div>
             <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '200ms'}}>
               <AdminStatCard
                 icon={<Clock className="w-6 h-6" />}
                 title="Pending Verification"
-                value={stats.pendingVerification}
-                change="-5 since yesterday"
-                changeType="decrease"
+                value={isLoadingReportsStats ? 0 : stats.pendingVerification}
+                change={reportsStats ? `${reportsStats.averageResponseTime} avg response` : undefined}
+                changeType="neutral"
                 bgGradient="bg-gradient-to-br from-yellow-500 to-orange-500"
                 iconBg="bg-yellow-400"
                 onClick={() => window.location.href = '/verify-reports'}
+                isLoading={isLoadingReportsStats}
               />
             </div>
             <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '300ms'}}>

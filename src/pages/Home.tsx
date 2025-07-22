@@ -138,8 +138,8 @@ const Home: React.FC = () => {
       description: t('home.safety.emergencyKit.description'),
       icon: Shield,
       image: "https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      gradient: "from-blue-500 to-cyan-500",
-      bgGradient: "from-blue-50 to-cyan-50",
+      gradient: "from-blue-500 to-blue-600",
+      bgGradient: "from-blue-50 to-blue-100",
       tips: t('home.safety.emergencyKit.tips', { returnObjects: true }) as string[]
     },
     {
@@ -148,8 +148,8 @@ const Home: React.FC = () => {
       description: t('home.safety.evacuationPlanning.description'),
       icon: MapPin,
       image: "https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      gradient: "from-green-500 to-emerald-500",
-      bgGradient: "from-green-50 to-emerald-50",
+      gradient: "from-green-500 to-green-600",
+      bgGradient: "from-green-50 to-green-100",
       tips: t('home.safety.evacuationPlanning.tips', { returnObjects: true }) as string[]
     },
     {
@@ -158,8 +158,8 @@ const Home: React.FC = () => {
       description: t('home.safety.communicationStrategy.description'),
       icon: Phone,
       image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      gradient: "from-purple-500 to-pink-500",
-      bgGradient: "from-purple-50 to-pink-50",
+      gradient: "from-indigo-500 to-indigo-600",
+      bgGradient: "from-indigo-50 to-indigo-100",
       tips: t('home.safety.communicationStrategy.tips', { returnObjects: true }) as string[]
     },
     {
@@ -178,8 +178,8 @@ const Home: React.FC = () => {
       description: t('home.safety.communityPreparedness.description'),
       icon: Users,
       image: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      gradient: "from-teal-500 to-blue-500",
-      bgGradient: "from-teal-50 to-blue-50",
+      gradient: "from-blue-500 to-blue-600",
+      bgGradient: "from-blue-50 to-blue-100",
       tips: t('home.safety.communityPreparedness.tips', { returnObjects: true }) as string[]
     },
     {
@@ -188,8 +188,8 @@ const Home: React.FC = () => {
       description: t('home.safety.digitalPreparedness.description'),
       icon: Zap,
       image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      gradient: "from-indigo-500 to-purple-500",
-      bgGradient: "from-indigo-50 to-purple-50",
+      gradient: "from-indigo-500 to-indigo-600",
+      bgGradient: "from-indigo-50 to-indigo-100",
       tips: t('home.safety.digitalPreparedness.tips', { returnObjects: true }) as string[]
     }
   ];
@@ -477,8 +477,8 @@ const Home: React.FC = () => {
           {/* Beautiful Progress Bar */}
           <div className="absolute bottom-0 left-0 right-0 z-20">
             <div className="h-1 bg-white/20">
-              <div 
-                className="h-full bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 transition-all duration-300 shadow-lg"
+              <div
+                className="h-full bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500 transition-all duration-300 shadow-lg"
                 style={{ width: `${((currentSlide + 1) / heroImages.length) * 100}%` }}
               />
             </div>
@@ -917,7 +917,7 @@ const Home: React.FC = () => {
               </div>
 
               {/* Tornado Card */}
-              <div className="group relative bg-gradient-to-br from-purple-800 via-purple-900 to-indigo-900 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
+              <div className="group relative bg-gradient-to-br from-indigo-800 via-indigo-900 to-blue-900 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
                 <div className="absolute inset-0">
                   <img
                     src="https://images.unsplash.com/photo-1446776877081-d282a0f896e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
@@ -930,10 +930,10 @@ const Home: React.FC = () => {
                 <div className="relative p-8 h-80 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold">
+                      <span className="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold">
                         Tornado
                       </span>
-                      <span className="bg-purple-800/80 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                      <span className="bg-indigo-800/80 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
                         <CheckCircle size={12} className="mr-1" />
                         Verified
                       </span>
@@ -941,18 +941,18 @@ const Home: React.FC = () => {
                     <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
                       Tornado Aftermath Cleanup
                     </h3>
-                    <p className="text-purple-100 text-sm leading-relaxed mb-4">
+                    <p className="text-indigo-100 text-sm leading-relaxed mb-4">
                       EF2 tornado caused significant damage to residential area. Multiple homes damaged, debris scattered throughout neighborhood.
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-purple-200">
+                      <div className="flex items-center text-indigo-200">
                         <MapPin size={14} className="mr-2" />
                         Denver
                       </div>
-                      <div className="flex items-center text-purple-200">
+                      <div className="flex items-center text-indigo-200">
                         <Clock size={14} className="mr-2" />
                         Jan 10
                       </div>
@@ -1023,7 +1023,7 @@ const Home: React.FC = () => {
               </div>
 
               {/* Hurricane Card */}
-              <div className="group relative bg-gradient-to-br from-teal-800 via-teal-900 to-blue-900 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
+              <div className="group relative bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-900 rounded-3xl overflow-hidden shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-500">
                 <div className="absolute inset-0">
                   <img
                     src="https://images.unsplash.com/photo-1559827260-dc66d52bef19?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
@@ -1036,10 +1036,10 @@ const Home: React.FC = () => {
                 <div className="relative p-8 h-80 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="bg-teal-600 text-white px-4 py-2 rounded-full text-sm font-bold">
+                      <span className="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold">
                         Hurricane
                       </span>
-                      <span className="bg-teal-800/80 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
+                      <span className="bg-blue-800/80 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center">
                         <CheckCircle size={12} className="mr-1" />
                         Verified
                       </span>
@@ -1047,18 +1047,18 @@ const Home: React.FC = () => {
                     <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
                       Hurricane Recovery Efforts
                     </h3>
-                    <p className="text-teal-100 text-sm leading-relaxed mb-4">
+                    <p className="text-blue-100 text-sm leading-relaxed mb-4">
                       Category 3 hurricane made landfall. Emergency shelters activated, power restoration in progress across affected areas.
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-teal-200">
+                      <div className="flex items-center text-blue-200">
                         <MapPin size={14} className="mr-2" />
                         Miami
                       </div>
-                      <div className="flex items-center text-teal-200">
+                      <div className="flex items-center text-blue-200">
                         <Clock size={14} className="mr-2" />
                         Jan 5
                       </div>
@@ -1279,7 +1279,7 @@ const Home: React.FC = () => {
                       tabIndex={index === currentSafetySlide ? 0 : -1}
                     >
                       {index === currentSafetySlide && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-green-400 rounded-full opacity-80 animate-pulse"></div>
+                        <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-500 rounded-full opacity-80 animate-pulse"></div>
                       )}
                     </button>
                   ))}
@@ -1290,7 +1290,7 @@ const Home: React.FC = () => {
               <div className="absolute bottom-0 left-0 right-0 z-20">
                 <div className="h-1 bg-white/20">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-400 via-green-400 to-blue-400 transition-all duration-300 shadow-lg"
+                    className="h-full bg-gradient-to-r from-green-400 via-green-500 to-blue-500 transition-all duration-300 shadow-lg"
                     style={{ width: `${((currentSafetySlide + 1) / safetyContent.length) * 100}%` }}
                   />
                 </div>

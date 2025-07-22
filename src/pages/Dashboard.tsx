@@ -18,6 +18,7 @@ import {
   Heart,
   MapPin
 } from 'lucide-react';
+import { showInfoToast } from '../utils/notifications';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -408,7 +409,7 @@ const Dashboard: React.FC = () => {
                                 navigate(`/assistance/received/${item.id}`);
                               } else {
                                 // Handle endorsement logic
-                                alert('Endorsement functionality will be implemented');
+                                showInfoToast('Endorsement functionality will be implemented in a future update.', 'Feature Coming Soon');
                               }
                             }}
                             className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1 hover:bg-blue-50 rounded transition-colors"
