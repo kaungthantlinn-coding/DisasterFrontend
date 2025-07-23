@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 import { errorHandler, ErrorTracker } from '../utils/errorHandler';
+import { isTokenExpired } from '../utils/jwtUtils';
+import { showErrorToast } from '../utils/notifications';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
 
@@ -12,20 +14,43 @@ export const api = axios.create({
   timeout: 10000, // 10 second timeout
 });
 
-// Request interceptor to add auth token and track requests
+// Request interceptor to add auth token, check expiration, and track requests
 api.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().accessToken;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const authState = useAuthStore.getState();
+    const { accessToken } = authState;
+
+    if (accessToken) {
+      // Check if token is expired before making the request
+      if (isTokenExpired(accessToken)) {
+        console.warn('🔒 Token expired in api.ts - rejecting request and logging out');
+
+        // Log out user immediately
+        authState.logout();
+
+        // Show error message
+        showErrorToast(
+          'Your session has expired. Please log in again.',
+          'Session Expired'
+        );
+
+        // Redirect to login
+        window.location.href = '/login';
+
+        // Reject the request
+        return Promise.reject(new Error('Token expired'));
+      }
+
+      // Add valid token to request
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    
+
     // Add request ID for tracking
     config.metadata = {
       startTime: Date.now(),
       requestId: Math.random().toString(36).substr(2, 9),
     };
-    
+
     return config;
   },
   (error) => {
@@ -71,9 +96,20 @@ api.interceptors.response.use(
       },
     });
     
-    // Handle authentication errors
+    // Handle authentication errors (401 Unauthorized)
     if (error.response?.status === 401) {
+      console.warn('🔒 Received 401 Unauthorized in api.ts - token expired or invalid');
+
+      // Log out user immediately
       useAuthStore.getState().logout();
+
+      // Show error message
+      showErrorToast(
+        'Your session has expired. Please log in again.',
+        'Session Expired'
+      );
+
+      // Redirect to login
       window.location.href = '/login';
     }
     

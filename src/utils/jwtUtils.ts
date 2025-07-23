@@ -64,7 +64,7 @@ export const isTokenExpired = (token: string | null, bufferSeconds: number = 30)
 
   // Get current time in seconds (Unix timestamp)
   const currentTime = Math.floor(Date.now() / 1000);
-  
+
   // Check if token is expired (with buffer)
   return payload.exp <= (currentTime + bufferSeconds);
 };

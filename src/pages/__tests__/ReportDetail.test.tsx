@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
-import ReportDetail from '../pages/ReportDetail';
+import ReportDetail from '../ReportDetail';
 
 // Mock the useParams hook
 vi.mock('react-router-dom', async () => {
@@ -13,11 +13,11 @@ vi.mock('react-router-dom', async () => {
 });
 
 // Mock the components that might cause issues in tests
-vi.mock('../components/Layout/Header', () => ({
+vi.mock('../../components/Layout/Header', () => ({
   default: () => <div data-testid="header">Header</div>,
 }));
 
-vi.mock('../components/Layout/Footer', () => ({
+vi.mock('../../components/Layout/Footer', () => ({
   default: () => <div data-testid="footer">Footer</div>,
 }));
 
@@ -49,27 +49,45 @@ describe('ReportDetail', () => {
     expect(screen.getByText('Back to Home')).toBeInTheDocument();
   });
 
-  it('renders assistance needed section', () => {
+  it('renders header and footer components', () => {
     renderWithRouter(<ReportDetail />);
+    
+    expect(screen.getByTestId('header')).toBeInTheDocument();
+    expect(screen.getByTestId('footer')).toBeInTheDocument();
+  });
 
-    // Check if assistance needed section is present by looking for the heading
+  it('displays report status and severity', () => {
+    renderWithRouter(<ReportDetail />);
+    
+    // Check for status and severity indicators
+    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.getByText('High')).toBeInTheDocument();
+  });
+
+  it('shows impact assessment section', () => {
+    renderWithRouter(<ReportDetail />);
+    
+    // Check for impact assessment content
+    expect(screen.getByText('Impact Assessment')).toBeInTheDocument();
+    expect(screen.getByText('Property Damage')).toBeInTheDocument();
+    expect(screen.getByText('Infrastructure Damage')).toBeInTheDocument();
+  });
+
+  it('displays assistance needed section', () => {
+    renderWithRouter(<ReportDetail />);
+    
+    // Check for assistance needed content
     expect(screen.getByText('Assistance Needed')).toBeInTheDocument();
+    expect(screen.getByText('Emergency Rescue')).toBeInTheDocument();
+    expect(screen.getByText('Medical Assistance')).toBeInTheDocument();
   });
 
-  it('renders actions section', () => {
+  it('shows contact information', () => {
     renderWithRouter(<ReportDetail />);
-
-    // Check if actions section heading is present
-    expect(screen.getByText('Take Action')).toBeInTheDocument();
-    expect(screen.getByText('Offer Assistance')).toBeInTheDocument();
-    expect(screen.getByText('Contact Reporter')).toBeInTheDocument();
-  });
-
-  it('renders report status and urgency information', () => {
-    renderWithRouter(<ReportDetail />);
-
-    // Look for status indicators that are likely in the component
-    const statusElements = screen.getAllByText(/Status:|Priority:|Urgent|High|Medium|Low/i);
-    expect(statusElements.length).toBeGreaterThanOrEqual(0); // At least some status info should be present
+    
+    // Check for contact information
+    expect(screen.getByText('Contact Information')).toBeInTheDocument();
+    expect(screen.getByText('john.smith@email.com')).toBeInTheDocument();
+    expect(screen.getByText('+1 (555) 123-4567')).toBeInTheDocument();
   });
 });

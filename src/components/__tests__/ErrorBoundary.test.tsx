@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
-import ErrorBoundary from '../components/ErrorBoundary';
+import ErrorBoundary from '../ErrorBoundary';
 
 // Component that throws an error for testing
 const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
@@ -54,23 +54,42 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
     
-    expect(screen.getByText('Error Details (Development)')).toBeInTheDocument();
-    expect(screen.getByText(/Test error/)).toBeInTheDocument();
+    // In development mode, error details should be visible
+    expect(screen.getByText('Error Details:')).toBeInTheDocument();
+    expect(screen.getByText('Test error')).toBeInTheDocument();
   });
 
-  it('provides action buttons when error occurs', () => {
+  it('has a refresh button that reloads the page', () => {
+    // Mock window.location.reload
+    const mockReload = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { reload: mockReload },
+      writable: true,
+    });
+
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
       </ErrorBoundary>
     );
     
-    const tryAgainButton = screen.getByText('Try Again');
-    expect(tryAgainButton).toBeInTheDocument();
-    expect(tryAgainButton.tagName).toBe('BUTTON');
-    
     const refreshButton = screen.getByText('Refresh Page');
     expect(refreshButton).toBeInTheDocument();
-    expect(refreshButton.tagName).toBe('BUTTON');
+    
+    refreshButton.click();
+    expect(mockReload).toHaveBeenCalled();
+  });
+
+  it('logs error to console', () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+    
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 });

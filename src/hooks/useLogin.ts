@@ -4,6 +4,7 @@ import { authService } from '../services/authService';
 import { useAuthStore } from '../stores/authStore';
 import { useErrorHandler, ErrorTracker } from '../utils/errorHandler';
 import { getRoleBasedRedirectPath, logRoleBasedRedirection } from '../utils/roleRedirection';
+import { getTokenExpirationDate } from '../utils/jwtUtils';
 
 export const useLogin = () => {
   const { handleError, getErrorMessage } = useErrorHandler();
@@ -21,8 +22,19 @@ export const useLogin = () => {
       return result.data;
     },
     onSuccess: (data) => {
-      useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken);
+      // Extract token expiration date
+      const expiresAt = getTokenExpirationDate(data.token)?.toISOString();
+
+      // Set auth state with token expiration info
+      useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken, expiresAt);
+
+      // Track successful login
       ErrorTracker.getInstance().trackUserAction('login_success', { userId: data.user.userId });
+
+      // Log token expiration info for debugging
+      if (expiresAt) {
+        console.log('🔒 User logged in successfully. Token expires at:', new Date(expiresAt).toLocaleString());
+      }
 
       // Check for intended destination from location state
       const from = (location.state as any)?.from?.pathname;

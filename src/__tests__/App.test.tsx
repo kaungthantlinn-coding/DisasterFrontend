@@ -28,12 +28,16 @@ vi.mock('../pages/ReportImpact', () => ({
   default: () => <div data-testid="report-impact-page">Report Impact Page</div>,
 }));
 
-vi.mock('../components/ProtectedRoute', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div data-testid="protected-route">{children}</div>,
+vi.mock('../components/ErrorBoundary', () => ({
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="error-boundary">{children}</div>
+  ),
 }));
 
-vi.mock('../components/ErrorBoundary', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div data-testid="error-boundary">{children}</div>,
+vi.mock('../components/Auth/TokenExpirationMonitor', () => ({
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="token-monitor">{children}</div>
+  ),
 }));
 
 // Mock react-router-dom to avoid BrowserRouter conflicts

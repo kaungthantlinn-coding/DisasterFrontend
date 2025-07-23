@@ -22,9 +22,11 @@ import Donate from './pages/Donate';
 import Partnership from './pages/Partnership';
 
 import AvatarDebug from './components/Debug/AvatarDebug';
+import TokenDebugPage from './pages/TokenDebugPage';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import TokenExpirationMonitor from './components/Auth/TokenExpirationMonitor';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -40,13 +42,14 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <Router
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          <div className="min-h-screen bg-gray-50">
+        <TokenExpirationMonitor>
+          <Router
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <div className="min-h-screen bg-gray-50">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<LoginPage />} />
@@ -72,6 +75,7 @@ function App() {
               <Route path="/partnership" element={<Partnership />} />
 
               <Route path="/debug/avatar" element={<AvatarDebug />} />
+              <Route path="/debug/token" element={<TokenDebugPage />} />
               {/* Reports routes - accessible to all authenticated users */}
               <Route
                 path="/reports"
@@ -141,6 +145,7 @@ function App() {
             </Routes>
           </div>
         </Router>
+        </TokenExpirationMonitor>
         <Toaster
           position="top-right"
           toastOptions={{

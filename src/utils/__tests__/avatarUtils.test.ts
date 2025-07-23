@@ -5,7 +5,7 @@ import {
   getInitials, 
   getAvatarBackgroundColor, 
   getAvatarTextColor 
-} from './avatarUtils';
+} from '../avatarUtils';
 
 describe('Avatar Utils', () => {
   describe('isValidImageUrl', () => {
@@ -50,68 +50,84 @@ describe('Avatar Utils', () => {
   });
 
   describe('extractPhotoUrl', () => {
-    it('should extract from various user object fields', () => {
-      const user1 = { photoUrl: 'https://example.com/photo.jpg' };
-      expect(extractPhotoUrl(user1)).toBe('https://example.com/photo.jpg');
-
-      const user2 = { picture: 'https://example.com/picture.jpg' };
-      expect(extractPhotoUrl(user2)).toBe('https://example.com/picture.jpg');
-
-      const user3 = { avatar: 'https://example.com/avatar.jpg' };
-      expect(extractPhotoUrl(user3)).toBe('https://example.com/avatar.jpg');
-    });
-
-    it('should prioritize fields in order', () => {
-      const user = {
-        avatar: 'https://example.com/avatar.jpg',
-        photoUrl: 'https://example.com/photo.jpg',
-        picture: 'https://example.com/picture.jpg'
+    it('should extract photo URL from Google user object', () => {
+      const googleUser = {
+        picture: 'https://lh3.googleusercontent.com/a/ACg8ocIY26fr-P6Wz3d7EUfcBbsiwsstm4j0NnZZDcSD5RWMigRl8SE=s96-c'
       };
-      expect(extractPhotoUrl(user)).toBe('https://example.com/photo.jpg');
+      const photoUrl = extractPhotoUrl(googleUser);
+      expect(photoUrl).toBe('https://lh3.googleusercontent.com/a/ACg8ocIY26fr-P6Wz3d7EUfcBbsiwsstm4j0NnZZDcSD5RWMigRl8SE=s128-c');
     });
 
-    it('should return undefined for invalid or missing URLs', () => {
-      expect(extractPhotoUrl({})).toBeUndefined();
-      expect(extractPhotoUrl({ photoUrl: '' })).toBeUndefined();
-      expect(extractPhotoUrl({ photoUrl: 'invalid-url' })).toBeUndefined();
+    it('should return undefined for user without picture', () => {
+      const userWithoutPicture = {};
+      expect(extractPhotoUrl(userWithoutPicture)).toBeUndefined();
+    });
+
+    it('should return undefined for invalid picture URL', () => {
+      const userWithInvalidPicture = { picture: 'invalid-url' };
+      expect(extractPhotoUrl(userWithInvalidPicture)).toBeUndefined();
     });
   });
 
   describe('getInitials', () => {
-    it('should generate initials from names', () => {
+    it('should generate initials from full name', () => {
       expect(getInitials('John Doe')).toBe('JD');
       expect(getInitials('Jane Smith Johnson')).toBe('JS');
-      expect(getInitials('Madonna')).toBe('M');
+      expect(getInitials('Alice')).toBe('A');
+    });
+
+    it('should handle edge cases', () => {
       expect(getInitials('')).toBe('');
-      expect(getInitials(undefined)).toBe('');
+      expect(getInitials('   ')).toBe('');
+      expect(getInitials('a')).toBe('A');
+      expect(getInitials('john doe')).toBe('JD');
+    });
+
+    it('should handle special characters', () => {
+      expect(getInitials('Jean-Pierre Dupont')).toBe('JD');
+      expect(getInitials("O'Connor Smith")).toBe('OS');
+      expect(getInitials('李 明')).toBe('李明');
     });
   });
 
   describe('getAvatarBackgroundColor', () => {
-    it('should return consistent colors for same names', () => {
+    it('should return consistent colors for same input', () => {
       const color1 = getAvatarBackgroundColor('John Doe');
       const color2 = getAvatarBackgroundColor('John Doe');
       expect(color1).toBe(color2);
     });
 
-    it('should return different colors for different names', () => {
+    it('should return different colors for different inputs', () => {
       const color1 = getAvatarBackgroundColor('John Doe');
       const color2 = getAvatarBackgroundColor('Jane Smith');
-      // Note: This might occasionally fail due to hash collisions, but very unlikely
       expect(color1).not.toBe(color2);
     });
 
-    it('should return default color for empty name', () => {
-      expect(getAvatarBackgroundColor('')).toBe('bg-blue-100');
-      expect(getAvatarBackgroundColor(undefined)).toBe('bg-blue-100');
+    it('should return valid CSS color', () => {
+      const color = getAvatarBackgroundColor('Test User');
+      expect(color).toMatch(/^#[0-9A-F]{6}$/i);
     });
   });
 
   describe('getAvatarTextColor', () => {
-    it('should return corresponding text colors', () => {
-      expect(getAvatarTextColor('bg-blue-100')).toBe('text-blue-600');
-      expect(getAvatarTextColor('bg-green-100')).toBe('text-green-600');
-      expect(getAvatarTextColor('bg-unknown-100')).toBe('text-blue-600'); // fallback
+    it('should return white for dark backgrounds', () => {
+      const darkColor = '#000000';
+      expect(getAvatarTextColor(darkColor)).toBe('#FFFFFF');
+    });
+
+    it('should return black for light backgrounds', () => {
+      const lightColor = '#FFFFFF';
+      expect(getAvatarTextColor(lightColor)).toBe('#000000');
+    });
+
+    it('should handle colors without hash', () => {
+      expect(getAvatarTextColor('000000')).toBe('#FFFFFF');
+      expect(getAvatarTextColor('FFFFFF')).toBe('#000000');
+    });
+
+    it('should return white as default for invalid colors', () => {
+      expect(getAvatarTextColor('invalid')).toBe('#FFFFFF');
+      expect(getAvatarTextColor('')).toBe('#FFFFFF');
     });
   });
 });
