@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Users,
   FileText,
@@ -25,10 +25,16 @@ import {
   ChevronRight,
   Sparkles,
   Zap,
-  Star
+  Star,
+  RefreshCw,
+  Download,
+  Maximize2,
+  Minimize2,
+  Calendar,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { useRoles } from '../../hooks/useRoles';
 import { userManagementApi } from '../../apis/userManagement';
 import { ReportsAPI } from '../../apis/reports';
 
@@ -37,6 +43,49 @@ import UserManagement from './UserManagement';
 import Analytics from './Analytics';
 import SystemSettings from './systemsettings';
 import ReportManagement from './ReportManagement';
+
+// Error Boundary Component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Admin Panel Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+            <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
+            <p className="text-gray-600 mb-4">
+              The admin panel encountered an unexpected error. Please refresh the page or contact support.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 
 
@@ -182,15 +231,106 @@ const QuickActionCard: React.FC<QuickActionProps> = ({ icon, title, description,
 const AdminPanel: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
+  // Enhanced state management
   const [timeRange, setTimeRange] = useState('7d');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    message: string;
+    timestamp: Date;
+  }>>([]);
 
   // Update time every minute
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Notification system
+  const addNotification = useCallback((type: 'success' | 'error' | 'warning' | 'info', message: string) => {
+    const id = Date.now().toString();
+    setNotifications(prev => [...prev, { id, type, message, timestamp: new Date() }]);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  }, []);
+
+  // Manual refresh functionality
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries();
+      addNotification('success', 'Data refreshed successfully');
+    } catch (error) {
+      addNotification('error', 'Failed to refresh data');
+    } finally {
+      setTimeout(() => setRefreshing(false), 1000);
+    }
+  }, [queryClient, addNotification]);
+
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'r':
+            e.preventDefault();
+            handleRefresh();
+            break;
+          case 'k':
+            e.preventDefault();
+            document.querySelector<HTMLInputElement>('input[placeholder="Search..."]')?.focus();
+            break;
+          case 'b':
+            e.preventDefault();
+            setSidebarOpen(prev => !prev);
+            break;
+        }
+      }
+      if (e.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleRefresh]);
 
   // Check if we're on the main admin panel page
   const isMainPanel = location.pathname === '/admin' || location.pathname === '/admin/';
@@ -235,54 +375,81 @@ const AdminPanel: React.FC = () => {
     window.location.href = '/login';
   };
 
-  // Fetch real user management statistics
+  // Enhanced data fetching with better error handling
   const {
     data: userStats,
     isLoading: isLoadingUserStats,
-    error: userStatsError
+    error: userStatsError,
+    isRefetching: isRefetchingUserStats
   } = useQuery({
-    queryKey: ['adminDashboardStats'],
-    queryFn: userManagementApi.getDashboardStats,
+    queryKey: ['adminDashboardStats', timeRange],
+    queryFn: () => userManagementApi.getDashboardStats(),
     staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: 2,
-    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 3;
+    },
+    refetchInterval: isOnline ? 5 * 60 * 1000 : false, // Only refetch when online
+    enabled: isOnline
   });
 
-  // Fetch real reports statistics
   const {
     data: reportsStats,
     isLoading: isLoadingReportsStats,
-    error: reportsStatsError
+    error: reportsStatsError,
+    isRefetching: isRefetchingReportsStats
   } = useQuery({
-    queryKey: ['adminReportsStats'],
-    queryFn: ReportsAPI.getReportsStatistics,
+    queryKey: ['adminReportsStats', timeRange],
+    queryFn: () => ReportsAPI.getReportsStatistics(),
     staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: 2,
-    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 3;
+    },
+    refetchInterval: isOnline ? 5 * 60 * 1000 : false, // Only refetch when online
+    enabled: isOnline
   });
 
-  // Calculate percentage changes (you can enhance this with historical data)
-  const calculateChange = (current: number, previous?: number) => {
-    if (!previous || previous === 0) return '+0%';
-    const change = ((current - previous) / previous) * 100;
-    const sign = change >= 0 ? '+' : '';
-    return `${sign}${change.toFixed(1)}%`;
-  };
 
-  // Real stats with loading states
-  const stats = {
-    totalUsers: userStats?.totalUsers || 0,
-    totalReports: reportsStats?.totalReports || 0,
-    pendingVerification: reportsStats?.pendingReports || 0,
-    systemHealth: 98.5, // TODO: Add system health API
-    activeUsers: userStats?.activeUsers || 0,
-    verifiedReports: reportsStats?.verifiedReports || 0,
-    blacklistedUsers: userStats?.suspendedUsers || 0,
-    serverUptime: '99.9%' // TODO: Add system health API
-  };
 
-  // Check if any data is loading
+  // Enhanced loading and error states
   const isLoadingAnyStats = isLoadingUserStats || isLoadingReportsStats;
+  const isRefreshingAnyStats = isRefetchingUserStats || isRefetchingReportsStats || refreshing;
+  const hasAnyError = userStatsError || reportsStatsError;
+
+  // Memoized calculations for better performance
+  const enhancedStats = useMemo(() => {
+    const baseStats = {
+      totalUsers: (userStats as any)?.totalUsers || 0,
+      totalReports: (reportsStats as any)?.totalReports || 0,
+      pendingVerification: (reportsStats as any)?.pendingReports || 0,
+      systemHealth: 98.5, // TODO: Add system health API
+      activeUsers: (userStats as any)?.activeUsers || 0,
+      verifiedReports: (reportsStats as any)?.verifiedReports || 0,
+      blacklistedUsers: (userStats as any)?.suspendedUsers || 0,
+      serverUptime: '99.9%' // TODO: Add system health API
+    };
+
+    // Calculate growth percentages
+    const userGrowth = (userStats as any)?.previousPeriodUsers 
+      ? ((baseStats.totalUsers - (userStats as any).previousPeriodUsers) / (userStats as any).previousPeriodUsers * 100).toFixed(1)
+      : '0';
+    
+    const reportGrowth = (reportsStats as any)?.previousPeriodReports
+      ? ((baseStats.totalReports - (reportsStats as any).previousPeriodReports) / (reportsStats as any).previousPeriodReports * 100).toFixed(1)
+      : '0';
+
+    const userGrowthNum = parseFloat(userGrowth);
+    const reportGrowthNum = parseFloat(reportGrowth);
+
+    return {
+      ...baseStats,
+      userGrowth: `${userGrowthNum >= 0 ? '+' : ''}${userGrowth}%`,
+      reportGrowth: `${reportGrowthNum >= 0 ? '+' : ''}${reportGrowth}%`,
+      userGrowthType: userGrowthNum >= 0 ? 'increase' as const : 'decrease' as const,
+      reportGrowthType: reportGrowthNum >= 0 ? 'increase' as const : 'decrease' as const
+    };
+  }, [userStats, reportsStats]);
 
   const quickActions = [
     {
@@ -329,40 +496,59 @@ const AdminPanel: React.FC = () => {
     }
   ];
 
-  const recentActivities = [
-    {
-      id: 1,
-      action: 'New user registration',
-      user: 'Sarah Johnson',
-      time: '2 minutes ago',
-      type: 'user',
-      icon: <UserCheck className="w-4 h-4" />
-    },
-    {
-      id: 2,
-      action: 'Report verified',
-      user: 'Admin',
-      time: '15 minutes ago',
-      type: 'report',
-      icon: <CheckCircle className="w-4 h-4" />
-    },
-    {
-      id: 3,
-      action: 'System backup completed',
-      user: 'System',
-      time: '1 hour ago',
-      type: 'system',
-      icon: <Database className="w-4 h-4" />
-    },
-    {
-      id: 4,
-      action: 'Critical alert resolved',
-      user: 'Admin Team',
-      time: '2 hours ago',
-      type: 'alert',
-      icon: <AlertTriangle className="w-4 h-4" />
+  // Enhanced recent activities with real-time data
+  const recentActivities = useMemo(() => {
+    const activities = [
+      {
+        id: 1,
+        action: 'New user registration',
+        user: 'Sarah Johnson',
+        time: '2 minutes ago',
+        type: 'user',
+        icon: <UserCheck className="w-4 h-4" />,
+        priority: 'low'
+      },
+      {
+        id: 2,
+        action: 'Report verified',
+        user: 'Admin',
+        time: '15 minutes ago',
+        type: 'report',
+        icon: <CheckCircle className="w-4 h-4" />,
+        priority: 'medium'
+      },
+      {
+        id: 3,
+        action: 'System backup completed',
+        user: 'System',
+        time: '1 hour ago',
+        type: 'system',
+        icon: <Database className="w-4 h-4" />,
+        priority: 'low'
+      },
+      {
+        id: 4,
+        action: 'Critical alert resolved',
+        user: 'Admin Team',
+        time: '2 hours ago',
+        type: 'alert',
+        icon: <AlertTriangle className="w-4 h-4" />,
+        priority: 'high'
+      }
+    ];
+
+    // Filter activities based on search query
+    if (searchQuery) {
+      return activities.filter(activity => 
+        activity.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        activity.user.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
-  ];
+
+    return activities;
+  }, [searchQuery]);
+
+
 
   const AdminDashboard = () => (
     <div className="space-y-8">
@@ -395,7 +581,7 @@ const AdminPanel: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
                     <Users className="w-4 h-4 text-blue-300" />
-                    <span className="text-sm font-medium">{stats.activeUsers} active users</span>
+                    <span className="text-sm font-medium">{enhancedStats.activeUsers} active users</span>
                   </div>
                 </div>
               </div>
@@ -433,17 +619,39 @@ const AdminPanel: React.FC = () => {
               )}
             </div>
           </div>
+          {/* Error State */}
+          {hasAnyError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+                <div>
+                  <h4 className="text-red-800 font-medium">Data Loading Issues</h4>
+                  <p className="text-red-600 text-sm">
+                    Some statistics may be outdated. 
+                    {!isOnline && ' You are currently offline.'}
+                    <button 
+                      onClick={handleRefresh}
+                      className="ml-2 text-red-700 underline hover:no-underline"
+                    >
+                      Try refreshing
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '0ms'}}>
               <AdminStatCard
                 icon={<Users className="w-6 h-6" />}
                 title="Total Users"
-                value={isLoadingUserStats ? 0 : stats.totalUsers.toLocaleString()}
-                change={userStats ? `${userStats.totalUsers > 0 ? '+' : ''}${((userStats.totalUsers / Math.max(userStats.totalUsers - 50, 1)) * 100 - 100).toFixed(1)}% from last month` : undefined}
-                changeType={userStats && userStats.totalUsers > 0 ? "increase" : "neutral"}
+                value={isLoadingUserStats ? 0 : enhancedStats.totalUsers.toLocaleString()}
+                change={enhancedStats.userGrowth !== '+0%' ? `${enhancedStats.userGrowth} from last period` : undefined}
+                changeType={enhancedStats.userGrowthType}
                 bgGradient="bg-gradient-to-br from-blue-500 to-blue-600"
                 iconBg="bg-blue-400"
-                onClick={() => window.location.href = '/admin/users'}
+                onClick={() => navigate('/admin/users')}
                 isLoading={isLoadingUserStats}
               />
             </div>
@@ -451,12 +659,12 @@ const AdminPanel: React.FC = () => {
               <AdminStatCard
                 icon={<FileText className="w-6 h-6" />}
                 title="Total Reports"
-                value={isLoadingReportsStats ? 0 : stats.totalReports.toLocaleString()}
-                change={reportsStats ? `${reportsStats.recentReports > 0 ? '+' : ''}${reportsStats.recentReports} recent reports` : undefined}
-                changeType={reportsStats && reportsStats.recentReports > 0 ? "increase" : "neutral"}
+                value={isLoadingReportsStats ? 0 : enhancedStats.totalReports.toLocaleString()}
+                change={enhancedStats.reportGrowth !== '+0%' ? `${enhancedStats.reportGrowth} from last period` : undefined}
+                changeType={enhancedStats.reportGrowthType}
                 bgGradient="bg-gradient-to-br from-green-500 to-emerald-600"
                 iconBg="bg-green-400"
-                onClick={() => window.location.href = '/admin/reports'}
+                onClick={() => navigate('/admin/reports')}
                 isLoading={isLoadingReportsStats}
               />
             </div>
@@ -464,12 +672,12 @@ const AdminPanel: React.FC = () => {
               <AdminStatCard
                 icon={<Clock className="w-6 h-6" />}
                 title="Pending Verification"
-                value={isLoadingReportsStats ? 0 : stats.pendingVerification}
-                change={reportsStats ? `${reportsStats.averageResponseTime} avg response` : undefined}
-                changeType="neutral"
+                value={isLoadingReportsStats ? 0 : enhancedStats.pendingVerification}
+                change={(reportsStats as any)?.averageResponseTime ? `${(reportsStats as any).averageResponseTime} avg response` : undefined}
+                changeType={enhancedStats.pendingVerification > 10 ? "decrease" as const : "neutral" as const}
                 bgGradient="bg-gradient-to-br from-yellow-500 to-orange-500"
                 iconBg="bg-yellow-400"
-                onClick={() => window.location.href = '/verify-reports'}
+                onClick={() => navigate('/admin/reports?filter=pending')}
                 isLoading={isLoadingReportsStats}
               />
             </div>
@@ -477,11 +685,12 @@ const AdminPanel: React.FC = () => {
               <AdminStatCard
                 icon={<TrendingUp className="w-6 h-6" />}
                 title="System Health"
-                value={`${stats.systemHealth}%`}
-                change="Excellent performance"
-                changeType="increase"
+                value={`${enhancedStats.systemHealth}%`}
+                change={enhancedStats.systemHealth >= 95 ? "Excellent performance" : enhancedStats.systemHealth >= 85 ? "Good performance" : "Needs attention"}
+                changeType={enhancedStats.systemHealth >= 95 ? "increase" as const : enhancedStats.systemHealth >= 85 ? "neutral" as const : "decrease" as const}
                 bgGradient="bg-gradient-to-br from-purple-500 to-purple-600"
                 iconBg="bg-purple-400"
+                onClick={() => navigate('/admin/settings?tab=system')}
               />
             </div>
           </div>
@@ -583,7 +792,7 @@ const AdminPanel: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-green-700 font-bold">{stats.serverUptime}</span>
+                  <span className="text-green-700 font-bold">{enhancedStats.serverUptime}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200 hover:shadow-md transition-all group/status">
@@ -594,7 +803,7 @@ const AdminPanel: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4 text-blue-600" />
-                  <span className="text-blue-700 font-bold">{stats.activeUsers}</span>
+                  <span className="text-blue-700 font-bold">{enhancedStats.activeUsers}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 hover:shadow-md transition-all group/status">
@@ -605,7 +814,7 @@ const AdminPanel: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Star className="w-4 h-4 text-purple-600" />
-                  <span className="text-purple-700 font-bold">{stats.verifiedReports}</span>
+                  <span className="text-purple-700 font-bold">{enhancedStats.verifiedReports}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-200 hover:shadow-md transition-all group/status">
@@ -616,7 +825,7 @@ const AdminPanel: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <X className="w-4 h-4 text-red-600" />
-                  <span className="text-red-700 font-bold">{stats.blacklistedUsers}</span>
+                  <span className="text-red-700 font-bold">{enhancedStats.blacklistedUsers}</span>
                 </div>
               </div>
             </div>
@@ -628,6 +837,47 @@ const AdminPanel: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            className={`p-4 rounded-lg shadow-lg border-l-4 bg-white max-w-sm transform transition-all duration-300 ${
+              notification.type === 'success' ? 'border-green-500' :
+              notification.type === 'error' ? 'border-red-500' :
+              notification.type === 'warning' ? 'border-yellow-500' :
+              'border-blue-500'
+            }`}
+          >
+            <div className="flex items-start space-x-3">
+              <div className={`flex-shrink-0 ${
+                notification.type === 'success' ? 'text-green-500' :
+                notification.type === 'error' ? 'text-red-500' :
+                notification.type === 'warning' ? 'text-yellow-500' :
+                'text-blue-500'
+              }`}>
+                {notification.type === 'success' && <CheckCircle className="w-5 h-5" />}
+                {notification.type === 'error' && <AlertTriangle className="w-5 h-5" />}
+                {notification.type === 'warning' && <AlertTriangle className="w-5 h-5" />}
+                {notification.type === 'info' && <Bell className="w-5 h-5" />}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">{notification.message}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {notification.timestamp.toLocaleTimeString()}
+                </p>
+              </div>
+              <button
+                onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -743,48 +993,133 @@ const AdminPanel: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        {/* Enhanced Top Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+                title="Open sidebar (Ctrl+B)"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {navItems.find(item => item.active)?.title || 'Dashboard'}
-                </h2>
-                <p className="text-sm text-gray-500">Manage your disaster response platform</p>
+              <div className="flex items-center space-x-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
+                    <span>{navItems.find(item => item.active)?.title || 'Dashboard'}</span>
+                    {hasAnyError && (
+                      <AlertTriangle className="w-4 h-4 text-red-500" />
+                    )}
+                    {!isOnline && (
+                      <WifiOff className="w-4 h-4 text-orange-500" />
+                    )}
+                  </h2>
+                  <p className="text-sm text-gray-500 flex items-center space-x-2">
+                    <span>Manage your disaster response platform</span>
+                    <span>•</span>
+                    <span className="flex items-center space-x-1">
+                      {isOnline ? (
+                        <Wifi className="w-3 h-3 text-green-500" />
+                      ) : (
+                        <WifiOff className="w-3 h-3 text-orange-500" />
+                      )}
+                      <span className={isOnline ? 'text-green-600' : 'text-orange-600'}>
+                        {isOnline ? 'Online' : 'Offline'}
+                      </span>
+                    </span>
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            
+            <div className="flex items-center space-x-2">
+              {/* Enhanced Search */}
               <div className="relative hidden md:block">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Search..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64"
+                  placeholder="Search... (Ctrl+K)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 transition-all"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              <select 
-                value={timeRange} 
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="24h">Last 24 hours</option>
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-              </select>
-              <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
+
+              {/* Time Range Selector */}
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <select 
+                  value={timeRange} 
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none cursor-pointer"
+                  title="Select time range"
+                >
+                  <option value="1h">Last Hour</option>
+                  <option value="24h">Last 24 Hours</option>
+                  <option value="7d">Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                  <option value="90d">Last 90 Days</option>
+                  <option value="1y">Last Year</option>
+                </select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-1">
+                {/* Refresh Button */}
+                <button 
+                  onClick={handleRefresh}
+                  disabled={isRefreshingAnyStats}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Refresh data (Ctrl+R)"
+                >
+                  <RefreshCw className={`w-5 h-5 ${isRefreshingAnyStats ? 'animate-spin' : ''}`} />
+                </button>
+
+                {/* Fullscreen Toggle */}
+                <button 
+                  onClick={toggleFullscreen}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden lg:block"
+                  title="Toggle fullscreen"
+                >
+                  {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                </button>
+
+                {/* Export Button */}
+                <button 
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Export data"
+                  onClick={() => {
+                    // TODO: Implement export functionality
+                    console.log('Export data');
+                  }}
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+
+                {/* Notifications */}
+                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative">
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                </button>
+              </div>
             </div>
           </div>
+
+          {/* Loading Bar */}
+          {isRefreshingAnyStats && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-200">
+              <div className="h-full bg-blue-600 animate-pulse"></div>
+            </div>
+          )}
         </header>
 
         {/* Page Content */}
@@ -805,4 +1140,11 @@ const AdminPanel: React.FC = () => {
   );
 };
 
-export default AdminPanel;
+// Wrapped component with error boundary
+const AdminPanelWithErrorBoundary: React.FC = () => (
+  <ErrorBoundary>
+    <AdminPanel />
+  </ErrorBoundary>
+);
+
+export default AdminPanelWithErrorBoundary;

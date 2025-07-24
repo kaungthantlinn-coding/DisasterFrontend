@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { useTranslation } from 'react-i18next';
 import {
   Search,
   MapPin,
@@ -28,33 +27,130 @@ import {
   Truck,
   RefreshCw,
   BarChart3,
-  Sparkles,
-  Heart
+  TrendingUp,
+  Heart,
+  Eye,
+  Filter,
+  Star,
+  Award
 } from 'lucide-react';
 
 // Components
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
-import ReportMap from '../components/Map/ReportMap';
 
-// Hooks
-import { useRoles } from '../hooks/useRoles';
-
-// Data
-import { mockReports } from '../data/mockData';
-
-// Types
-import { Report } from '../types';
+// Mock data for demonstration
+const mockReports = [
+  {
+    id: '1',
+    title: 'Major Earthquake in Turkey',
+    description: 'Magnitude 7.2 earthquake causing significant damage to buildings and infrastructure.',
+    disasterType: 'earthquake',
+    severity: 'critical',
+    status: 'verified',
+    location: {
+      address: 'Kahramanmaraş, Turkey',
+      coordinates: { lat: 37.5858, lng: 36.9371 }
+    },
+    createdAt: '2024-02-15T08:30:00Z',
+    reportedBy: 'Emergency Services',
+    photos: ['https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
+    assistanceLog: [
+      { timestamp: '2024-02-15T09:00:00Z', action: 'Search and rescue teams deployed', responder: 'AFAD Turkey' }
+    ]
+  },
+  {
+    id: '2',
+    title: 'Wildfire Spreading in California',
+    description: 'Fast-moving wildfire threatening residential areas in Los Angeles County.',
+    disasterType: 'fire',
+    severity: 'high',
+    status: 'verified',
+    location: {
+      address: 'Los Angeles County, CA',
+      coordinates: { lat: 34.0522, lng: -118.2437 }
+    },
+    createdAt: '2024-02-14T15:45:00Z',
+    reportedBy: 'CAL FIRE',
+    photos: ['https://images.unsplash.com/photo-1574482620811-1aa16ffe3c82?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
+    assistanceLog: [
+      { timestamp: '2024-02-14T16:00:00Z', action: 'Evacuation orders issued', responder: 'LA County Sheriff' }
+    ]
+  },
+  {
+    id: '3',
+    title: 'Severe Flooding in Bangladesh',
+    description: 'Heavy monsoon rains causing widespread flooding in Dhaka Division.',
+    disasterType: 'flood',
+    severity: 'high',
+    status: 'verified',
+    location: {
+      address: 'Dhaka Division, Bangladesh',
+      coordinates: { lat: 23.8103, lng: 90.4125 }
+    },
+    createdAt: '2024-02-13T12:20:00Z',
+    reportedBy: 'Bangladesh Meteorological Department',
+    photos: ['https://images.unsplash.com/photo-1547036967-23d11aacaee0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
+    assistanceLog: [
+      { timestamp: '2024-02-13T13:00:00Z', action: 'Relief supplies distributed', responder: 'Red Crescent Bangladesh' }
+    ]
+  },
+  {
+    id: '4',
+    title: 'Hurricane Category 3 Approaching',
+    description: 'Hurricane with sustained winds of 120 mph approaching Gulf Coast.',
+    disasterType: 'storm',
+    severity: 'critical',
+    status: 'verified',
+    location: {
+      address: 'Gulf of Mexico',
+      coordinates: { lat: 25.7617, lng: -80.1918 }
+    },
+    createdAt: '2024-02-12T18:00:00Z',
+    reportedBy: 'National Hurricane Center',
+    photos: ['https://images.unsplash.com/photo-1446776877081-d282a0f896e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
+    assistanceLog: [
+      { timestamp: '2024-02-12T19:00:00Z', action: 'Emergency shelters opened', responder: 'FEMA' }
+    ]
+  },
+  {
+    id: '5',
+    title: 'Landslide Blocks Highway',
+    description: 'Heavy rains trigger landslide blocking major highway in mountainous region.',
+    disasterType: 'landslide',
+    severity: 'medium',
+    status: 'verified',
+    location: {
+      address: 'Highway 1, California',
+      coordinates: { lat: 36.2704, lng: -121.8081 }
+    },
+    createdAt: '2024-02-11T10:15:00Z',
+    reportedBy: 'Caltrans',
+    photos: ['https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
+    assistanceLog: []
+  },
+  {
+    id: '6',
+    title: 'Traffic Accident on Interstate',
+    description: 'Multi-vehicle accident causing traffic delays and requiring emergency response.',
+    disasterType: 'accident',
+    severity: 'medium',
+    status: 'resolved',
+    location: {
+      address: 'Interstate 95, Virginia',
+      coordinates: { lat: 38.8048, lng: -77.0469 }
+    },
+    createdAt: '2024-02-10T14:30:00Z',
+    reportedBy: 'Virginia State Police',
+    photos: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
+    assistanceLog: [
+      { timestamp: '2024-02-10T15:00:00Z', action: 'Scene cleared, traffic resumed', responder: 'Virginia DOT' }
+    ]
+  }
+];
 
 const Reports: React.FC = () => {
-  // Translation
-  const { t } = useTranslation();
-
-  // Navigation
   const navigate = useNavigate();
-
-  // Auth and roles
-  const { isAdmin, isCj, isOnlyUser } = useRoles();
 
   // State for filters and pagination
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,38 +164,21 @@ const Reports: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-
-  // Role-based permissions
-  const canViewSensitiveInfo = isAdmin() || isCj();
-  const isRegularUser = isOnlyUser();
-
-  // Image loading states
-  const [imageLoadingStates, setImageLoadingStates] = useState<{[key: string]: boolean}>({});
-  const [imageErrorStates, setImageErrorStates] = useState<{[key: string]: boolean}>({});
 
   // Filter options
   const disasterTypes = ['all', 'flood', 'fire', 'earthquake', 'storm', 'landslide', 'accident', 'other'];
   const severityLevels = ['all', 'low', 'medium', 'high', 'critical'];
-  // Status options based on user role
-  const statusOptions = isRegularUser
-    ? ['all', 'verified'] // Regular users only see verified reports
-    : ['all', 'pending', 'verified', 'resolved']; // Admin/CJ see all statuses
+  const statusOptions = ['all', 'pending', 'verified', 'resolved'];
   const sortOptions = [
-    { value: 'newest', label: t('reports.searchAndFilters.sortOptions.newest') },
-    { value: 'oldest', label: t('reports.searchAndFilters.sortOptions.oldest') },
-    { value: 'severity', label: t('reports.searchAndFilters.sortOptions.severity') },
-    { value: 'location', label: t('reports.searchAndFilters.sortOptions.location') }
+    { value: 'newest', label: 'Newest First' },
+    { value: 'oldest', label: 'Oldest First' },
+    { value: 'severity', label: 'By Severity' },
+    { value: 'location', label: 'By Location' }
   ];
 
-  // Filter and sort reports based on user role
+  // Filter and sort reports
   const filteredAndSortedReports = useMemo(() => {
     let filtered = mockReports.filter(report => {
-      // Role-based filtering: Regular users only see verified reports
-      if (isRegularUser && report.status !== 'verified') {
-        return false;
-      }
-
       // Search filter
       if (searchTerm && !report.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
           !report.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -149,7 +228,7 @@ const Reports: React.FC = () => {
     });
 
     return filtered;
-  }, [mockReports, searchTerm, selectedDisasterType, selectedSeverity, selectedStatus, showOnlyWithImages, sortBy, isRegularUser]);
+  }, [searchTerm, selectedDisasterType, selectedSeverity, selectedStatus, showOnlyWithImages, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedReports.length / itemsPerPage);
@@ -172,7 +251,7 @@ const Reports: React.FC = () => {
     setCurrentPage(1);
   };
 
-  // Get disaster type icon component
+  // Get disaster type icon
   const getDisasterIcon = (type: string) => {
     const iconProps = { size: 16, className: "text-white" };
     switch (type) {
@@ -199,405 +278,301 @@ const Reports: React.FC = () => {
     }
   };
 
-  // Get disaster type display name
-  const getDisasterTypeName = (type: string) => {
-    switch (type) {
-      case 'flood': return t('reports.disasterTypes.flood');
-      case 'fire': return t('reports.disasterTypes.fire');
-      case 'earthquake': return t('reports.disasterTypes.earthquake');
-      case 'storm': return t('reports.disasterTypes.storm');
-      case 'landslide': return t('reports.disasterTypes.landslide');
-      case 'accident': return t('reports.disasterTypes.accident');
-      default: return t('reports.disasterTypes.other');
-    }
-  };
-
-  // Get severity level display name
-  const getSeverityLevelName = (level: string) => {
-    switch (level) {
-      case 'critical': return t('reports.severityLevels.critical');
-      case 'high': return t('reports.severityLevels.high');
-      case 'medium': return t('reports.severityLevels.medium');
-      case 'low': return t('reports.severityLevels.low');
-      default: return level.charAt(0).toUpperCase() + level.slice(1);
-    }
-  };
-
-  // Get status display name
-  const getStatusName = (status: string) => {
-    switch (status) {
-      case 'pending': return t('reports.statusTypes.pending');
-      case 'verified': return t('reports.statusTypes.verified');
-      case 'investigating': return t('reports.statusTypes.investigating');
-      case 'resolved': return t('reports.statusTypes.resolved');
-      default: return status.charAt(0).toUpperCase() + status.slice(1);
-    }
-  };
-
-  // Get severity color classes
+  // Get severity color
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical':
-        return 'bg-red-500';
-      case 'high':
-        return 'bg-orange-500';
-      case 'medium':
-        return 'bg-yellow-500';
-      case 'low':
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-500';
+      case 'critical': return 'bg-red-500';
+      case 'high': return 'bg-orange-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-green-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  // Enhanced default image handling with optimized quality and aspect ratios
-  const getDefaultImage = (type: string) => {
-    const defaultImages = {
-      flood: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=800&h=600&fit=crop&crop=center&auto=format&q=80',
-      fire: 'https://images.unsplash.com/photo-1574169208507-84376144848b?w=800&h=600&fit=crop&crop=center&auto=format&q=80',
-      earthquake: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&h=600&fit=crop&crop=center&auto=format&q=80',
-      storm: 'https://images.unsplash.com/photo-1527482797697-8795b05a13fe?w=800&h=600&fit=crop&crop=center&auto=format&q=80',
-      landslide: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop&crop=center&auto=format&q=80',
-      accident: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop&crop=center&auto=format&q=80',
-      other: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop&crop=center&auto=format&q=80'
-    };
-    return defaultImages[type as keyof typeof defaultImages] || defaultImages.other;
-  };
-
-  const handleImageLoad = (reportId: string) => {
-    setImageLoadingStates(prev => ({ ...prev, [reportId]: false }));
-  };
-
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, disasterType: string, reportId: string) => {
-    const target = e.target as HTMLImageElement;
-    target.src = getDefaultImage(disasterType);
-    setImageErrorStates(prev => ({ ...prev, [reportId]: true }));
-    setImageLoadingStates(prev => ({ ...prev, [reportId]: false }));
-  };
-
-  const handleImageLoadStart = (reportId: string) => {
-    setImageLoadingStates(prev => ({ ...prev, [reportId]: true }));
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'verified': return 'bg-green-100 text-green-800 border-green-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'resolved': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-indigo-50/20">
+    <div className="min-h-screen bg-white">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 navbar-spacing pb-16">
-        {/* Professional Page Header */}
-        <div className="text-center mb-16">
-          {/* Status Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-sm font-semibold hover:bg-blue-100 transition-colors duration-200">
-              <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
-              <Activity size={16} className="mr-2" />
-              {t('reports.header.statusBadges.liveReports')}
-            </div>
-            <button
-              onClick={() => {
-                setIsLoading(true);
-                setTimeout(() => {
-                  window.location.reload();
-                }, 500);
-              }}
-              className="inline-flex items-center px-4 py-2 rounded-full bg-white border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm"
-              title={t('reports.header.statusBadges.refreshTitle')}
-              disabled={isLoading}
-            >
-              <RefreshCw size={16} className={`mr-2 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform duration-300`} />
-              {isLoading ? t('reports.header.statusBadges.refreshing') : t('reports.header.statusBadges.refresh')}
-            </button>
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-sm font-semibold">
-              <Sparkles size={16} className="mr-2" />
-              {t('reports.header.statusBadges.enhancedUI')}
-            </div>
-          </div>
+      <main>
+        {/* Hero Section - Matching your design system */}
+        <section className="relative py-20 lg:py-32 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900"></div>
+          <div className="absolute inset-0 bg-black/20"></div>
 
-          {/* Main Title */}
-          <div className="relative mb-8">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-              {isRegularUser ? t('reports.header.titles.regularUser.main') : t('reports.header.titles.responder.main')}
-              <br />
-              <span className="text-blue-600">
-                {isRegularUser ? t('reports.header.titles.regularUser.sub') : t('reports.header.titles.responder.sub')}
-              </span>
-            </h1>
-          </div>
+          {/* Floating background elements */}
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl"></div>
 
-          {/* Description */}
-          <p className="text-lg sm:text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed mb-12">
-            {isRegularUser
-              ? t('reports.header.descriptions.regularUser')
-              : t('reports.header.descriptions.responder')
-            }
-          </p>
+          <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="text-center max-w-4xl mx-auto">
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-sm font-medium mb-8">
+                <Activity size={16} className="mr-2 text-cyan-300" />
+                <span className="text-white/90">Live Reports</span>
+              </div>
 
-          {/* Statistics Cards - Matching Design */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto">
-            {/* Total Reports Card */}
-            <div className="group relative bg-blue-50/80 rounded-2xl p-6 border border-blue-100/50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-              <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative z-10 text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="p-3 bg-blue-600 rounded-xl shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <BarChart3 className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-                <div className="text-4xl font-black text-gray-900 mb-2">
-                  {filteredAndSortedReports.length}
-                </div>
-                <div className="text-gray-900 font-bold text-base mb-1">{t('reports.statistics.totalReports.title')}</div>
-                <div className="text-sm text-blue-600 font-medium">{t('reports.statistics.totalReports.subtitle')}</div>
+              <h1 className="text-5xl lg:text-7xl font-bold text-white mb-8 leading-tight">
+                <span className="block mb-2">Disaster</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300">
+                  Response Reports
+                </span>
+              </h1>
+
+              <p className="text-xl lg:text-2xl text-blue-100 mb-12 leading-relaxed max-w-3xl mx-auto">
+                Real-time disaster reports from around the world. Stay informed about emergency situations 
+                and response efforts in your area and globally.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <button
+                  onClick={() => document.getElementById('reports-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="group bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105"
+                >
+                  <Eye size={20} className="mr-2" />
+                  View Reports
+                  <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </button>
+                <Link
+                  to="/report/new"
+                  className="group bg-white/10 backdrop-blur-xl border border-white/30 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+                >
+                  <AlertTriangle size={20} className="mr-2" />
+                  Report Emergency
+                </Link>
               </div>
             </div>
+          </div>
+        </section>
 
-            {/* Verified Reports Card */}
-            <div className="group relative bg-blue-50/80 rounded-2xl p-6 border border-blue-100/50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-              <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative z-10 text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="p-3 bg-blue-600 rounded-xl shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <CheckCircle className="w-6 h-6 text-white" />
-                  </div>
+        {/* Stats Section - Matching your design system */}
+        <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50/30">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold mb-6">
+                <TrendingUp size={16} className="mr-2" />
+                Live Statistics
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+                Global <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Emergency Overview</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80 text-center">
+                <div className="inline-flex p-4 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md mb-6">
+                  <BarChart3 size={24} />
                 </div>
-                <div className="text-4xl font-black text-gray-900 mb-2">
+                <div className="text-3xl font-bold text-gray-900 mb-2">{filteredAndSortedReports.length}</div>
+                <div className="text-gray-600 font-medium">Total Reports</div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80 text-center">
+                <div className="inline-flex p-4 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md mb-6">
+                  <CheckCircle size={24} />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">
                   {filteredAndSortedReports.filter(r => r.status === 'verified').length}
                 </div>
-                <div className="text-gray-900 font-bold text-base mb-1">{t('reports.statistics.verifiedReports.title')}</div>
-                <div className="text-sm text-blue-600 font-medium">
-                  {filteredAndSortedReports.length > 0 ? Math.round((filteredAndSortedReports.filter(r => r.status === 'verified').length / filteredAndSortedReports.length) * 100) : 0}% {t('reports.statistics.verifiedReports.subtitle')}
-                </div>
+                <div className="text-gray-600 font-medium">Verified Reports</div>
               </div>
-            </div>
 
-            {/* High Priority Card */}
-            <div className="group relative bg-blue-50/80 rounded-2xl p-6 border border-blue-100/50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-              <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative z-10 text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="p-3 bg-blue-600 rounded-xl shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <AlertTriangle className="w-6 h-6 text-white" />
-                  </div>
+              <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80 text-center">
+                <div className="inline-flex p-4 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-md mb-6">
+                  <AlertTriangle size={24} />
                 </div>
-                <div className="text-4xl font-black text-gray-900 mb-2">
+                <div className="text-3xl font-bold text-gray-900 mb-2">
                   {filteredAndSortedReports.filter(r => r.severity === 'critical' || r.severity === 'high').length}
                 </div>
-                <div className="text-gray-900 font-bold text-base mb-1">{t('reports.statistics.highPriority.title')}</div>
-                <div className="text-sm text-blue-600 font-medium">{t('reports.statistics.highPriority.subtitle')}</div>
+                <div className="text-gray-600 font-medium">High Priority</div>
               </div>
-            </div>
 
-            {/* Active Response Card */}
-            <div className="group relative bg-blue-50/80 rounded-2xl p-6 border border-blue-100/50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-              <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative z-10 text-center">
-                <div className="flex justify-center mb-4">
-                  <div className="p-3 bg-blue-600 rounded-xl shadow-md group-hover:scale-105 transition-transform duration-300">
-                    <Heart className="w-6 h-6 text-white" />
-                  </div>
+              <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80 text-center">
+                <div className="inline-flex p-4 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-md mb-6">
+                  <Heart size={24} />
                 </div>
-                <div className="text-4xl font-black text-gray-900 mb-2">
+                <div className="text-3xl font-bold text-gray-900 mb-2">
                   {filteredAndSortedReports.filter(r => r.assistanceLog && r.assistanceLog.length > 0).length}
                 </div>
-                <div className="text-gray-900 font-bold text-base mb-1">{t('reports.statistics.activeResponse.title')}</div>
-                <div className="text-sm text-blue-600 font-medium">{t('reports.statistics.activeResponse.subtitle')}</div>
+                <div className="text-gray-600 font-medium">Active Response</div>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Role-based Information Banner */}
-        {isRegularUser && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-12">
-            <div className="flex items-start space-x-4">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Shield className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-blue-900 mb-2 flex items-center">
-                  {t('reports.communityBanner.title')}
-                </h3>
-                <p className="text-blue-800 leading-relaxed">
-                  {t('reports.communityBanner.description')}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Search and Filter Controls */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-12">
-          <div className="flex flex-col xl:flex-row gap-6 mb-6">
-            {/* Search Bar */}
-            <div className="flex-1 relative">
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <Search size={20} />
-              </div>
-              <input
-                type="text"
-                placeholder={t('reports.searchAndFilters.searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              )}
-            </div>
-
-            {/* View Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`flex items-center px-4 py-2 rounded-md font-medium transition-colors duration-200 ${
-                  viewMode === 'grid'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Grid3X3 size={18} className="mr-2" />
-                {t('reports.searchAndFilters.viewModes.grid')}
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`flex items-center px-4 py-2 rounded-md font-medium transition-colors duration-200 ${
-                  viewMode === 'list'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <List size={18} className="mr-2" />
-                {t('reports.searchAndFilters.viewModes.list')}
-              </button>
-              <button
-                onClick={() => setViewMode('map')}
-                className={`flex items-center px-4 py-2 rounded-md font-medium transition-colors duration-200 ${
-                  viewMode === 'map'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                <Map size={18} className="mr-2" />
-                {t('reports.searchAndFilters.viewModes.map')}
-              </button>
-            </div>
-
-            {/* Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${
-                showFilters
-                  ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                  : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
-              }`}
-            >
-              <SlidersHorizontal size={18} className="mr-2" />
-              {t('reports.searchAndFilters.filters')}
-            </button>
-          </div>
-
-          {/* Enhanced Filter Controls */}
-          {showFilters && (
-              <div className="border-t border-gray-200/60 pt-8 mt-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                  {/* Disaster Type Filter */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">{t('reports.searchAndFilters.filterLabels.disasterType')}</label>
-                    <select
-                      value={selectedDisasterType}
-                      onChange={(e) => setSelectedDisasterType(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-200 text-gray-700 font-medium shadow-sm"
-                    >
-                      {disasterTypes.map(type => (
-                        <option key={type} value={type}>
-                          {type === 'all' ? t('reports.searchAndFilters.filterOptions.allTypes') : getDisasterTypeName(type)}
-                        </option>
-                      ))}
-                    </select>
+        </section>  
+      {/* Reports Section */}
+        <section id="reports-section" className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            {/* Search and Filter Controls */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-12">
+              <div className="flex flex-col xl:flex-row gap-6 mb-6">
+                {/* Search Bar */}
+                <div className="flex-1 relative">
+                  <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <Search size={20} />
                   </div>
-
-                  {/* Severity Filter */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">{t('reports.searchAndFilters.filterLabels.severityLevel')}</label>
-                    <select
-                      value={selectedSeverity}
-                      onChange={(e) => setSelectedSeverity(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-200 text-gray-700 font-medium shadow-sm"
+                  <input
+                    type="text"
+                    placeholder="Search reports by title, description, or location..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
-                      {severityLevels.map(level => (
-                        <option key={level} value={level}>
-                          {level === 'all' ? t('reports.searchAndFilters.filterOptions.allSeverities') : getSeverityLevelName(level)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Status Filter */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">{t('reports.searchAndFilters.filterLabels.reportStatus')}</label>
-                    <select
-                      value={selectedStatus}
-                      onChange={(e) => setSelectedStatus(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-200 text-gray-700 font-medium shadow-sm"
-                    >
-                      {statusOptions.map(status => (
-                        <option key={status} value={status}>
-                          {status === 'all' ? t('reports.searchAndFilters.filterOptions.allStatuses') : getStatusName(status)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Sort By */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-700 mb-3">{t('reports.searchAndFilters.sortBy')}</label>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 transition-all duration-200 text-gray-700 font-medium shadow-sm"
-                    >
-                      {sortOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      <X size={18} />
+                    </button>
+                  )}
                 </div>
 
-                {/* Enhanced Additional Options */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 pt-6 border-t border-gray-200/60">
-                  <div className="flex flex-wrap items-center gap-4">
-                    <label className="group flex items-center cursor-pointer">
-                      <div className="relative">
+                {/* View Toggle */}
+                <div className="flex items-center bg-gray-100 rounded-xl p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`flex items-center px-4 py-3 rounded-lg font-medium transition-colors duration-200 ${
+                      viewMode === 'grid'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Grid3X3 size={18} className="mr-2" />
+                    Grid
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`flex items-center px-4 py-3 rounded-lg font-medium transition-colors duration-200 ${
+                      viewMode === 'list'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <List size={18} className="mr-2" />
+                    List
+                  </button>
+                  <button
+                    onClick={() => setViewMode('map')}
+                    className={`flex items-center px-4 py-3 rounded-lg font-medium transition-colors duration-200 ${
+                      viewMode === 'map'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Map size={18} className="mr-2" />
+                    Map
+                  </button>
+                </div>
+
+                {/* Filter Toggle */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center px-6 py-3 rounded-xl font-medium transition-colors duration-200 ${
+                    showFilters
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                      : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+                  }`}
+                >
+                  <Filter size={18} className="mr-2" />
+                  Filters
+                </button>
+              </div>
+
+              {/* Filter Controls */}
+              {showFilters && (
+                <div className="border-t border-gray-200 pt-8 mt-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    {/* Disaster Type Filter */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">Disaster Type</label>
+                      <select
+                        value={selectedDisasterType}
+                        onChange={(e) => setSelectedDisasterType(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="flood">Flood</option>
+                        <option value="fire">Fire</option>
+                        <option value="earthquake">Earthquake</option>
+                        <option value="storm">Storm</option>
+                        <option value="landslide">Landslide</option>
+                        <option value="accident">Accident</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+
+                    {/* Severity Filter */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">Severity Level</label>
+                      <select
+                        value={selectedSeverity}
+                        onChange={(e) => setSelectedSeverity(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      >
+                        <option value="all">All Severities</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">Report Status</label>
+                      <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="verified">Verified</option>
+                        <option value="resolved">Resolved</option>
+                      </select>
+                    </div>
+
+                    {/* Sort By */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">Sort By</label>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      >
+                        {sortOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Additional Options */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 pt-6 border-t border-gray-200">
+                    <div className="flex items-center">
+                      <label className="flex items-center cursor-pointer">
                         <input
                           type="checkbox"
                           checked={showOnlyWithImages}
                           onChange={(e) => setShowOnlyWithImages(e.target.checked)}
-                          className="sr-only"
+                          className="w-5 h-5 text-blue-600 border-2 border-gray-300 rounded focus:ring-blue-500"
                         />
-                        <div className={`w-5 h-5 rounded-md border-2 transition-all duration-200 ${
-                          showOnlyWithImages
-                            ? 'bg-blue-500 border-blue-500'
-                            : 'border-gray-300 group-hover:border-gray-400'
-                        }`}>
-                          {showOnlyWithImages && (
-                            <CheckCircle size={12} className="text-white absolute inset-0.5" />
-                          )}
-                        </div>
-                      </div>
-                      <span className="ml-3 text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
-                        Show only reports with images
-                      </span>
-                    </label>
-                  </div>
+                        <span className="ml-3 text-sm font-medium text-gray-700">
+                          Show only reports with images
+                        </span>
+                      </label>
+                    </div>
 
-                  <div className="flex items-center gap-4">
                     <button
                       onClick={clearAllFilters}
                       className="px-6 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
@@ -606,466 +581,563 @@ const Reports: React.FC = () => {
                     </button>
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* Results Summary */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 bg-blue-50 rounded-xl p-6 border border-blue-100">
+              <div>
+                <p className="text-gray-700 font-medium">
+                  Showing <span className="font-bold text-blue-600">{startIndex + 1}</span>-<span className="font-bold text-blue-600">{Math.min(startIndex + itemsPerPage, filteredAndSortedReports.length)}</span> of <span className="font-bold text-blue-600">{filteredAndSortedReports.length}</span> reports
+                </p>
               </div>
-            )}
-        </div>
-
-        {/* Enhanced Results Summary */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-12 bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/40">
-          <div className="mb-4 sm:mb-0">
-            <p className="text-gray-700 font-medium">
-              Showing <span className="font-bold text-blue-600">{startIndex + 1}</span>-<span className="font-bold text-blue-600">{Math.min(startIndex + itemsPerPage, filteredAndSortedReports.length)}</span> of <span className="font-bold text-blue-600">{filteredAndSortedReports.length}</span> reports
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              {filteredAndSortedReports.length === mockReports.length ? 'All reports displayed' : 'Filtered results'}
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <label className="text-sm font-medium text-gray-600">Items per page:</label>
-            <select
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(1);
-              }}
-              className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value={12}>12</option>
-              <option value={24}>24</option>
-              <option value={48}>48</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Refined Reports Display - Brand Consistent */}
-        {paginatedReports.length > 0 ? (
-          viewMode === 'map' ? (
-            /* Professional Map View */
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200/60 overflow-hidden mb-20">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-gray-900">Reports Map View</h3>
-                  <div className="text-sm text-gray-600">
-                    Showing {filteredAndSortedReports.length} reports on map
-                  </div>
-                </div>
-                <ReportMap
-                  reports={filteredAndSortedReports}
-                  selectedReport={selectedReport}
-                  onReportSelect={(report) => {
-                    setSelectedReport(report);
-                    // Navigate to report detail when a report is selected on the map
-                    navigate(`/reports/${report.id}`);
+              <div className="mt-4 sm:mt-0">
+                <button
+                  onClick={() => {
+                    setIsLoading(true);
+                    setTimeout(() => {
+                      setIsLoading(false);
+                    }, 1000);
                   }}
-                  height="600px"
-                />
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                  disabled={isLoading}
+                >
+                  <RefreshCw size={16} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  {isLoading ? 'Refreshing...' : 'Refresh'}
+                </button>
               </div>
             </div>
-          ) : viewMode === 'grid' ? (
-            /* Enhanced Professional Grid View */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8 mb-20">
-              {paginatedReports.map((report, index) => (
-                <article
-                  key={report.id}
-                  className="group relative bg-white rounded-2xl shadow-lg border border-gray-200/60 overflow-hidden hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300 flex flex-col h-full"
-                  style={{
-                    animationDelay: `${index * 50}ms`,
-                    animation: 'fadeInUp 0.6s ease-out forwards'
-                  }}
-                >
-                  {/* Professional Image Section with Aspect Ratio */}
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    {/* Loading skeleton */}
-                    {imageLoadingStates[report.id] && (
-                      <div className="absolute inset-0 bg-gray-200 animate-pulse">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-shimmer"></div>
+
+            {/* Reports Grid/List/Map */}
+            {viewMode === 'map' ? (
+              <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                <div className="p-6 border-b border-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Reports Map View</h3>
+                  <p className="text-gray-600">Interactive map showing disaster report locations</p>
+                </div>
+                <div className="relative">
+                  {/* Map Container */}
+                  <div className="h-96 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Map size={32} className="text-blue-600" />
                       </div>
-                    )}
-
-                    <img
-                      src={report.photos && report.photos.length > 0 ? report.photos[0] : getDefaultImage(report.disasterType)}
-                      alt={report.title}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      onLoadStart={() => handleImageLoadStart(report.id)}
-                      onLoad={() => handleImageLoad(report.id)}
-                      onError={(e) => handleImageError(e, report.disasterType, report.id)}
-                    />
-
-                    {/* Subtle overlay for better text contrast */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                    {/* Image quality indicator */}
-                    {imageErrorStates[report.id] && (
-                      <div className="absolute bottom-3 left-3 bg-amber-500/90 backdrop-blur-sm text-white px-2 py-1 rounded-md text-xs font-medium">
-                        {t('reports.reportCard.imageLoadError')}
-                      </div>
-                    )}
-
-                    {/* Professional Severity Badge */}
-                    <div className="absolute top-3 left-3 z-10">
-                      <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${getSeverityColor(report.severity)}`}>
-                        <div className={`w-2 h-2 rounded-full mr-1.5 ${
-                          report.severity === 'critical' ? 'bg-red-400 animate-pulse' :
-                          report.severity === 'high' ? 'bg-orange-400' :
-                          report.severity === 'medium' ? 'bg-yellow-400' :
-                          'bg-green-400'
-                        }`}></div>
-                        <span>{getSeverityLevelName(report.severity).toUpperCase()}</span>
-                      </div>
-                    </div>
-
-                    {/* Professional Status Badge */}
-                    <div className="absolute top-3 right-3 z-10">
-                      <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${
-                        report.status === 'verified' ? 'bg-green-100/90 text-green-800' :
-                        report.status === 'pending' ? 'bg-yellow-100/90 text-yellow-800' :
-                        report.status === 'resolved' ? 'bg-blue-100/90 text-blue-800' :
-                        'bg-gray-100/90 text-gray-800'
-                      }`}>
-                        {report.status === 'verified' && <CheckCircle size={12} className="mr-1" />}
-                        {report.status === 'pending' && <Clock size={12} className="mr-1" />}
-                        <span>{getStatusName(report.status)}</span>
-                      </div>
-                    </div>
-
-                    {/* Multiple Images Indicator */}
-                    {report.photos && report.photos.length > 1 && (
-                      <div className="absolute bottom-3 right-3 z-10">
-                        <div className="inline-flex items-center px-2 py-1 bg-black/60 backdrop-blur-sm text-white rounded-md text-xs font-medium">
-                          <ImageIcon size={12} className="mr-1" />
-                          <span>{report.photos.length}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Professional Content Section */}
-                  <div className="p-6 flex flex-col flex-1">
-                    {/* Main Content - grows to fill available space */}
-                    <div className="flex-1">
-                      <div className="mb-4">
-                        <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-blue-700 transition-colors line-clamp-2 leading-tight">
-                          {report.title}
-                        </h3>
-                        <p className="text-gray-600 text-sm line-clamp-3 leading-relaxed">
-                          {report.description}
-                        </p>
-                      </div>
-
-                      {/* Professional Meta Information */}
-                      <div className="space-y-3 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin size={14} className="text-blue-600 mr-2 flex-shrink-0" />
-                          <span className="truncate">{report.location.address}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar size={14} className="text-indigo-600 mr-2 flex-shrink-0" />
-                          <span>{format(report.createdAt, 'MMM d, yyyy')}</span>
-                        </div>
-                        {canViewSensitiveInfo && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <User size={14} className="text-blue-700 mr-2 flex-shrink-0" />
-                            <span className="truncate">{report.reporterName}</span>
+                      <h4 className="text-xl font-semibold text-gray-900 mb-2">Interactive Map</h4>
+                      <p className="text-gray-600 mb-6 max-w-md">
+                        Map integration would show all {filteredAndSortedReports.length} reports with interactive markers
+                      </p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {Array.from(new Set(filteredAndSortedReports.map(r => r.disasterType))).map(type => (
+                          <div key={type} className={`inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(type)} text-white text-sm font-semibold`}>
+                            {getDisasterIcon(type)}
+                            <span className="ml-2 capitalize">{type}</span>
                           </div>
-                        )}
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Map Legend */}
+                  <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-xs">
+                    <h5 className="font-semibold text-gray-900 mb-3">Legend</h5>
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                        <span className="text-sm text-gray-600">Critical ({filteredAndSortedReports.filter(r => r.severity === 'critical').length})</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+                        <span className="text-sm text-gray-600">High ({filteredAndSortedReports.filter(r => r.severity === 'high').length})</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                        <span className="text-sm text-gray-600">Medium ({filteredAndSortedReports.filter(r => r.severity === 'medium').length})</span>
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        <span className="text-sm text-gray-600">Low ({filteredAndSortedReports.filter(r => r.severity === 'low').length})</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Map Controls */}
+                <div className="p-6 border-t border-gray-100 bg-gray-50">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center space-x-4">
+                      <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <MapPin size={16} className="mr-2" />
+                        Show All Markers
+                      </button>
+                      <button className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        <Filter size={16} className="mr-2" />
+                        Filter by Severity
+                      </button>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Showing {filteredAndSortedReports.length} reports on map
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {paginatedReports.map((report) => (
+                  <div
+                    key={report.id}
+                    className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80 cursor-pointer"
+                    onClick={() => navigate(`/reports/${report.id}`)}
+                  >
+                    {/* Image */}
+                    <div className="aspect-[4/3] overflow-hidden relative">
+                      <img
+                        src={report.photos?.[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
+                        alt={report.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      
+                      {/* Disaster Type Badge */}
+                      <div className={`absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(report.disasterType)} text-white text-sm font-semibold flex items-center shadow-lg`}>
+                        {getDisasterIcon(report.disasterType)}
+                        <span className="ml-2 capitalize">{report.disasterType}</span>
                       </div>
 
-                      {/* Professional Disaster Type Badge */}
-                      <div className="mb-4">
-                        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold ${getDisasterColor(report.disasterType)} text-white`}>
-                          {getDisasterIcon(report.disasterType)}
-                          <span className="ml-1.5">{getDisasterTypeName(report.disasterType)}</span>
+                      {/* Severity Badge */}
+                      <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${getSeverityColor(report.severity)} shadow-lg`}></div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6">
+                      {/* Status Badge */}
+                      <div className="flex items-center justify-between mb-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(report.status)}`}>
+                          {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {format(new Date(report.createdAt), 'MMM dd, yyyy')}
                         </span>
                       </div>
-                    </div>
 
-                    {/* Professional Action Button - always at bottom */}
-                    <div className="mt-auto pt-4 border-t border-gray-100">
-                      <Link
-                        to={`/reports/${report.id}`}
-                        className="w-full inline-flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
-                      >
-                        {t('reports.reportCard.viewDetails')}
-                        <ArrowRight size={16} className="ml-2" />
-                      </Link>
+                      {/* Title */}
+                      <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                        {report.title}
+                      </h3>
+
+                      {/* Description */}
+                      <p className="text-gray-600 mb-4 line-clamp-2">
+                        {report.description}
+                      </p>
+
+                      {/* Location */}
+                      <div className="flex items-center text-gray-500 mb-4">
+                        <MapPin size={16} className="mr-2" />
+                        <span className="text-sm">{report.location.address}</span>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                        <div className="flex items-center text-gray-500">
+                          <User size={16} className="mr-2" />
+                          <span className="text-sm">{report.reportedBy}</span>
+                        </div>
+                        <div className="flex items-center text-blue-600 font-medium">
+                          <span className="text-sm">View Details</span>
+                          <ArrowRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            /* Professional List View */
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-200/60 overflow-hidden mb-20">
-              <div className="divide-y divide-gray-100">
-                {paginatedReports.map((report, index) => (
-                  <article
-                    key={report.id}
-                    className="group hover:bg-gray-50/80 transition-all duration-200"
-                    style={{
-                      animationDelay: `${index * 30}ms`,
-                      animation: 'fadeInUp 0.4s ease-out forwards'
-                    }}
-                  >
-                    <div className="p-6 flex items-start space-x-6">
-                      {/* Professional Thumbnail */}
-                      <div className="relative w-24 h-24 lg:w-32 lg:h-32 rounded-xl overflow-hidden flex-shrink-0 shadow-md">
-                        {/* Loading skeleton for thumbnails */}
-                        {imageLoadingStates[report.id] && (
-                          <div className="absolute inset-0 bg-gray-200 animate-pulse">
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full animate-shimmer"></div>
-                          </div>
-                        )}
-
-                        <img
-                          src={report.photos && report.photos.length > 0 ? report.photos[0] : getDefaultImage(report.disasterType)}
-                          alt={report.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          onLoadStart={() => handleImageLoadStart(report.id)}
-                          onLoad={() => handleImageLoad(report.id)}
-                          onError={(e) => handleImageError(e, report.disasterType, report.id)}
-                        />
-
-                        {/* Multiple images indicator for thumbnails */}
-                        {report.photos && report.photos.length > 1 && (
-                          <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-xs font-medium flex items-center">
-                            <ImageIcon size={10} className="mr-1" />
-                            {report.photos.length}
-                          </div>
-                        )}
-
-                        {/* Image quality indicator for thumbnails */}
-                        {imageErrorStates[report.id] && (
-                          <div className="absolute top-2 left-2 bg-amber-500/90 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-xs font-medium">
-                            {t('reports.reportCard.defaultImage')}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Professional Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0 pr-6">
-                            <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-700 transition-colors mb-2 line-clamp-2">
-                              {report.title}
-                            </h3>
-                            <p className="text-gray-600 mb-4 line-clamp-2 leading-relaxed">
-                              {report.description}
-                            </p>
-                          </div>
-
-                          {/* Professional Status and Severity Badges */}
-                          <div className="flex flex-col items-end space-y-2 ml-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getSeverityColor(report.severity)}`}>
-                              {getSeverityLevelName(report.severity).toUpperCase()}
-                            </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              report.status === 'verified' ? 'bg-green-100 text-green-800' :
-                              report.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              report.status === 'resolved' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {report.status === 'verified' && <CheckCircle size={12} className="inline mr-1" />}
-                              {report.status === 'pending' && <Clock size={12} className="inline mr-1" />}
-                              {getStatusName(report.status)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Professional Meta Information */}
-                        <div className="flex flex-wrap items-center gap-3 mt-3">
-                          <div className="flex items-center text-sm text-gray-600">
-                            <MapPin size={14} className="mr-1.5 text-blue-600" />
-                            <span className="truncate max-w-48">{report.location.address}</span>
-                          </div>
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Calendar size={14} className="mr-1.5 text-indigo-600" />
-                            <span>{format(report.createdAt, 'MMM d, yyyy')}</span>
-                          </div>
-                          {canViewSensitiveInfo && (
-                            <div className="flex items-center text-sm text-gray-600">
-                              <User size={14} className="mr-1.5 text-blue-700" />
-                              <span className="truncate">{report.reporterName}</span>
-                            </div>
-                          )}
-                          <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold ${getDisasterColor(report.disasterType)} text-white`}>
-                            {getDisasterIcon(report.disasterType)}
-                            <span className="ml-1.5">{getDisasterTypeName(report.disasterType)}</span>
-                          </span>
-                          {report.photos && report.photos.length > 1 && (
-                            <div className="flex items-center text-sm text-gray-600">
-                              <ImageIcon size={14} className="mr-1.5 text-blue-600" />
-                              <span>{report.photos.length} {t('reports.reportCard.photos')}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Professional Action Button */}
-                      <div className="flex-shrink-0 ml-auto">
-                        <Link
-                          to={`/reports/${report.id}`}
-                          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02]"
-                        >
-                          {t('reports.reportCard.viewDetails')}
-                          <ArrowRight size={16} className="ml-2" />
-                        </Link>
-                      </div>
-                    </div>
-                  </article>
                 ))}
               </div>
-            </div>
-          )
-        ) : (
-          /* Refined Empty State */
-          <div className="text-center py-32">
-            <div className="max-w-3xl mx-auto">
-              <div className="relative mb-16">
-                <div className="bg-gradient-to-br from-blue-100 via-indigo-100 to-blue-200 rounded-full w-48 h-48 flex items-center justify-center mx-auto shadow-2xl">
-                  <Search size={64} className="text-blue-600" />
-                </div>
-                <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-blue-400/30 to-indigo-500/30 rounded-full opacity-60 animate-pulse"></div>
-                <div className="absolute -bottom-6 -left-6 w-16 h-16 bg-gradient-to-br from-indigo-400/30 to-blue-500/30 rounded-full opacity-60 animate-pulse delay-1000"></div>
+            ) : (
+              <div className="space-y-6">
+                {paginatedReports.map((report) => (
+                  <div
+                    key={report.id}
+                    className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100/80 cursor-pointer"
+                    onClick={() => navigate(`/reports/${report.id}`)}
+                  >
+                    <div className="flex items-start space-x-6">
+                      {/* Image */}
+                      <div className="w-32 h-24 rounded-xl overflow-hidden flex-shrink-0">
+                        <img
+                          src={report.photos?.[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
+                          alt={report.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(report.disasterType)} text-white text-sm font-semibold flex items-center`}>
+                              {getDisasterIcon(report.disasterType)}
+                              <span className="ml-2 capitalize">{report.disasterType}</span>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(report.status)}`}>
+                              {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                            </span>
+                          </div>
+                          <div className={`w-3 h-3 rounded-full ${getSeverityColor(report.severity)}`}></div>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                          {report.title}
+                        </h3>
+
+                        <p className="text-gray-600 mb-3 line-clamp-2">
+                          {report.description}
+                        </p>
+
+                        <div className="flex items-center justify-between text-sm text-gray-500">
+                          <div className="flex items-center space-x-4">
+                            <div className="flex items-center">
+                              <MapPin size={16} className="mr-1" />
+                              {report.location.address}
+                            </div>
+                            <div className="flex items-center">
+                              <Calendar size={16} className="mr-1" />
+                              {format(new Date(report.createdAt), 'MMM dd, yyyy')}
+                            </div>
+                            <div className="flex items-center">
+                              <User size={16} className="mr-1" />
+                              {report.reportedBy}
+                            </div>
+                          </div>
+                          <div className="flex items-center text-blue-600 font-medium">
+                            <span>View Details</span>
+                            <ArrowRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            )}
 
-              <h3 className="text-3xl font-bold text-gray-900 mb-6">{t('reports.noResults.title')}</h3>
-              <p className="text-xl text-gray-600 mb-12 leading-relaxed">
-                {t('reports.noResults.description')}
-              </p>
+            {/* Advanced Real-World Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-12">
+                {/* Items per page selector */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 bg-white rounded-xl p-6 border border-gray-100">
+                  <div className="flex items-center space-x-4 mb-4 sm:mb-0">
+                    <span className="text-sm font-medium text-gray-700">Show:</span>
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                      <option value={6}>6 per page</option>
+                      <option value={12}>12 per page</option>
+                      <option value={24}>24 per page</option>
+                      <option value={48}>48 per page</option>
+                    </select>
+                  </div>
+                  
+                  <div className="text-sm text-gray-600">
+                    Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredAndSortedReports.length)} of {filteredAndSortedReports.length} results
+                  </div>
+                </div>
 
-              <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+                {/* Main Pagination Controls */}
+                <div className="bg-white rounded-xl p-6 border border-gray-100">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                    {/* Previous/Next Navigation */}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title="First page"
+                      >
+                        <ChevronLeft size={18} />
+                        <ChevronLeft size={18} className="-ml-2" />
+                      </button>
+                      
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft size={18} className="mr-1" />
+                        Previous
+                      </button>
+                    </div>
+
+                    {/* Page Numbers with Smart Ellipsis */}
+                    <div className="flex items-center justify-center space-x-1">
+                      {(() => {
+                        const pages = [];
+                        const showEllipsis = totalPages > 7;
+                        
+                        if (!showEllipsis) {
+                          // Show all pages if 7 or fewer
+                          for (let i = 1; i <= totalPages; i++) {
+                            pages.push(
+                              <button
+                                key={i}
+                                onClick={() => setCurrentPage(i)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                  currentPage === i
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                              >
+                                {i}
+                              </button>
+                            );
+                          }
+                        } else {
+                          // Smart pagination with ellipsis
+                          // Always show first page
+                          pages.push(
+                            <button
+                              key={1}
+                              onClick={() => setCurrentPage(1)}
+                              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                currentPage === 1
+                                  ? 'bg-blue-600 text-white shadow-md'
+                                  : 'text-gray-600 hover:bg-gray-100'
+                              }`}
+                            >
+                              1
+                            </button>
+                          );
+
+                          // Show ellipsis if current page is far from start
+                          if (currentPage > 4) {
+                            pages.push(
+                              <span key="ellipsis1" className="px-2 py-2 text-gray-400">
+                                ...
+                              </span>
+                            );
+                          }
+
+                          // Show pages around current page
+                          const start = Math.max(2, currentPage - 1);
+                          const end = Math.min(totalPages - 1, currentPage + 1);
+                          
+                          for (let i = start; i <= end; i++) {
+                            if (i !== 1 && i !== totalPages) {
+                              pages.push(
+                                <button
+                                  key={i}
+                                  onClick={() => setCurrentPage(i)}
+                                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                    currentPage === i
+                                      ? 'bg-blue-600 text-white shadow-md'
+                                      : 'text-gray-600 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  {i}
+                                </button>
+                              );
+                            }
+                          }
+
+                          // Show ellipsis if current page is far from end
+                          if (currentPage < totalPages - 3) {
+                            pages.push(
+                              <span key="ellipsis2" className="px-2 py-2 text-gray-400">
+                                ...
+                              </span>
+                            );
+                          }
+
+                          // Always show last page
+                          if (totalPages > 1) {
+                            pages.push(
+                              <button
+                                key={totalPages}
+                                onClick={() => setCurrentPage(totalPages)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                                  currentPage === totalPages
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                              >
+                                {totalPages}
+                              </button>
+                            );
+                          }
+                        }
+                        
+                        return pages;
+                      })()}
+                    </div>
+
+                    {/* Next/Last Navigation */}
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next
+                        <ChevronRight size={18} className="ml-1" />
+                      </button>
+                      
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title="Last page"
+                      >
+                        <ChevronRight size={18} />
+                        <ChevronRight size={18} className="-ml-2" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Page Jump Input */}
+                  <div className="flex items-center justify-center mt-6 pt-6 border-t border-gray-200">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm text-gray-600">Go to page:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max={totalPages}
+                        value={currentPage}
+                        onChange={(e) => {
+                          const page = parseInt(e.target.value);
+                          if (page >= 1 && page <= totalPages) {
+                            setCurrentPage(page);
+                          }
+                        }}
+                        className="w-20 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                      />
+                      <span className="text-sm text-gray-600">of {totalPages}</span>
+                    </div>
+                  </div>
+
+                  {/* Mobile-friendly page info */}
+                  <div className="flex items-center justify-center mt-4 lg:hidden">
+                    <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
+                      Page {currentPage} of {totalPages}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No Results */}
+            {filteredAndSortedReports.length === 0 && (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Search size={32} className="text-gray-400" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">No Reports Found</h3>
+                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                  We couldn't find any reports matching your search criteria. Try adjusting your filters or search terms.
+                </p>
                 <button
                   onClick={clearAllFilters}
-                  className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 overflow-hidden"
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/25 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-                  <span className="relative">{t('reports.searchAndFilters.clearAllFilters')}</span>
+                  Clear All Filters
                 </button>
               </div>
+            )}
+          </div>
+        </section>
 
-              <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 border border-blue-200/50 shadow-xl">
-                <h4 className="text-xl font-bold text-gray-800 mb-6">Current Search Criteria:</h4>
-                <div className="flex flex-wrap gap-4 justify-center">
-                  <span className="px-5 py-3 bg-blue-100/80 text-blue-800 rounded-xl text-base font-bold">
-                    Search: {searchTerm || 'All reports'}
-                  </span>
-                  {selectedDisasterType !== 'all' && (
-                    <span className="px-5 py-3 bg-indigo-100/80 text-indigo-800 rounded-xl text-base font-bold">
-                      Type: {getDisasterTypeName(selectedDisasterType)}
-                    </span>
-                  )}
-                  {selectedSeverity !== 'all' && (
-                    <span className="px-5 py-3 bg-blue-200/60 text-blue-800 rounded-xl text-base font-bold">
-                      Severity: {selectedSeverity.charAt(0).toUpperCase() + selectedSeverity.slice(1)}
-                    </span>
-                  )}
-                  {selectedStatus !== 'all' && (
-                    <span className="px-5 py-3 bg-indigo-200/60 text-indigo-800 rounded-xl text-base font-bold">
-                      Status: {selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
-                    </span>
-                  )}
+        {/* Featured Reports Section */}
+        <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold mb-6">
+                <Star size={16} className="mr-2" />
+                Featured Reports
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+                Critical <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-red-600">Emergency Situations</span>
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                High-priority disaster reports requiring immediate attention and response efforts.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {mockReports.filter(r => r.severity === 'critical' || r.severity === 'high').slice(0, 3).map((report) => (
+                <div
+                  key={report.id}
+                  className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80"
+                >
+                  <div className="aspect-[4/3] overflow-hidden relative">
+                    <img
+                      src={report.photos?.[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
+                      alt={report.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-4 left-4">
+                      <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(report.disasterType)} text-white text-sm font-semibold flex items-center shadow-lg`}>
+                        {getDisasterIcon(report.disasterType)}
+                        <span className="ml-2 capitalize">{report.disasterType}</span>
+                      </div>
+                    </div>
+                    <div className="absolute top-4 right-4">
+                      <div className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-semibold">
+                        <AlertTriangle size={14} className="mr-1" />
+                        {report.severity.charAt(0).toUpperCase() + report.severity.slice(1)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">{report.title}</h3>
+                    <p className="text-gray-600 mb-4 line-clamp-2">{report.description}</p>
+                    <div className="flex items-center text-gray-500 mb-4">
+                      <MapPin size={16} className="mr-2" />
+                      <span className="text-sm">{report.location.address}</span>
+                    </div>
+                    <Link
+                      to={`/reports/${report.id}`}
+                      className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      View Details
+                      <ArrowRight size={16} className="ml-1" />
+                    </Link>
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section - Matching your design system */}
+        <section className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                Stay Informed, Stay Safe
+              </h2>
+              <p className="text-xl text-blue-100 mb-10 leading-relaxed">
+                Join our community of informed citizens helping to build safer, more resilient communities worldwide.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-6 justify-center">
+                <Link
+                  to="/report/new"
+                  className="group bg-white text-slate-900 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-gray-50 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105"
+                >
+                  <AlertTriangle size={20} className="mr-3" />
+                  Report Emergency
+                  <ArrowRight size={20} className="ml-3 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link
+                  to="/about"
+                  className="bg-white/10 backdrop-blur-xl border border-white/30 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
+                >
+                  Learn More
+                </Link>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Premium Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/60 p-8 mb-12 relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/3 via-transparent to-purple-500/3"></div>
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full translate-x-16 -translate-y-16"></div>
-
-            <div className="relative">
-              {/* Enhanced Pagination Info */}
-              <div className="flex flex-col lg:flex-row items-center justify-between mb-10">
-                <div className="mb-6 lg:mb-0">
-                  <p className="text-lg text-gray-700 font-semibold mb-2">
-                    Showing <span className="font-black text-blue-600 text-xl">{startIndex + 1}</span>-<span className="font-black text-blue-600 text-xl">{Math.min(startIndex + itemsPerPage, filteredAndSortedReports.length)}</span> of{' '}
-                    <span className="font-black text-blue-600 text-xl">{filteredAndSortedReports.length}</span> reports
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {filteredAndSortedReports.length === mockReports.length ? 'All available reports' : 'Filtered results based on your criteria'}
-                  </p>
-                </div>
-
-                <div className="flex items-center space-x-4">
-                  <div className="text-lg text-gray-700 font-semibold">
-                    Page <span className="font-black text-blue-600 text-xl">{currentPage}</span> of{' '}
-                    <span className="font-black text-blue-600 text-xl">{totalPages}</span>
-                  </div>
-                  <div className="h-8 w-px bg-gray-300"></div>
-                  <div className="text-sm text-gray-500">
-                    {Math.ceil((currentPage / totalPages) * 100)}% complete
-                  </div>
-                </div>
-              </div>
-
-              {/* Enhanced Pagination Controls */}
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                {/* Previous Button */}
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className={`group flex items-center px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 ${
-                    currentPage === 1
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 shadow-lg hover:shadow-xl transform hover:scale-105'
-                  }`}
-                >
-                  <ChevronLeft size={18} className={`mr-2 ${currentPage === 1 ? '' : 'group-hover:-translate-x-1'} transition-transform`} />
-                  {t('reports.pagination.previous')}
-                </button>
-
-                {/* Enhanced Page Numbers */}
-                <div className="flex items-center space-x-2">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`w-12 h-12 rounded-2xl text-sm font-bold transition-all duration-300 transform hover:scale-110 ${
-                          currentPage === pageNum
-                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border-2 border-blue-500'
-                            : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 shadow-md hover:shadow-lg'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Next Button */}
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className={`group flex items-center px-6 py-3 rounded-2xl text-sm font-semibold transition-all duration-300 ${
-                    currentPage === totalPages
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 shadow-lg hover:shadow-xl transform hover:scale-105'
-                  }`}
-                >
-                  {t('reports.pagination.next')}
-                  <ChevronRight size={18} className={`ml-2 ${currentPage === totalPages ? '' : 'group-hover:translate-x-1'} transition-transform`} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        </section>
       </main>
 
       <Footer />

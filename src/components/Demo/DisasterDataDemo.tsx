@@ -8,7 +8,7 @@ import { RealWorldDisaster } from '../../types';
 const DisasterDataDemo: React.FC = () => {
   const { disasters, loading, error, lastUpdated, refresh, statistics } = useDisasterData({
     autoRefresh: true,
-    refreshInterval: 5 * 60 * 1000, // 5 minutes
+    refreshInterval: 12 * 60 * 1000, // 12 minutes - staggered from home page
     includeSignificantOnly: true,
   });
 

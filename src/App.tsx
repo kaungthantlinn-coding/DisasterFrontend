@@ -20,6 +20,7 @@ import GetInvolved from './pages/GetInvolved';
 import Contact from './pages/Contact';
 import Donate from './pages/Donate';
 import Partnership from './pages/Partnership';
+import CJDashboard from './pages/CJDashboard';
 
 import AvatarDebug from './components/Debug/AvatarDebug';
 import TokenDebugPage from './pages/TokenDebugPage';

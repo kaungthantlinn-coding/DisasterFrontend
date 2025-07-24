@@ -1,6 +1,7 @@
 
 import { RealWorldDisaster, USGSEarthquakeResponse, USGSEarthquake } from '../types';
 import { mockReports } from '../data/mockData';
+import { requestManager } from '../utils/requestManager';
 
 // USGS Earthquake API endpoints
 const USGS_BASE_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary';
@@ -83,7 +84,7 @@ const convertUSGSToDisaster = (earthquake: USGSEarthquake): RealWorldDisaster =>
 export class DisasterDataService {
   private static instance: DisasterDataService;
   private cache: Map<string, { data: RealWorldDisaster[]; timestamp: number }> = new Map();
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes - longer cache to reduce API calls
 
   static getInstance(): DisasterDataService {
     if (!DisasterDataService.instance) {
@@ -124,6 +125,9 @@ export class DisasterDataService {
     }));
   }
 
+  // Track ongoing requests to prevent duplicate calls
+  private ongoingRequests: Map<string, Promise<RealWorldDisaster[]>> = new Map();
+
   /**
    * Fetch earthquake data from USGS
    */
@@ -135,25 +139,42 @@ export class DisasterDataService {
       return cached.data;
     }
 
+    // Use global request manager to prevent duplicate calls
+    return requestManager.executeRequest(cacheKey, () => 
+      this.performUSGSRequest(feedType, cacheKey, cached)
+    );
+  }
+
+  private async performUSGSRequest(
+    feedType: keyof typeof USGS_FEEDS, 
+    cacheKey: string, 
+    cached?: { data: RealWorldDisaster[]; timestamp: number }
+  ): Promise<RealWorldDisaster[]> {
     try {
       console.log(`Fetching earthquake data from: ${USGS_FEEDS[feedType]}`);
+      
+      // Create abort controller for better timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
       const response = await fetch(USGS_FEEDS[feedType], {
         headers: {
           'Accept': 'application/json',
+          'User-Agent': 'DisasterResponse-App/1.0',
         },
-        // Add timeout to prevent hanging requests
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data: USGSEarthquakeResponse = await response.json();
-      console.log(`Received ${data.features.length} earthquakes from USGS`);
+      console.log(`✅ Received ${data.features.length} earthquakes from USGS`);
 
       const disasters = data.features.map(convertUSGSToDisaster);
-      console.log(`Converted ${disasters.length} disasters:`, disasters.slice(0, 3)); // Log first 3 for debugging
       
       // Cache the results
       this.cache.set(cacheKey, {
@@ -165,24 +186,24 @@ export class DisasterDataService {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          console.warn('USGS earthquake data request timed out');
+          console.warn('⏱️ USGS earthquake data request timed out - using fallback data');
         } else if (error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
-          console.warn('Network error: Unable to reach USGS earthquake service. This may be due to network connectivity issues or the service being temporarily unavailable.');
+          console.warn('🌐 Network error: Unable to reach USGS earthquake service - using fallback data');
         } else {
-          console.error('Error fetching USGS earthquake data:', error.message);
+          console.error('❌ Error fetching USGS earthquake data:', error.message);
         }
       } else {
-        console.error('Unknown error fetching USGS earthquake data:', error);
+        console.error('❌ Unknown error fetching USGS earthquake data:', error);
       }
 
       // Return cached data if available, even if expired
       if (cached) {
-        console.warn('Using expired cache data due to API error');
+        console.warn('📦 Using expired cache data due to API error');
         return cached.data;
       }
 
       // If no cached data available, use fallback mock data
-      console.warn('No cached data available, using fallback earthquake data from mock reports');
+      console.warn('🔄 No cached data available, using fallback earthquake data from mock reports');
       const fallbackData = this.generateFallbackEarthquakeData();
 
       // Cache the fallback data for future use

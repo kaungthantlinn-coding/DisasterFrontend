@@ -26,7 +26,7 @@ interface UseDisasterDataReturn {
 export const useDisasterData = (options: UseDisasterDataOptions = {}): UseDisasterDataReturn => {
   const {
     autoRefresh = true,
-    refreshInterval = 5 * 60 * 1000, // 5 minutes default
+    refreshInterval = 10 * 60 * 1000, // 10 minutes default - reduced frequency
     includeSignificantOnly = true,
   } = options;
 
