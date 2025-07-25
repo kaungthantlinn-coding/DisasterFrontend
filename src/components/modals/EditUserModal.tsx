@@ -7,9 +7,27 @@ import {
   Shield,
   Save,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 import Avatar from '../Common/Avatar';
+import { useRoleUpdate } from '../../hooks/useRoleUpdate';
+import { RoleUpdateValidationDto } from '../../apis/userManagement';
+import { showSuccessToast } from '../../utils/notifications';
+
+// Helper function to convert role names to proper case for API
+const convertToProperCase = (role: string): string => {
+  switch (role.toLowerCase()) {
+    case 'admin':
+      return 'Admin';
+    case 'cj':
+      return 'CJ';
+    case 'user':
+      return 'User';
+    default:
+      return role;
+  }
+};
 
 interface User {
   id: string;
@@ -62,22 +80,45 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     phone: '',
     roleNames: []
   });
-  
+
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [roleValidation, setRoleValidation] = useState<RoleUpdateValidationDto | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [originalRoles, setOriginalRoles] = useState<string[]>([]);
+
+  // Initialize role update hook
+  const { validateAndUpdateRoles, isLoading: isRoleUpdateLoading } = useRoleUpdate();
 
   // Initialize form data when user changes
   useEffect(() => {
     if (user) {
+      // Convert user role to proper case for API consistency
+      const userRole = user.role;
+      const properCaseRole = convertToProperCase(userRole);
+      const userRoles = [properCaseRole];
+
+      // Debug: Log role initialization data
+      console.log('EditUserModal - Role Initialization:', {
+        userRole,
+        properCaseRole,
+        userRoles,
+        availableRoles,
+        dropdownValue: properCaseRole?.toLowerCase()
+      });
+
       setFormData({
         name: user.name || '',
         email: user.email || '',
         phone: user.phone || '',
-        roleNames: [user.role] || []
+        roleNames: userRoles
       });
+      setOriginalRoles(userRoles);
       setErrors({});
+      setRoleValidation(null);
+      setShowConfirmation(false);
     }
-  }, [user]);
+  }, [user, availableRoles]);
 
   if (!isOpen || !user) return null;
 
@@ -118,20 +159,43 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsSaving(true);
     try {
-      await onSave(user.id, {
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim() || undefined,
-        roleNames: formData.roleNames
+      // Check if roles have changed
+      const rolesChanged = JSON.stringify(formData.roleNames.sort()) !== JSON.stringify(originalRoles.sort());
+
+      // Debug: Log role change detection
+      console.log('EditUserModal - Role Change Detection:', {
+        formDataRoles: formData.roleNames,
+        originalRoles,
+        rolesChanged,
+        formDataSorted: JSON.stringify(formData.roleNames.sort()),
+        originalSorted: JSON.stringify(originalRoles.sort())
       });
-      onClose();
+
+      if (rolesChanged) {
+        // Handle role-specific update with validation
+        await handleRoleUpdate();
+      } else {
+        // Handle regular user update (no role changes) - use existing API
+        // Ensure role names are in proper case even for non-role updates
+        const properCaseRoles = formData.roleNames.map(convertToProperCase);
+
+
+
+        await onSave(user.id, {
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim() || undefined,
+          roleNames: properCaseRoles
+        });
+        onClose();
+      }
     } catch (error) {
       console.error('Failed to update user:', error);
       // Error handling is done in the parent component via toast
@@ -140,12 +204,113 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     }
   };
 
+  const handleRoleUpdate = async () => {
+    try {
+      // Ensure role names are in proper case for API
+      const properCaseRoles = formData.roleNames.map(convertToProperCase);
+
+
+
+      // Prepare other user data that might have changed
+      const otherUserData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || undefined,
+      };
+
+      await validateAndUpdateRoles(
+        user.id,
+        {
+          roleNames: properCaseRoles,
+          reason: 'Role updated via admin panel'
+        },
+        otherUserData
+      );
+
+      showSuccessToast('User role updated successfully');
+      onClose();
+    } catch (error: any) {
+      if (error.requiresConfirmation && error.validation) {
+        // Show confirmation dialog for role changes that require confirmation
+        setRoleValidation(error.validation);
+        setShowConfirmation(true);
+      } else if (error.validation && !error.validation.canUpdate) {
+        // Show validation errors as form errors
+        setErrors(prev => ({
+          ...prev,
+          roleNames: error.validation.blockers.join(', ')
+        }));
+      } else {
+        // Re-throw other errors to be handled by parent component
+        throw error;
+      }
+    }
+  };
+
+  const handleConfirmRoleUpdate = async () => {
+    setShowConfirmation(false);
+    setIsSaving(true);
+
+    try {
+      // Ensure role names are in proper case for API
+      const properCaseRoles = formData.roleNames.map(convertToProperCase);
+
+
+
+      // Prepare other user data that might have changed
+      const otherUserData = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || undefined,
+      };
+
+      // Proceed with role update, skipping validation since we already confirmed
+      await validateAndUpdateRoles(
+        user.id,
+        {
+          roleNames: properCaseRoles,
+          reason: 'Role updated via admin panel (confirmed)'
+        },
+        otherUserData,
+        true // Skip validation
+      );
+
+      showSuccessToast('User role updated successfully');
+      onClose();
+    } catch (error) {
+      console.error('Failed to update user roles:', error);
+      // Error handling is done in the parent component via toast
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelConfirmation = () => {
+    setShowConfirmation(false);
+    setRoleValidation(null);
+  };
+
   const handleRoleChange = (role: string) => {
+    // Convert lowercase role back to proper case for API
+    const properCaseRole = convertToProperCase(role);
+
+    // Debug: Log role change details
+    console.log('EditUserModal - Role Change:', {
+      selectedRole: role,
+      properCaseRole,
+      previousRoles: formData.roleNames,
+      originalRoles,
+      availableRoles
+    });
+
     // For now, only allow single role selection
     setFormData(prev => ({
       ...prev,
-      roleNames: [role]
+      roleNames: [properCaseRole]
     }));
+    // Clear any previous validation when role changes
+    setRoleValidation(null);
+    setShowConfirmation(false);
   };
 
   return (
@@ -195,7 +360,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 errors.name ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter full name"
-              disabled={isSaving}
+              disabled={isSaving || isRoleUpdateLoading}
             />
             {errors.name && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -220,7 +385,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 errors.email ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter email address"
-              disabled={isSaving}
+              disabled={isSaving || isRoleUpdateLoading}
             />
             {errors.email && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -245,7 +410,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 errors.phone ? 'border-red-300' : 'border-gray-300'
               }`}
               placeholder="Enter phone number (optional)"
-              disabled={isSaving}
+              disabled={isSaving || isRoleUpdateLoading}
             />
             {errors.phone && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -263,17 +428,17 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             </label>
             <select
               id="role"
-              value={formData.roleNames[0] || ''}
+              value={formData.roleNames[0]?.toLowerCase() || ''}
               onChange={(e) => handleRoleChange(e.target.value)}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 errors.roleNames ? 'border-red-300' : 'border-gray-300'
               }`}
-              disabled={isSaving}
+              disabled={isSaving || isRoleUpdateLoading}
             >
               <option value="">Select a role</option>
               {availableRoles.map(role => (
                 <option key={role} value={role.toLowerCase()}>
-                  {role}
+                  {convertToProperCase(role)}
                 </option>
               ))}
             </select>
@@ -290,17 +455,17 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              disabled={isSaving}
+              disabled={isSaving || isRoleUpdateLoading}
               className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isRoleUpdateLoading}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
             >
-              {isSaving ? (
+              {(isSaving || isRoleUpdateLoading) ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Saving...
@@ -315,6 +480,72 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Role Update Confirmation Dialog */}
+      {showConfirmation && roleValidation && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="w-6 h-6 text-yellow-500 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Role Changes</h3>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-gray-700 mb-3">
+                You are about to change the user's role. Please review the following:
+              </p>
+
+              {roleValidation.warnings.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="font-medium text-yellow-700 mb-2">Warnings:</h4>
+                  <ul className="list-disc list-inside text-sm text-yellow-600 space-y-1">
+                    {roleValidation.warnings.map((warning, index) => (
+                      <li key={index}>{warning}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {roleValidation.affectedPermissions.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="font-medium text-blue-700 mb-2">Affected Permissions:</h4>
+                  <ul className="list-disc list-inside text-sm text-blue-600 space-y-1">
+                    {roleValidation.affectedPermissions.map((permission, index) => (
+                      <li key={index}>{permission}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={handleCancelConfirmation}
+                disabled={isSaving}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRoleUpdate}
+                disabled={isSaving}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 flex items-center"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Confirm Changes'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

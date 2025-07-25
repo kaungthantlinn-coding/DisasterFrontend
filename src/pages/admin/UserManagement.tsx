@@ -80,9 +80,15 @@ interface FilterConfig {
 
 // Helper function to map API user to local user
 const mapApiUserToLocal = (apiUser: any): User => {
-  // Determine primary role
-  const primaryRole = apiUser.roleNames?.includes('admin') ? 'admin' :
-                     apiUser.roleNames?.includes('cj') ? 'cj' : 'user';
+  // Determine primary role (case-insensitive check)
+  const roleNames = apiUser.roleNames || [];
+  const hasRole = (roleName: string) =>
+    roleNames.some((role: string) => role.toLowerCase() === roleName.toLowerCase());
+
+  const primaryRole = hasRole('admin') ? 'admin' :
+                     hasRole('cj') ? 'cj' : 'user';
+
+
 
   // Determine status - handle both UserListItemDto and UserDetailsDto
   const status = apiUser.isBlacklisted ? 'suspended' :
