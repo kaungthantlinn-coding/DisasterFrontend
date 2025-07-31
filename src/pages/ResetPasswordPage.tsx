@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle, AlertCircle, Shield } from 'lucide-react';
+import { ArrowLeft, Lock, Eye, EyeOff, CheckCircle, AlertCircle, Shield, Copy } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { useResetPassword, useVerifyResetToken } from '../hooks/useResetPassword';
+import { 
+  generatePasswordResetDebugInfo, 
+  logPasswordResetDebugInfo,
+  getPasswordResetErrorMessage,
+  exportDebugInfoForSupport
+} from '../utils/passwordResetDebug';
 
 interface PasswordStrength {
   score: number;
@@ -9,9 +16,53 @@ interface PasswordStrength {
   isValid: boolean;
 }
 
+// Password confirmation validation state
+interface ValidationState {
+  newPassword: boolean;
+  confirmPassword: boolean;
+  passwordsMatch: boolean;
+}
+
+// Get validation state for form fields
+const getValidationState = (formData: { newPassword: string; confirmPassword: string }, passwordStrength: PasswordStrength): ValidationState => {
+  return {
+    newPassword: formData.newPassword.length > 0 && passwordStrength.isValid,
+    confirmPassword: formData.confirmPassword.length > 0,
+    passwordsMatch: formData.newPassword === formData.confirmPassword && formData.confirmPassword.length > 0
+  };
+};
+
 const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token') || '';
+  // Get token from URL and ensure it's properly decoded
+  const rawToken = searchParams.get('token') || '';
+  const token = rawToken ? (() => {
+    try {
+      // First decode URI component
+      let decoded = decodeURIComponent(rawToken);
+      
+      // Handle common URL encoding issue: spaces should be + in Base64
+      // This happens when + characters get converted to spaces in URL parameters
+      const hasSpaces = decoded.includes(' ');
+      if (hasSpaces) {
+        decoded = decoded.replace(/\s+/g, '+'); // Replace all whitespace with +
+        console.log('🔧 Fixed spaces in token (converted to +)');
+      }
+      
+      console.log('🔍 Token extraction:', {
+        rawToken: rawToken.substring(0, 20) + '...',
+        decodedToken: decoded.substring(0, 20) + '...',
+        hadSpaces: hasSpaces,
+        needsDecoding: rawToken !== decoded,
+        tokenLength: decoded.length
+      });
+      
+      return decoded;
+    } catch (error) {
+      console.error('❌ Failed to decode token from URL:', error);
+      return rawToken; // Use raw token if decoding fails
+    }
+  })() : '';
   
   const [formData, setFormData] = useState({
     newPassword: '',
@@ -27,6 +78,22 @@ const ResetPasswordPage: React.FC = () => {
 
   const resetPasswordMutation = useResetPassword();
   const { data: tokenVerification, isLoading: isVerifyingToken, error: tokenError } = useVerifyResetToken(token);
+  
+  // Form validation state
+  const validationState = getValidationState(formData, passwordStrength);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  
+  // Enhanced debugging and validation
+  useEffect(() => {
+    if (token || tokenError || tokenVerification) {
+      const debugInfo = generatePasswordResetDebugInfo(
+        token,
+        tokenVerification,
+        tokenError
+      );
+      logPasswordResetDebugInfo(debugInfo);
+    }
+  }, [token, tokenError, tokenVerification]);
 
   // Password strength validation
   useEffect(() => {
@@ -77,14 +144,31 @@ const ResetPasswordPage: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 Password reset form submitted');
+    setHasAttemptedSubmit(true);
+    
+    // Validate password strength
     if (!passwordStrength.isValid) {
+      console.warn('⚠️ Password does not meet strength requirements');
+      toast.error('Please ensure your password meets all the requirements.');
       return;
     }
 
+    // Validate password confirmation
     if (formData.newPassword !== formData.confirmPassword) {
+      console.warn('⚠️ Passwords do not match');
+      toast.error('Passwords do not match. Please check and try again.');
       return;
     }
 
+    // Final token validation before submission
+    if (!token || token.trim().length === 0) {
+      console.error('❌ No token available for password reset');
+      toast.error('Invalid reset token. Please request a new password reset link.');
+      return;
+    }
+
+    console.log('✅ All validations passed, submitting password reset');
     resetPasswordMutation.mutate({
       token,
       newPassword: formData.newPassword,
@@ -130,8 +214,50 @@ const ResetPasswordPage: React.FC = () => {
     console.error('🔒 Password reset token validation failed:', {
       tokenError,
       tokenVerification,
-      token: token ? `${token.substring(0, 20)}...` : 'No token'
+      token: token ? `${token.substring(0, 20)}...` : 'No token',
+      errorType: tokenVerification?.errorType || 'UNKNOWN'
     });
+
+    // Generate enhanced debug info and user-friendly error message
+    const debugInfo = generatePasswordResetDebugInfo(token, tokenVerification, tokenError);
+    const errorType = tokenVerification?.errorType || 'UNKNOWN';
+    const errorMessage = getPasswordResetErrorMessage(debugInfo);
+    
+    // Function to copy debug info for support
+    const copyDebugInfo = async () => {
+      try {
+        const debugReport = exportDebugInfoForSupport(debugInfo);
+        await navigator.clipboard.writeText(debugReport);
+        toast.success('Debug information copied to clipboard!');
+      } catch (error) {
+        console.error('Failed to copy debug info:', error);
+        toast.error('Failed to copy debug information');
+      }
+    };
+    
+    // Customize icon and color based on error type
+    const getErrorIcon = () => {
+      switch (errorType) {
+        case 'MISSING_TOKEN':
+        case 'INVALID_FORMAT':
+          return { icon: AlertCircle, color: 'from-orange-500 to-orange-600' };
+        case 'EXPIRED_OR_INVALID':
+        case 'TOKEN_NOT_FOUND':
+          return { icon: AlertCircle, color: 'from-red-500 to-red-600' };
+        case 'NETWORK_ERROR':
+          return { icon: AlertCircle, color: 'from-yellow-500 to-yellow-600' };
+        case 'SERVER_ERROR':
+          return { icon: AlertCircle, color: 'from-purple-500 to-purple-600' };
+        default:
+          return { icon: AlertCircle, color: 'from-red-500 to-red-600' };
+      }
+    };
+
+    const { icon: ErrorIcon, color } = getErrorIcon();
+
+    // Show retry option for network errors
+    const showRetryOption = errorType === 'NETWORK_ERROR';
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background Pattern */}
@@ -142,19 +268,78 @@ const ResetPasswordPage: React.FC = () => {
 
         <div className="relative sm:mx-auto sm:w-full sm:max-w-md">
           <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg mb-6">
-              <AlertCircle size={32} className="text-white" />
+            <div className={`mx-auto w-16 h-16 bg-gradient-to-br ${color} rounded-full flex items-center justify-center shadow-lg mb-6`}>
+              <ErrorIcon size={32} className="text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Invalid Reset Link</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {errorType === 'NETWORK_ERROR' ? 'Connection Problem' : 'Invalid Reset Link'}
+            </h1>
             <p className="text-lg text-gray-600 mb-6">
-              {tokenVerification?.message || tokenError?.message || 'This password reset link is invalid or has expired.'}
+              {errorMessage}
             </p>
-            <Link
-              to="/forgot-password"
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-300"
-            >
-              Request New Reset Link
-            </Link>
+            
+            {/* Error-specific help text */}
+            {errorType === 'INVALID_FORMAT' && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 text-left">
+                <h3 className="font-semibold text-yellow-800 mb-2">Troubleshooting Tips:</h3>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• Make sure you're using the complete link from your email</li>
+                  <li>• Check if the link was broken across multiple lines</li>
+                  <li>• Try copying and pasting the entire URL</li>
+                </ul>
+              </div>
+            )}
+            
+            {errorType === 'EXPIRED_OR_INVALID' && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-left">
+                <h3 className="font-semibold text-red-800 mb-2">Why did this happen?</h3>
+                <ul className="text-sm text-red-700 space-y-1">
+                  <li>• Reset links expire after 1 hour for security</li>
+                  <li>• Each link can only be used once</li>
+                  <li>• Requesting a new reset cancels previous links</li>
+                </ul>
+              </div>
+            )}
+            
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {showRetryOption && (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-300"
+                >
+                  Try Again
+                </button>
+              )}
+              <Link
+                to="/forgot-password"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-300"
+              >
+                Request New Reset Link
+              </Link>
+            </div>
+            
+            {/* Debug information for technical users */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <details className="text-left">
+                <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700 flex items-center gap-2">
+                  <span>Technical Details</span>
+                  <span className="text-xs">(for troubleshooting)</span>
+                </summary>
+                <div className="mt-3 p-3 bg-gray-50 rounded-lg text-xs text-gray-600 space-y-2">
+                  <div><strong>Error Type:</strong> {errorType}</div>
+                  <div><strong>Token Present:</strong> {token ? 'Yes' : 'No'}</div>
+                  <div><strong>Token Length:</strong> {token?.length || 0}</div>
+                  <div><strong>Timestamp:</strong> {new Date().toISOString()}</div>
+                  <button
+                    onClick={copyDebugInfo}
+                    className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+                  >
+                    <Copy size={14} />
+                    Copy Debug Info
+                  </button>
+                </div>
+              </details>
+            </div>
           </div>
         </div>
       </div>
@@ -215,7 +400,13 @@ const ResetPasswordPage: React.FC = () => {
                   value={formData.newPassword}
                   onChange={handleInputChange}
                   required
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-gray-50 focus:bg-white"
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl shadow-sm focus:outline-none focus:ring-2 transition-all duration-300 bg-gray-50 focus:bg-white ${
+                    hasAttemptedSubmit && !validationState.newPassword
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : validationState.newPassword
+                      ? 'border-green-300 focus:ring-green-500 focus:border-green-500'
+                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                   placeholder="Enter your new password"
                 />
                 <button
@@ -279,7 +470,13 @@ const ResetPasswordPage: React.FC = () => {
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
                   required
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-gray-50 focus:bg-white"
+                  className={`w-full pl-10 pr-12 py-3 border rounded-xl shadow-sm focus:outline-none focus:ring-2 transition-all duration-300 bg-gray-50 focus:bg-white ${
+                    hasAttemptedSubmit && !validationState.passwordsMatch
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : validationState.passwordsMatch
+                      ? 'border-green-300 focus:ring-green-500 focus:border-green-500'
+                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  }`}
                   placeholder="Confirm your new password"
                 />
                 <button
@@ -298,29 +495,63 @@ const ResetPasswordPage: React.FC = () => {
               {/* Password Match Indicator */}
               {formData.confirmPassword && (
                 <div className="mt-2">
-                  {formData.newPassword === formData.confirmPassword ? (
-                    <div className="flex items-center text-green-600 text-sm">
+                  {validationState.passwordsMatch ? (
+                    <div className="flex items-center text-green-600 text-sm animate-fadeIn">
                       <CheckCircle size={16} className="mr-2" />
                       <span>Passwords match</span>
                     </div>
                   ) : (
-                    <div className="flex items-center text-red-600 text-sm">
+                    <div className="flex items-center text-red-600 text-sm animate-fadeIn">
                       <AlertCircle size={16} className="mr-2" />
                       <span>Passwords do not match</span>
                     </div>
                   )}
                 </div>
               )}
+              
+              {/* Enhanced validation feedback */}
+              {hasAttemptedSubmit && formData.confirmPassword && !validationState.passwordsMatch && (
+                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-xs text-red-700">
+                    Please ensure both password fields match exactly.
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Error Message */}
+            {/* Enhanced Error Messages */}
             {resetPasswordMutation.error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center">
-                <AlertCircle size={16} className="mr-2 flex-shrink-0" />
-                <span>
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                <div className="flex items-center mb-2">
+                  <AlertCircle size={16} className="mr-2 flex-shrink-0" />
+                  <span className="font-semibold">Password Reset Failed</span>
+                </div>
+                <p className="text-xs text-red-600 mb-2">
                   {(resetPasswordMutation.error as any)?.response?.data?.message || 
                    'Failed to reset password. Please try again.'}
-                </span>
+                </p>
+                <div className="text-xs text-red-500">
+                  <p>If this problem persists:</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>Try requesting a new password reset link</li>
+                    <li>Check your internet connection</li>
+                    <li>Contact support if the issue continues</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+            
+            {/* Form validation summary */}
+            {hasAttemptedSubmit && (!validationState.newPassword || !validationState.passwordsMatch) && (
+              <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-xl text-sm">
+                <div className="flex items-center mb-2">
+                  <AlertCircle size={16} className="mr-2 flex-shrink-0" />
+                  <span className="font-semibold">Please Fix the Following:</span>
+                </div>
+                <ul className="text-xs space-y-1">
+                  {!validationState.newPassword && <li>• Password must meet all strength requirements</li>}
+                  {!validationState.passwordsMatch && <li>• Both password fields must match</li>}
+                </ul>
               </div>
             )}
 
@@ -329,8 +560,8 @@ const ResetPasswordPage: React.FC = () => {
               type="submit"
               disabled={
                 resetPasswordMutation.isPending || 
-                !passwordStrength.isValid || 
-                formData.newPassword !== formData.confirmPassword ||
+                !validationState.newPassword || 
+                !validationState.passwordsMatch ||
                 !formData.newPassword ||
                 !formData.confirmPassword
               }
