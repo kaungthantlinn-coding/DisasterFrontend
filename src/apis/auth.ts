@@ -74,7 +74,23 @@ export const authApi = {
 
   // Verify reset token
   verifyResetToken: async (token: string): Promise<{ valid: boolean; message?: string }> => {
-    const response = await apiClient.post('/Auth/verify-reset-token', { token });
-    return response.data;
+    try {
+      const response = await apiClient.post('/Auth/verify-reset-token', { token });
+      // Map backend response (isValid) to frontend expectation (valid)
+      return {
+        valid: response.data.isValid,
+        message: response.data.message
+      };
+    } catch (error: any) {
+      // Handle 400 Bad Request responses (invalid tokens)
+      if (error.response?.status === 400 && error.response?.data) {
+        return {
+          valid: error.response.data.isValid || false,
+          message: error.response.data.message || 'Invalid or expired token.'
+        };
+      }
+      // Re-throw other errors
+      throw error;
+    }
   },
 };

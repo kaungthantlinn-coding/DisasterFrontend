@@ -19,6 +19,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { showInfoToast } from '../utils/notifications';
+import { useReports, useReportsStatistics } from '../hooks/useReports';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -175,31 +176,33 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // Mock data - replace with real data from API
+  // API calls for real data
+  const { data: userReportsData, isLoading: reportsLoading } = useReports({
+    page: 1,
+    pageSize: 10,
+    // Add user filter when user management is implemented
+  });
+
+  const { data: statsData, isLoading: statsLoading } = useReportsStatistics();
+
+  // Get user stats from API or use defaults
   const stats = {
-    reportsSubmitted: 2,
-    verifiedReports: 2,
-    assistanceProvided: 2
+    reportsSubmitted: userReportsData?.totalReports || 0,
+    verifiedReports: userReportsData?.reports?.filter(r => r.status === 'verified').length || 0,
+    assistanceProvided: 0 // This would come from assistance tracking API
   };
 
-  const myReports = [
-    {
-      id: 1,
-      title: 'Flooding in Downtown District',
-      description: 'Severe flooding has affected multiple residential areas after heavy rainfall. Water levels reached 3-4 feet in some streets, making them...',
-      status: 'Verified' as const,
-      date: 'Jan 15, 2024',
-      image: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center'
-    },
-    {
-      id: 2,
-      title: 'Wildfire Damage Assessment',
-      description: 'Fast-moving wildfire has damaged several residential properties and threatens surrounding forest areas.',
-      status: 'Verified' as const,
-      date: 'Jan 12, 2024',
-      image: 'https://images.unsplash.com/photo-1574482620881-2f235c4e6d9d?w=64&h=64&fit=crop&crop=center'
-    }
-  ];
+  // Get user's reports from API data
+  const myReports = (userReportsData?.reports || []).slice(0, 2).map(report => ({
+    id: report.id,
+    title: report.title,
+    description: report.description.length > 100
+      ? report.description.substring(0, 100) + '...'
+      : report.description,
+    status: report.status.charAt(0).toUpperCase() + report.status.slice(1) as 'Verified' | 'Pending' | 'Resolved',
+    date: new Date(report.createdAt).toLocaleDateString(),
+    image: report.photos?.[0] || 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center'
+  }));
 
   const myAssistance = [
     {
@@ -261,14 +264,14 @@ const Dashboard: React.FC = () => {
           <StatCard
             icon={<Eye className="w-6 h-6" />}
             title="Reports Submitted"
-            value={stats.reportsSubmitted}
+            value={reportsLoading ? "..." : stats.reportsSubmitted}
             bgColor="bg-blue-50"
             iconColor="text-blue-600"
           />
           <StatCard
             icon={<CheckCircle className="w-6 h-6" />}
             title="Verified Reports"
-            value={stats.verifiedReports}
+            value={reportsLoading ? "..." : stats.verifiedReports}
             bgColor="bg-green-50"
             iconColor="text-green-600"
           />

@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, MapPin, Calendar, User, Heart, MessageCircle, CheckCircle, Clock } from 'lucide-react';
-import { mockReports } from '../data/mockData';
 import { format } from 'date-fns';
 import ReportMap from '../components/Map/ReportMap';
 import Header from '../components/Layout/Header';
 import { showSuccessToast, showErrorToast } from '../utils/notifications';
+import { useReport, useAddAssistanceLog } from '../hooks/useReports';
 
 const ReportDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
   const [assistanceText, setAssistanceText] = useState('');
   const [showAssistanceForm, setShowAssistanceForm] = useState(false);
+
+  // API calls
+  const { data: report, isLoading, error } = useReport(id || '');
+  const addAssistanceMutation = useAddAssistanceLog();
 
   const getDefaultImage = (type: string) => {
     const defaultImages = {
@@ -24,13 +28,27 @@ const ReportDetail: React.FC = () => {
     return defaultImages[type as keyof typeof defaultImages] || defaultImages.default;
   };
 
-  const report = mockReports.find(r => r.id === id);
-
-  if (!report) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-4">Report Not Found</h1>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading report...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !report) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-4">
+            {error ? 'Error Loading Report' : 'Report Not Found'}
+          </h1>
+          <p className="text-gray-600 mb-4">
+            {error ? 'There was an error loading the report details.' : 'The requested report could not be found.'}
+          </p>
           <Link to="/" className="text-red-600 hover:text-red-700">
             ← Back to Home
           </Link>
@@ -39,20 +57,28 @@ const ReportDetail: React.FC = () => {
     );
   }
 
-  const handleOfferAssistance = () => {
+  const handleOfferAssistance = async () => {
     if (!assistanceText.trim()) {
       showErrorToast('Please enter your assistance offer before submitting.', 'Missing Information');
       return;
     }
 
-    // Here you would normally make an API call
-    console.log('Offering assistance:', assistanceText);
-    setAssistanceText('');
-    setShowAssistanceForm(false);
-    showSuccessToast(
-      'Thank you for offering assistance! Your offer has been recorded and the reporter will be notified.',
-      'Assistance Offer Submitted'
-    );
+    try {
+      await addAssistanceMutation.mutateAsync({
+        reportId: report.id,
+        action: assistanceText,
+        responder: 'Current User' // This should come from auth context
+      });
+
+      setAssistanceText('');
+      setShowAssistanceForm(false);
+      showSuccessToast(
+        'Thank you for offering assistance! Your offer has been recorded and the reporter will be notified.',
+        'Assistance Offer Submitted'
+      );
+    } catch (error) {
+      showErrorToast('Failed to submit assistance offer. Please try again.', 'Submission Failed');
+    }
   };
 
   return (

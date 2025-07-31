@@ -22,33 +22,9 @@ import {
   Activity
 } from 'lucide-react';
 
-interface Report {
-  id: string;
-  title: string;
-  type: 'earthquake' | 'flood' | 'fire' | 'cyclone' | 'landslide' | 'other';
-  status: 'pending' | 'verified' | 'rejected' | 'investigating';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  location: string;
-  coordinates: [number, number];
-  submittedBy: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-  };
-  submittedAt: string;
-  verifiedAt?: string;
-  verifiedBy?: {
-    id: string;
-    name: string;
-  };
-  description: string;
-  images: string[];
-  comments: number;
-  priority: number;
-  affectedPeople?: number;
-  estimatedDamage?: string;
-}
+// Hooks and Types
+import { useReports, useUpdateReportStatus } from '../../hooks/useReports';
+import { Report } from '../../types';
 
 interface FilterState {
   status: string;
@@ -77,124 +53,21 @@ const ReportManagement: React.FC = () => {
     location: ''
   });
 
-  // Mock data - replace with real API data
-  const mockReports: Report[] = [
-    {
-      id: 'RPT-001',
-      title: 'Major Earthquake in Downtown Area',
-      type: 'earthquake',
-      status: 'pending',
-      severity: 'critical',
-      location: 'San Francisco, CA',
-      coordinates: [37.7749, -122.4194],
-      submittedBy: {
-        id: 'user-1',
-        name: 'John Smith',
-        email: 'john.smith@email.com',
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face'
-      },
-      submittedAt: '2024-01-15T10:30:00Z',
-      description: 'Strong earthquake felt across the downtown area. Multiple buildings showing structural damage.',
-      images: ['image1.jpg', 'image2.jpg'],
-      comments: 5,
-      priority: 9,
-      affectedPeople: 1500,
-      estimatedDamage: '$2.5M'
-    },
-    {
-      id: 'RPT-002',
-      title: 'Flash Flood in Residential Area',
-      type: 'flood',
-      status: 'verified',
-      severity: 'high',
-      location: 'Austin, TX',
-      coordinates: [30.2672, -97.7431],
-      submittedBy: {
-        id: 'user-2',
-        name: 'Sarah Johnson',
-        email: 'sarah.j@email.com'
-      },
-      submittedAt: '2024-01-14T15:45:00Z',
-      verifiedAt: '2024-01-14T16:30:00Z',
-      verifiedBy: {
-        id: 'admin-1',
-        name: 'Admin User'
-      },
-      description: 'Sudden flash flood affecting multiple residential streets. Water levels rising rapidly.',
-      images: ['flood1.jpg'],
-      comments: 3,
-      priority: 7,
-      affectedPeople: 800,
-      estimatedDamage: '$1.2M'
-    },
-    {
-      id: 'RPT-003',
-      title: 'Wildfire Spreading Near Highway',
-      type: 'fire',
-      status: 'investigating',
-      severity: 'high',
-      location: 'Los Angeles, CA',
-      coordinates: [34.0522, -118.2437],
-      submittedBy: {
-        id: 'user-3',
-        name: 'Mike Davis',
-        email: 'mike.davis@email.com'
-      },
-      submittedAt: '2024-01-13T09:15:00Z',
-      description: 'Large wildfire visible from Highway 101. Smoke affecting visibility.',
-      images: ['fire1.jpg', 'fire2.jpg', 'fire3.jpg'],
-      comments: 8,
-      priority: 8,
-      affectedPeople: 2000,
-      estimatedDamage: '$5M'
-    },
-    {
-      id: 'RPT-004',
-      title: 'Minor Landslide on Mountain Road',
-      type: 'landslide',
-      status: 'rejected',
-      severity: 'low',
-      location: 'Denver, CO',
-      coordinates: [39.7392, -104.9903],
-      submittedBy: {
-        id: 'user-4',
-        name: 'Lisa Wilson',
-        email: 'lisa.w@email.com'
-      },
-      submittedAt: '2024-01-12T14:20:00Z',
-      description: 'Small landslide blocking part of mountain access road.',
-      images: [],
-      comments: 1,
-      priority: 3,
-      affectedPeople: 50
-    },
-    {
-      id: 'RPT-005',
-      title: 'Severe Storm Damage',
-      type: 'cyclone',
-      status: 'verified',
-      severity: 'medium',
-      location: 'Miami, FL',
-      coordinates: [25.7617, -80.1918],
-      submittedBy: {
-        id: 'user-5',
-        name: 'Carlos Rodriguez',
-        email: 'carlos.r@email.com'
-      },
-      submittedAt: '2024-01-11T18:00:00Z',
-      verifiedAt: '2024-01-11T19:15:00Z',
-      verifiedBy: {
-        id: 'admin-2',
-        name: 'Jane Admin'
-      },
-      description: 'Severe storm causing power outages and tree damage across the city.',
-      images: ['storm1.jpg'],
-      comments: 4,
-      priority: 6,
-      affectedPeople: 1200,
-      estimatedDamage: '$800K'
+  // API calls for reports data
+  const { data: reportsData, isLoading, error, refetch } = useReports({
+    page: currentPage,
+    pageSize: itemsPerPage,
+    filters: {
+      disasterType: filters.type !== 'all' ? filters.type : undefined,
+      severity: filters.severity !== 'all' ? filters.severity : undefined,
+      status: filters.status !== 'all' ? filters.status : undefined,
     }
-  ];
+  });
+
+  const updateReportStatusMutation = useUpdateReportStatus();
+
+  // Get reports from API data
+  const reports = reportsData?.reports || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -236,10 +109,10 @@ const ReportManagement: React.FC = () => {
   };
 
   const handleSelectAll = () => {
-    if (selectedReports.length === mockReports.length) {
+    if (selectedReports.length === reports.length) {
       setSelectedReports([]);
     } else {
-      setSelectedReports(mockReports.map(report => report.id));
+      setSelectedReports(reports.map(report => report.id));
     }
   };
 
@@ -249,20 +122,28 @@ const ReportManagement: React.FC = () => {
     setSelectedReports([]);
   };
 
-  const handleStatusChange = (reportId: string, newStatus: string) => {
-    console.log(`Changing status of ${reportId} to ${newStatus}`);
-    // Implement status change
+  const handleStatusChange = async (reportId: string, newStatus: string) => {
+    try {
+      await updateReportStatusMutation.mutateAsync({
+        reportId,
+        status: newStatus as 'pending' | 'verified' | 'resolved'
+      });
+      // Refetch reports to get updated data
+      refetch();
+    } catch (error) {
+      console.error('Failed to update report status:', error);
+    }
   };
 
-  const filteredReports = mockReports.filter(report => {
-    const matchesSearch = report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         report.submittedBy.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredReports = reports.filter(report => {
+    const matchesSearch = report.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         report.location?.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         report.reporterName?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = filters.status === 'all' || report.status === filters.status;
-    const matchesType = filters.type === 'all' || report.type === filters.type;
+    const matchesType = filters.type === 'all' || report.disasterType === filters.type;
     const matchesSeverity = filters.severity === 'all' || report.severity === filters.severity;
-    const matchesLocation = !filters.location || report.location.toLowerCase().includes(filters.location.toLowerCase());
+    const matchesLocation = !filters.location || report.location?.address?.toLowerCase().includes(filters.location.toLowerCase());
     
     return matchesSearch && matchesStatus && matchesType && matchesSeverity && matchesLocation;
   });
@@ -272,12 +153,9 @@ const ReportManagement: React.FC = () => {
     
     switch (sortBy) {
       case 'submittedAt':
-        aValue = new Date(a.submittedAt).getTime();
-        bValue = new Date(b.submittedAt).getTime();
-        break;
-      case 'priority':
-        aValue = a.priority || 0;
-        bValue = b.priority || 0;
+      case 'createdAt':
+        aValue = new Date(a.createdAt).getTime();
+        bValue = new Date(b.createdAt).getTime();
         break;
       case 'severity':
         const severityOrder = { low: 1, medium: 2, high: 3, critical: 4 };
@@ -505,7 +383,7 @@ const ReportManagement: React.FC = () => {
                   <th className="px-6 py-3 text-left">
                     <input
                       type="checkbox"
-                      checked={selectedReports.length === mockReports.length}
+                      checked={selectedReports.length === reports.length}
                       onChange={handleSelectAll}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />

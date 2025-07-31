@@ -76,25 +76,29 @@ api.interceptors.response.use(
   },
   (error) => {
     const apiError = errorHandler.fromAxiosError(error);
-    
+
     // Enhanced error handling for connection issues
     if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED') {
       console.error('Backend server is not running or unreachable at:', API_BASE_URL);
       console.error('Please ensure the DisasterApp backend is running on localhost:5057');
     }
-    
-    // Track API errors
-    ErrorTracker.getInstance().track(apiError, {
-      component: 'API',
-      action: 'response_error',
-      additionalData: {
-        url: error.config?.url,
-        method: error.config?.method,
-        status: error.response?.status,
-        requestId: error.config?.metadata?.requestId,
-        baseURL: API_BASE_URL,
-      },
-    });
+
+    // Track API errors, but avoid duplicate tracking during retries
+    // We'll let the authService handle error tracking for auth operations
+    const isAuthEndpoint = error.config?.url?.includes('/Auth/');
+    if (!isAuthEndpoint) {
+      ErrorTracker.getInstance().track(apiError, {
+        component: 'API',
+        action: 'response_error',
+        additionalData: {
+          url: error.config?.url,
+          method: error.config?.method,
+          status: error.response?.status,
+          requestId: error.config?.metadata?.requestId,
+          baseURL: API_BASE_URL,
+        },
+      });
+    }
     
     // Handle authentication errors (401 Unauthorized)
     if (error.response?.status === 401) {

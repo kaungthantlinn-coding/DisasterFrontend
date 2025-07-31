@@ -1,6 +1,5 @@
 
 import { RealWorldDisaster, USGSEarthquakeResponse, USGSEarthquake } from '../types';
-import { mockReports } from '../data/mockData';
 import { requestManager } from '../utils/requestManager';
 
 // USGS Earthquake API endpoints
@@ -97,33 +96,7 @@ export class DisasterDataService {
     return Date.now() - timestamp < this.CACHE_DURATION;
   }
 
-  /**
-   * Generate fallback earthquake data from mock reports when API is unavailable
-   */
-  private generateFallbackEarthquakeData(): RealWorldDisaster[] {
-    const earthquakeReports = mockReports.filter(report => report.disasterType === 'earthquake');
 
-    return earthquakeReports.map(report => ({
-      id: `fallback-${report.id}`,
-      title: report.title,
-      description: report.description,
-      location: {
-        coordinates: report.location.coordinates,
-        place: report.location.address,
-      },
-      magnitude: 4.2 + Math.random() * 2.8, // Random magnitude between 4.2 and 7.0
-      depth: 10 + Math.random() * 40, // Random depth between 10-50 km
-      time: report.createdAt,
-      severity: report.severity as 'low' | 'medium' | 'high' | 'critical',
-      type: 'earthquake',
-      source: 'Mock Data (Offline)',
-      url: '#',
-      alert: null,
-      tsunami: false,
-      felt: Math.floor(Math.random() * 100),
-      significance: Math.floor(Math.random() * 1000),
-    }));
-  }
 
   // Track ongoing requests to prevent duplicate calls
   private ongoingRequests: Map<string, Promise<RealWorldDisaster[]>> = new Map();
@@ -202,17 +175,9 @@ export class DisasterDataService {
         return cached.data;
       }
 
-      // If no cached data available, use fallback mock data
-      console.warn('🔄 No cached data available, using fallback earthquake data from mock reports');
-      const fallbackData = this.generateFallbackEarthquakeData();
-
-      // Cache the fallback data for future use
-      this.cache.set(cacheKey, {
-        data: fallbackData,
-        timestamp: Date.now(),
-      });
-
-      return fallbackData;
+      // If no cached data available, return empty array
+      console.warn('🔄 No cached data available and API is unavailable');
+      return [];
     }
   }
 

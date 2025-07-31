@@ -126,6 +126,12 @@ const ResetPasswordPage: React.FC = () => {
 
   // Show error if token is invalid
   if (tokenError || (tokenVerification && !tokenVerification.valid)) {
+    // Log error details for debugging
+    console.error('🔒 Password reset token validation failed:', {
+      tokenError,
+      tokenVerification,
+      token: token ? `${token.substring(0, 20)}...` : 'No token'
+    });
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background Pattern */}
@@ -141,7 +147,7 @@ const ResetPasswordPage: React.FC = () => {
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Invalid Reset Link</h1>
             <p className="text-lg text-gray-600 mb-6">
-              This password reset link is invalid or has expired.
+              {tokenVerification?.message || tokenError?.message || 'This password reset link is invalid or has expired.'}
             </p>
             <Link
               to="/forgot-password"

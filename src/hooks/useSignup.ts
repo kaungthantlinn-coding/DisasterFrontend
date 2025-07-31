@@ -4,11 +4,10 @@ import { toast } from 'react-hot-toast';
 import { authService } from '../services/authService';
 import { useAuthStore } from '../stores/authStore';
 import { SignupRequest } from '../types';
-import { ErrorTracker, useErrorHandler } from '../utils/errorHandler';
+import { ErrorTracker } from '../utils/errorHandler';
 
 export const useSignup = () => {
   const navigate = useNavigate();
-  const { handleError } = useErrorHandler();
 
   return useMutation({
     mutationFn: async (data: SignupRequest) => {
@@ -43,20 +42,11 @@ export const useSignup = () => {
       navigate(redirectPath, { replace: true });
     },
     onError: (error: Error) => {
-      ErrorTracker.getInstance().track(error, {
-        component: 'useSignup',
-        action: 'signup_mutation',
-      });
-      
+      // Error is already tracked in authService, so just handle UI feedback
       // Show error toast
       toast.error(error.message, {
         duration: 6000,
         position: 'top-center',
-      });
-      
-      handleError(error, {
-        component: 'useSignup',
-        action: 'signup_mutation',
       });
     },
   });

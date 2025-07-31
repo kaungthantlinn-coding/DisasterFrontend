@@ -28,7 +28,17 @@ export const useResetPassword = () => {
 export const useVerifyResetToken = (token: string) => {
   return useQuery({
     queryKey: ['verifyResetToken', token],
-    queryFn: () => authApi.verifyResetToken(token),
+    queryFn: async () => {
+      console.log('🔍 Verifying reset token:', token ? `${token.substring(0, 20)}...` : 'No token');
+      try {
+        const result = await authApi.verifyResetToken(token);
+        console.log('✅ Token verification result:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ Token verification failed:', error);
+        throw error;
+      }
+    },
     enabled: !!token,
     retry: false,
     refetchOnWindowFocus: false,

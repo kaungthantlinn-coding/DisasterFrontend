@@ -25,6 +25,9 @@ import {
   Globe
 } from 'lucide-react';
 
+// Hooks
+import { useReports, useReportsStatistics } from '../hooks/useReports';
+
 interface AdminStatCardProps {
   icon: React.ReactNode;
   title: string;
@@ -205,46 +208,34 @@ const AdminDashboard: React.FC = () => {
   const [timeRange, setTimeRange] = useState('7d');
   const [selectedFilter, setSelectedFilter] = useState('all');
 
-  // Mock data - replace with real API data
+  // API calls for real data
+  const { data: reportsData, isLoading: reportsLoading } = useReports({
+    page: 1,
+    pageSize: 10,
+    filters: { status: 'pending' }
+  });
+
+  const { data: statsData, isLoading: statsLoading } = useReportsStatistics();
+
+  // Get stats from API or use defaults
   const stats = {
-    totalReports: 1248,
-    pendingVerification: 84,
-    assistanceRequests: 326,
-    blacklistedUsers: 17
+    totalReports: statsData?.totalReports || 0,
+    pendingVerification: statsData?.pendingReports || 0,
+    assistanceRequests: statsData?.assistanceRequests || 0,
+    blacklistedUsers: 0 // This would come from a user management API
   };
 
-  const recentReports = [
-    {
-      id: '1',
-      title: 'Major earthquake in downtown area',
-      reporter: 'John D.',
-      type: 'Earthquake',
-      status: 'pending' as const,
-      priority: 'critical' as const,
-      timeAgo: 'Reported 2 hours ago',
-      location: 'Downtown District'
-    },
-    {
-      id: '2',
-      title: 'Severe flooding in coastal region',
-      reporter: 'Sarah M.',
-      type: 'Flood',
-      status: 'pending' as const,
-      priority: 'high' as const,
-      timeAgo: 'Reported 5 hours ago',
-      location: 'Coastal Area'
-    },
-    {
-      id: '3',
-      title: 'Wildfire spreading near residential area',
-      reporter: 'Robert T.',
-      type: 'Fire',
-      status: 'verified' as const,
-      priority: 'critical' as const,
-      timeAgo: 'Reported yesterday',
-      location: 'Residential Zone'
-    }
-  ];
+  // Get recent reports from API data
+  const recentReports = (reportsData?.reports || []).slice(0, 3).map(report => ({
+    id: report.id,
+    title: report.title,
+    reporter: report.reporterName,
+    type: report.disasterType.charAt(0).toUpperCase() + report.disasterType.slice(1),
+    status: report.status as 'pending' | 'verified' | 'rejected',
+    priority: report.severity as 'low' | 'medium' | 'high' | 'critical',
+    timeAgo: `Reported ${new Date(report.createdAt).toLocaleDateString()}`,
+    location: report.location.address
+  }));
 
   const verificationSteps = [
     {

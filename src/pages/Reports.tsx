@@ -39,115 +39,10 @@ import {
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 
-// Mock data for demonstration
-const mockReports = [
-  {
-    id: '1',
-    title: 'Major Earthquake in Turkey',
-    description: 'Magnitude 7.2 earthquake causing significant damage to buildings and infrastructure.',
-    disasterType: 'earthquake',
-    severity: 'critical',
-    status: 'verified',
-    location: {
-      address: 'Kahramanmaraş, Turkey',
-      coordinates: { lat: 37.5858, lng: 36.9371 }
-    },
-    createdAt: '2024-02-15T08:30:00Z',
-    reportedBy: 'Emergency Services',
-    photos: ['https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
-    assistanceLog: [
-      { timestamp: '2024-02-15T09:00:00Z', action: 'Search and rescue teams deployed', responder: 'AFAD Turkey' }
-    ]
-  },
-  {
-    id: '2',
-    title: 'Wildfire Spreading in California',
-    description: 'Fast-moving wildfire threatening residential areas in Los Angeles County.',
-    disasterType: 'fire',
-    severity: 'high',
-    status: 'verified',
-    location: {
-      address: 'Los Angeles County, CA',
-      coordinates: { lat: 34.0522, lng: -118.2437 }
-    },
-    createdAt: '2024-02-14T15:45:00Z',
-    reportedBy: 'CAL FIRE',
-    photos: ['https://images.unsplash.com/photo-1574482620811-1aa16ffe3c82?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
-    assistanceLog: [
-      { timestamp: '2024-02-14T16:00:00Z', action: 'Evacuation orders issued', responder: 'LA County Sheriff' }
-    ]
-  },
-  {
-    id: '3',
-    title: 'Severe Flooding in Bangladesh',
-    description: 'Heavy monsoon rains causing widespread flooding in Dhaka Division.',
-    disasterType: 'flood',
-    severity: 'high',
-    status: 'verified',
-    location: {
-      address: 'Dhaka Division, Bangladesh',
-      coordinates: { lat: 23.8103, lng: 90.4125 }
-    },
-    createdAt: '2024-02-13T12:20:00Z',
-    reportedBy: 'Bangladesh Meteorological Department',
-    photos: ['https://images.unsplash.com/photo-1547036967-23d11aacaee0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
-    assistanceLog: [
-      { timestamp: '2024-02-13T13:00:00Z', action: 'Relief supplies distributed', responder: 'Red Crescent Bangladesh' }
-    ]
-  },
-  {
-    id: '4',
-    title: 'Hurricane Category 3 Approaching',
-    description: 'Hurricane with sustained winds of 120 mph approaching Gulf Coast.',
-    disasterType: 'storm',
-    severity: 'critical',
-    status: 'verified',
-    location: {
-      address: 'Gulf of Mexico',
-      coordinates: { lat: 25.7617, lng: -80.1918 }
-    },
-    createdAt: '2024-02-12T18:00:00Z',
-    reportedBy: 'National Hurricane Center',
-    photos: ['https://images.unsplash.com/photo-1446776877081-d282a0f896e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
-    assistanceLog: [
-      { timestamp: '2024-02-12T19:00:00Z', action: 'Emergency shelters opened', responder: 'FEMA' }
-    ]
-  },
-  {
-    id: '5',
-    title: 'Landslide Blocks Highway',
-    description: 'Heavy rains trigger landslide blocking major highway in mountainous region.',
-    disasterType: 'landslide',
-    severity: 'medium',
-    status: 'verified',
-    location: {
-      address: 'Highway 1, California',
-      coordinates: { lat: 36.2704, lng: -121.8081 }
-    },
-    createdAt: '2024-02-11T10:15:00Z',
-    reportedBy: 'Caltrans',
-    photos: ['https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
-    assistanceLog: []
-  },
-  {
-    id: '6',
-    title: 'Traffic Accident on Interstate',
-    description: 'Multi-vehicle accident causing traffic delays and requiring emergency response.',
-    disasterType: 'accident',
-    severity: 'medium',
-    status: 'resolved',
-    location: {
-      address: 'Interstate 95, Virginia',
-      coordinates: { lat: 38.8048, lng: -77.0469 }
-    },
-    createdAt: '2024-02-10T14:30:00Z',
-    reportedBy: 'Virginia State Police',
-    photos: ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
-    assistanceLog: [
-      { timestamp: '2024-02-10T15:00:00Z', action: 'Scene cleared, traffic resumed', responder: 'Virginia DOT' }
-    ]
-  }
-];
+// Hooks
+import { useReports } from '../hooks/useReports';
+
+
 
 const Reports: React.FC = () => {
   const navigate = useNavigate();
@@ -163,7 +58,18 @@ const Reports: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // API call to fetch reports
+  const { data: reportsData, isLoading, error, refetch } = useReports({
+    page: currentPage,
+    pageSize: itemsPerPage,
+    filters: {
+      disasterType: selectedDisasterType !== 'all' ? selectedDisasterType : undefined,
+      severity: selectedSeverity !== 'all' ? selectedSeverity : undefined,
+      status: selectedStatus !== 'all' ? selectedStatus : undefined,
+    }
+  });
 
   // Filter options
   const disasterTypes = ['all', 'flood', 'fire', 'earthquake', 'storm', 'landslide', 'accident', 'other'];
@@ -176,32 +82,20 @@ const Reports: React.FC = () => {
     { value: 'location', label: 'By Location' }
   ];
 
-  // Filter and sort reports
+  // Get reports from API data
+  const reports = reportsData?.reports || [];
+
+  // Filter and sort reports (client-side filtering for search and images only)
   const filteredAndSortedReports = useMemo(() => {
-    let filtered = mockReports.filter(report => {
-      // Search filter
-      if (searchTerm && !report.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          !report.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          !report.location.address.toLowerCase().includes(searchTerm.toLowerCase())) {
+    let filtered = reports.filter(report => {
+      // Search filter (client-side for real-time search)
+      if (searchTerm && !report.title?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          !report.description?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          !report.location?.address?.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
       }
 
-      // Disaster type filter
-      if (selectedDisasterType !== 'all' && report.disasterType !== selectedDisasterType) {
-        return false;
-      }
-
-      // Severity filter
-      if (selectedSeverity !== 'all' && report.severity !== selectedSeverity) {
-        return false;
-      }
-
-      // Status filter
-      if (selectedStatus !== 'all' && report.status !== selectedStatus) {
-        return false;
-      }
-
-      // Images filter
+      // Images filter (client-side)
       if (showOnlyWithImages && (!report.photos || report.photos.length === 0)) {
         return false;
       }
@@ -594,22 +488,50 @@ const Reports: React.FC = () => {
               <div className="mt-4 sm:mt-0">
                 <button
                   onClick={() => {
-                    setIsLoading(true);
-                    setTimeout(() => {
-                      setIsLoading(false);
-                    }, 1000);
+                    setIsRefreshing(true);
+                    refetch().finally(() => {
+                      setIsRefreshing(false);
+                    });
                   }}
                   className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                  disabled={isLoading}
+                  disabled={isRefreshing}
                 >
-                  <RefreshCw size={16} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                  {isLoading ? 'Refreshing...' : 'Refresh'}
+                  <RefreshCw size={16} className={`mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
                 </button>
               </div>
             </div>
 
-            {/* Reports Grid/List/Map */}
-            {viewMode === 'map' ? (
+            {/* Loading State */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Loading reports...</p>
+                </div>
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle size={32} className="text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No Reports Found</h3>
+                <p className="text-gray-600 mb-6">
+                  {searchTerm || selectedDisasterType !== 'all' || selectedSeverity !== 'all' || selectedStatus !== 'all'
+                    ? 'No reports match your current filters. Try adjusting your search criteria.'
+                    : 'No disaster reports have been submitted yet.'}
+                </p>
+                <button
+                  onClick={() => navigate('/report')}
+                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Submit First Report
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Reports Grid/List/Map */}
+                {viewMode === 'map' ? (
               <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
                 <div className="p-6 border-b border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Reports Map View</h3>
@@ -738,7 +660,7 @@ const Reports: React.FC = () => {
                       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                         <div className="flex items-center text-gray-500">
                           <User size={16} className="mr-2" />
-                          <span className="text-sm">{report.reportedBy}</span>
+                          <span className="text-sm">{report.reporterName}</span>
                         </div>
                         <div className="flex items-center text-blue-600 font-medium">
                           <span className="text-sm">View Details</span>
@@ -802,7 +724,7 @@ const Reports: React.FC = () => {
                             </div>
                             <div className="flex items-center">
                               <User size={16} className="mr-1" />
-                              {report.reportedBy}
+                              {report.reporterName}
                             </div>
                           </div>
                           <div className="flex items-center text-blue-600 font-medium">
@@ -1043,6 +965,8 @@ const Reports: React.FC = () => {
                 </button>
               </div>
             )}
+              </>
+            )}
           </div>
         </section>
 
@@ -1063,7 +987,7 @@ const Reports: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {mockReports.filter(r => r.severity === 'critical' || r.severity === 'high').slice(0, 3).map((report) => (
+              {reports.filter(r => r.severity === 'critical' || r.severity === 'high').slice(0, 3).map((report) => (
                 <div
                   key={report.id}
                   className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80"
