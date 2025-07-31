@@ -110,7 +110,13 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
     mutationFn: ({ userId, userData }: { userId: string; userData: UpdateUserDto }) =>
       userManagementApi.updateUser(userId, userData),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      // Use partial matching to invalidate all user-related queries
+      queryClient.invalidateQueries({
+        queryKey: ['users'],
+        exact: false // This will invalidate all queries that start with ['users']
+      });
+      queryClient.invalidateQueries({ queryKey: ['userManagementStats'] });
+
       // Note: Toast notifications are handled in the component for better control
     },
     onError: (error: any) => {
