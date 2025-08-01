@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, Menu, X, ChevronDown, User, LogOut, Settings, Shield,
   Heart, Globe, Users, Target, Award, HandHeart, Phone,
   AlertTriangle, Info, HelpCircle, MapPin, Zap, BookOpen, FileText,
-  Languages, DollarSign, Sparkles
+  Languages, DollarSign, Sparkles, MessageCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
 import Avatar from '../Common/Avatar';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
+import ChatWidget from '../Chat/ChatWidget';
+import { getUnreadChatCount, clearUnreadChatCount } from '../Chat/ChatWidget';
 
 interface NavItem {
   name: string;
@@ -29,12 +31,15 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [showChat, setShowChat] = useState(false);
   const location = useLocation();
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useAuth();
   const { isAdmin, isCj, hasAdminOrCjRole, isOnlyUser, formatRoleName } = useRoles();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [unreadChat, setUnreadChat] = useState(getUnreadChatCount());
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -48,6 +53,13 @@ const Header: React.FC = () => {
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setUnreadChat(getUnreadChatCount());
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const getNavItems = (): NavItem[] => {
@@ -246,6 +258,24 @@ const Header: React.FC = () => {
               <span className="relative z-10">{t('navigation.donate')}</span>
             </Link>
 
+            {/* CJ role user only: Chat icon */}
+            {isCj() && (
+              <button
+                onClick={() => {
+                  clearUnreadChatCount();
+                  setUnreadChat(0);
+                  navigate('/cj-chat-list');
+                }}
+                className="relative p-2 rounded-full hover:bg-blue-50 transition"
+                aria-label="Open chat list"
+              >
+                <MessageCircle size={24} className="text-blue-600" />
+                {unreadChat > 0 && (
+                  <span className="notification-badge">{unreadChat}</span>
+                )}
+              </button>
+            )}
+
             {isAuthenticated ? (
               /* User Profile Dropdown */
               <div className="relative" ref={userDropdownRef}>
@@ -431,6 +461,8 @@ const Header: React.FC = () => {
           </div>
         </div>
       )}
+      {/* CJ role user only: ChatWidget */}
+      {/* (No longer render ChatWidget for CJ role user) */}
     </header>
     </>
   );

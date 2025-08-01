@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useRoles } from '../hooks/useRoles';
 import Header from '../components/Layout/Header';
 import AdminDashboard from '../components/AdminDashboard';
+import CjChatList from './CjChatList';
 import { 
   Users, 
   FileText, 
@@ -163,6 +164,7 @@ const Dashboard: React.FC = () => {
   const { isAdmin } = useRoles();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'reports' | 'assistance'>('reports');
+  const [showChatModal, setShowChatModal] = useState(false);
 
   // Render admin dashboard for admin users
   if (isAdmin()) {
@@ -425,6 +427,10 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {showChatModal && (
+        <CjChatList onClose={() => setShowChatModal(false)} />
+      )}
     </div>
   );
 };

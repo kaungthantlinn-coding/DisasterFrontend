@@ -1441,7 +1441,8 @@ const Home: React.FC = () => {
       </main>
 
       <Footer />
-      <ChatWidget />
+      {/* Only show ChatWidget if not CJ role */}
+      {!isCj() && <ChatWidget />}
 
       {/* Floating Scroll to Top */}
       {showScrollTop && (
