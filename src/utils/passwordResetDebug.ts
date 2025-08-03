@@ -1,9 +1,4 @@
-/**
- * Password Reset Debugging Utilities
- * 
- * This file contains utilities to help debug password reset issues
- * and provide detailed logging for troubleshooting.
- */
+
 
 interface TokenValidationResult {
   isValid: boolean;
@@ -179,37 +174,8 @@ export const generatePasswordResetDebugInfo = (
 export const logPasswordResetDebugInfo = (debugInfo: DebugInfo): void => {
   console.group('🔍 Password Reset Debug Information');
   
-  console.log('📅 Timestamp:', debugInfo.timestamp);
-  console.log('🌐 URL:', debugInfo.url);
-  console.log('🖥️ User Agent:', debugInfo.userAgent.substring(0, 100) + '...');
-  
-  console.group('🎫 Token Information');
-  console.log('✅ Token Provided:', debugInfo.token.provided);
-  console.log('📏 Token Length:', debugInfo.token.length);
-  console.log('👀 Token Preview:', debugInfo.token.preview);
-  console.log('🔍 Structure Valid:', debugInfo.token.structure.isValid);
-  if (!debugInfo.token.structure.isValid) {
-    console.warn('❌ Validation Issue:', debugInfo.token.structure.reason);
-    if (debugInfo.token.structure.details) {
-      console.log('📋 Details:', debugInfo.token.structure.details);
-    }
-  }
-  console.groupEnd();
-  
-  console.group('🌐 API Information');
-  console.log('🎯 Endpoint:', debugInfo.api.endpoint);
-  if (debugInfo.api.status) {
-    console.log('📊 Status:', debugInfo.api.status);
-  }
-  if (debugInfo.api.response) {
-    console.log('✅ Response:', debugInfo.api.response);
-  }
-  if (debugInfo.api.error) {
-    console.error('❌ Error:', debugInfo.api.error);
-  }
-  console.groupEnd();
-  
-  console.groupEnd();
+  // Debug info removed for production
+  // All debug information is now handled silently
 };
 
 /**

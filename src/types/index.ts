@@ -41,6 +41,30 @@ export interface ResetPasswordRequest {
   confirmPassword: string;
 }
 
+// OTP (One-Time Passcode) request types
+export interface SendOTPRequest {
+  email: string;
+  purpose?: 'login' | 'signup' | 'verification'; // Purpose of the OTP
+}
+
+export interface VerifyOTPRequest {
+  email: string;
+  otp: string;
+  purpose?: 'login' | 'signup' | 'verification';
+}
+
+// OTP response types
+export interface SendOTPResponse {
+  message: string;
+  expiresAt: string; // When the OTP expires
+  retryAfter?: number; // Seconds until user can request another OTP
+}
+
+export interface VerifyOTPResponse extends AuthResponse {
+  // Inherits from AuthResponse (includes accessToken, refreshToken, user, etc.)
+  isNewUser?: boolean; // True if this is a first-time login (signup via OTP)
+}
+
 // Authentication response types
 export interface AuthResponse {
   accessToken: string;

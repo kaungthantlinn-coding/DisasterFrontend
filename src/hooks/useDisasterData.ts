@@ -64,7 +64,6 @@ export const useDisasterData = (options: UseDisasterDataOptions = {}): UseDisast
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch disaster data';
       setError(errorMessage);
-      console.error('Error fetching disaster data:', err);
     } finally {
       setLoading(false);
     }

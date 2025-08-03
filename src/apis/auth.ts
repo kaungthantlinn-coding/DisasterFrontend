@@ -6,6 +6,10 @@ import {
   RefreshTokenRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
+  SendOTPRequest,
+  VerifyOTPRequest,
+  SendOTPResponse,
+  VerifyOTPResponse,
   AuthResponse,
   User,
 } from '../types';
@@ -93,7 +97,6 @@ export const authApi = {
         };
       }
 
-      console.log('🔍 Verifying reset token with backend...');
       const response = await apiClient.post('/Auth/verify-reset-token', { token });
       
       // Map backend response (isValid) to frontend expectation (valid)
@@ -103,10 +106,8 @@ export const authApi = {
         errorType: response.data.isValid ? undefined : 'BACKEND_VALIDATION_FAILED'
       };
       
-      console.log('✅ Backend token verification result:', result);
       return result;
     } catch (error: any) {
-      console.error('❌ Token verification API error:', error);
       
       // Handle specific HTTP error responses
       if (error.response?.status === 400 && error.response?.data) {
@@ -141,6 +142,90 @@ export const authApi = {
           message: 'Unable to connect to server. Please check your internet connection and try again.',
           errorType: 'NETWORK_ERROR'
         };
+      }
+      
+      // Re-throw other unexpected errors
+      throw error;
+    }
+  },
+
+  // Send OTP to email
+  sendOTP: async (data: SendOTPRequest): Promise<SendOTPResponse> => {
+    try {
+      const response = await apiClient.post('/Auth/send-otp', data);
+      
+      return response.data;
+    } catch (error: any) {
+      
+      // Handle specific HTTP error responses
+      if (error.response?.status === 429) {
+        const errorData = error.response.data;
+        throw new Error(errorData.message || 'Too many requests. Please wait before requesting another OTP.');
+      }
+      
+      if (error.response?.status === 400 && error.response?.data) {
+        const errorData = error.response.data;
+        throw new Error(errorData.message || 'Invalid email address provided.');
+      }
+      
+      if (error.response?.status === 500) {
+        throw new Error('Server error occurred. Please try again later.');
+      }
+      
+      // Handle network errors
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        throw new Error('Unable to connect to server. Please check your internet connection and try again.');
+      }
+      
+      // Re-throw other unexpected errors
+      throw error;
+    }
+  },
+
+  // Verify OTP and login/signup
+  verifyOTP: async (data: VerifyOTPRequest): Promise<VerifyOTPResponse> => {
+    try {
+      // Validate OTP format before making API call
+      if (!data.otp || data.otp.trim().length === 0) {
+        throw new Error('Please enter the verification code.');
+      }
+
+      // Basic OTP format validation (assuming 6-digit codes)
+      if (data.otp.length !== 6 || !/^\d{6}$/.test(data.otp)) {
+        throw new Error('Please enter a valid 6-digit verification code.');
+      }
+
+      const response = await apiClient.post('/Auth/verify-otp', {
+        email: data.email,
+        otp: data.otp,
+        purpose: data.purpose || 'login'
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      // Enhanced error logging for debugging
+      
+      // Handle specific HTTP error responses
+      if (error.response?.status === 400 && error.response?.data) {
+        const errorData = error.response.data;
+        throw new Error(errorData.message || errorData.title || 'Invalid or expired verification code.');
+      }
+      
+      if (error.response?.status === 404) {
+        throw new Error('Verification code not found. Please request a new code.');
+      }
+      
+      if (error.response?.status === 429) {
+        throw new Error('Too many verification attempts. Please request a new code.');
+      }
+      
+      if (error.response?.status === 500) {
+        throw new Error('Server error occurred. Please try again later.');
+      }
+      
+      // Handle network errors
+      if (error.code === 'NETWORK_ERROR' || !error.response) {
+        throw new Error('Unable to connect to server. Please check your internet connection and try again.');
       }
       
       // Re-throw other unexpected errors

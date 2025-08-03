@@ -30,17 +30,8 @@ export class TokenExpirationService {
    */
   public startMonitoring(): void {
     if (this.isMonitoring) {
-      console.log('🔒 Token expiration monitoring already active');
       return;
     }
-
-    const authState = useAuthStore.getState();
-    console.log('🔒 Starting token expiration monitoring');
-    console.log('🔒 Auth state at startup:', {
-      isAuthenticated: authState.isAuthenticated,
-      hasToken: !!authState.accessToken,
-      tokenLength: authState.accessToken?.length || 0
-    });
 
     this.isMonitoring = true;
 
@@ -54,8 +45,6 @@ export class TokenExpirationService {
 
     // Listen for auth state changes
     this.setupAuthStateListener();
-
-    console.log('🔒 Token expiration monitoring successfully started');
   }
 
   /**
@@ -68,7 +57,6 @@ export class TokenExpirationService {
     }
     this.isMonitoring = false;
     this.warningShown = false;
-    console.log('🔒 Token expiration monitoring stopped');
   }
 
   /**
@@ -110,9 +98,6 @@ export class TokenExpirationService {
   private handleTokenExpiration(): void {
     const authState = useAuthStore.getState();
     
-    // Log the expiration event
-    console.log('🔒 Token expired - performing automatic logout');
-    
     // Clear auth state
     authState.logout();
     
@@ -135,8 +120,6 @@ export class TokenExpirationService {
   private showExpirationWarning(timeRemaining: number): void {
     this.warningShown = true;
     const minutes = Math.ceil(timeRemaining / 60);
-    
-    console.warn(`🔒 Token expiring in ${minutes} minutes`);
     
     showErrorToast(
       `Your session will expire in ${minutes} minute${minutes !== 1 ? 's' : ''}. Please save your work.`,

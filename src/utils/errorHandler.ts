@@ -72,11 +72,6 @@ export class ErrorTracker {
       ...context,
     };
 
-    // Log to console in development
-    if (!this.isProduction) {
-      console.error('Error tracked:', errorInfo);
-    }
-
     // In production, send to error tracking service
     if (this.isProduction) {
       this.sendToErrorService(errorInfo);
@@ -96,10 +91,6 @@ export class ErrorTracker {
       url: window.location.href,
       ...data,
     };
-
-    if (!this.isProduction) {
-      console.log('User action tracked:', actionInfo);
-    }
 
     if (this.isProduction) {
       this.sendToAnalyticsService(actionInfo);

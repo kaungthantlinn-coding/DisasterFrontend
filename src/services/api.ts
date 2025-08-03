@@ -68,9 +68,6 @@ api.interceptors.response.use(
   (response) => {
     // Track successful requests
     const duration = Date.now() - (response.config.metadata?.startTime || 0);
-    if (duration > 3000) { // Log slow requests
-      console.warn(`Slow API request: ${response.config.url} took ${duration}ms`);
-    }
     
     return response;
   },
@@ -102,8 +99,6 @@ api.interceptors.response.use(
     
     // Handle authentication errors (401 Unauthorized)
     if (error.response?.status === 401) {
-      console.warn('🔒 Received 401 Unauthorized in api.ts - token expired or invalid');
-
       // Log out user immediately
       useAuthStore.getState().logout();
 

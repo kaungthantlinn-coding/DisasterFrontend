@@ -31,10 +31,7 @@ export const useLogin = () => {
       // Track successful login
       ErrorTracker.getInstance().trackUserAction('login_success', { userId: data.user.userId });
 
-      // Log token expiration info for debugging
-      if (expiresAt) {
-        console.log('🔒 User logged in successfully. Token expires at:', new Date(expiresAt).toLocaleString());
-      }
+
 
       // Check for intended destination from location state
       const from = (location.state as any)?.from?.pathname;

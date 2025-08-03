@@ -119,9 +119,6 @@ export class DisasterDataService {
     cached?: { data: RealWorldDisaster[]; timestamp: number }
   ): Promise<RealWorldDisaster[]> {
     try {
-      console.log(`Fetching earthquake data from: ${USGS_FEEDS[feedType]}`);
-      
-      // Create abort controller for better timeout handling
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
       
@@ -140,7 +137,6 @@ export class DisasterDataService {
       }
 
       const data: USGSEarthquakeResponse = await response.json();
-      console.log(`✅ Received ${data.features.length} earthquakes from USGS`);
 
       const disasters = data.features.map(convertUSGSToDisaster);
       
@@ -152,27 +148,21 @@ export class DisasterDataService {
 
       return disasters;
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          console.warn('⏱️ USGS earthquake data request timed out - using fallback data');
-        } else if (error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
-          console.warn('🌐 Network error: Unable to reach USGS earthquake service - using fallback data');
-        } else {
-          console.error('❌ Error fetching USGS earthquake data:', error.message);
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            // Request timed out
+          } else if (error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
+            // Network error
+          }
         }
-      } else {
-        console.error('❌ Unknown error fetching USGS earthquake data:', error);
-      }
 
-      // Return cached data if available, even if expired
-      if (cached) {
-        console.warn('📦 Using expired cache data due to API error');
-        return cached.data;
-      }
+        // Return cached data if available, even if expired
+        if (cached) {
+          return cached.data;
+        }
 
-      // If no cached data available, return empty array
-      console.warn('🔄 No cached data available and API is unavailable');
-      return [];
+        // If no cached data available, return empty array
+        return [];
     }
   }
 
@@ -202,7 +192,6 @@ export class DisasterDataService {
         .sort((a, b) => b.time.getTime() - a.time.getTime())
         .slice(0, 50);
     } catch (error) {
-      console.error('Error fetching significant earthquakes:', error);
       return [];
     }
   }
@@ -214,7 +203,6 @@ export class DisasterDataService {
 
       return earthquakes;
     } catch (error) {
-      console.error('Error fetching disaster data:', error);
       return [];
     }
   }
@@ -245,7 +233,6 @@ export class DisasterDataService {
         lastUpdated: new Date(),
       };
     } catch (error) {
-      console.error('Error getting disaster statistics:', error);
       return {
         totalActive: 0,
         critical: 0,

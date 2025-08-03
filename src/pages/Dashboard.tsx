@@ -5,18 +5,14 @@ import { useRoles } from '../hooks/useRoles';
 import Header from '../components/Layout/Header';
 import AdminDashboard from '../components/AdminDashboard';
 import { 
-  Users, 
-  FileText, 
-  AlertTriangle, 
-  TrendingUp, 
-  Eye, 
-  ExternalLink, 
-  CheckCircle, 
-  Calendar, 
+  AlertTriangle,
+  Eye,
+  ExternalLink,
+  CheckCircle,
+  Calendar,
   Clock,
   Plus,
-  Heart,
-  MapPin
+  Heart
 } from 'lucide-react';
 import { showInfoToast } from '../utils/notifications';
 import { useReports, useReportsStatistics } from '../hooks/useReports';
@@ -183,11 +179,11 @@ const Dashboard: React.FC = () => {
     // Add user filter when user management is implemented
   });
 
-  const { data: statsData, isLoading: statsLoading } = useReportsStatistics();
+  useReportsStatistics();
 
   // Get user stats from API or use defaults
   const stats = {
-    reportsSubmitted: userReportsData?.totalReports || 0,
+    reportsSubmitted: userReportsData?.totalCount || 0,
     verifiedReports: userReportsData?.reports?.filter(r => r.status === 'verified').length || 0,
     assistanceProvided: 0 // This would come from assistance tracking API
   };
@@ -199,7 +195,7 @@ const Dashboard: React.FC = () => {
     description: report.description.length > 100
       ? report.description.substring(0, 100) + '...'
       : report.description,
-    status: report.status.charAt(0).toUpperCase() + report.status.slice(1) as 'Verified' | 'Pending' | 'Resolved',
+    status: report.status === 'resolved' ? 'Verified' : report.status.charAt(0).toUpperCase() + report.status.slice(1) as 'Verified' | 'Pending' | 'Rejected',
     date: new Date(report.createdAt).toLocaleDateString(),
     image: report.photos?.[0] || 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center'
   }));

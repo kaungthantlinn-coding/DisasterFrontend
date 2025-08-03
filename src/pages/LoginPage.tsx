@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { Shield, ArrowLeft, Lock } from 'lucide-react';
+import { Shield, ArrowLeft, Lock, Mail } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { getRoleBasedRedirectPath, logRoleBasedRedirection } from '../utils/roleRedirection';
 import LoginForm from '../components/LoginForm';
@@ -53,8 +53,19 @@ const LoginPage: React.FC = () => {
         {/* Main Login Container */}
         <div className="bg-white/80 backdrop-blur-sm py-8 px-6 shadow-xl rounded-2xl border border-white/50 relative z-10">
           {/* Google Login */}
-          <div className="mb-6">
+          <div className="mb-4">
             <GoogleLoginButton />
+          </div>
+
+          {/* Email OTP Login */}
+          <div className="mb-6">
+            <Link
+              to="/email-otp"
+              className="w-full inline-flex justify-center items-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 hover:scale-[1.02] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <Mail className="w-5 h-5 mr-3 text-blue-600" />
+              <span>Login with Email Code</span>
+            </Link>
           </div>
 
           {/* Divider */}
@@ -64,7 +75,7 @@ const LoginPage: React.FC = () => {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-4 bg-white text-gray-500 font-medium">
-                Or continue with email
+                Or continue with password
               </span>
             </div>
           </div>

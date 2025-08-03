@@ -94,7 +94,6 @@ export class ReportsAPI {
       
       return response.data;
     } catch (error: any) {
-      console.error('Error submitting report:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to submit report. Please try again.'
@@ -132,7 +131,6 @@ export class ReportsAPI {
       const response = await apiClient.get(`/reports?${params.toString()}`);
       return response.data;
     } catch (error: any) {
-      console.error('Error fetching reports:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to fetch reports. Please try again.'
@@ -148,7 +146,6 @@ export class ReportsAPI {
       const response = await apiClient.get(`/reports/${id}`);
       return response.data;
     } catch (error: any) {
-      console.error('Error fetching report:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to fetch report details. Please try again.'
@@ -171,7 +168,6 @@ export class ReportsAPI {
       });
       return response.data;
     } catch (error: any) {
-      console.error('Error updating report status:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to update report status. Please try again.'
@@ -194,7 +190,6 @@ export class ReportsAPI {
       });
       return response.data;
     } catch (error: any) {
-      console.error('Error adding assistance log:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to add assistance log. Please try again.'
@@ -217,7 +212,6 @@ export class ReportsAPI {
       const response = await apiClient.get('/reports/statistics');
       return response.data;
     } catch (error: any) {
-      console.error('Error fetching statistics:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to fetch statistics. Please try again.'
@@ -239,7 +233,6 @@ export class ReportsAPI {
       });
       return response.data;
     } catch (error: any) {
-      console.error('Error fetching nearby reports:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to fetch nearby reports. Please try again.'
@@ -261,7 +254,6 @@ export class ReportsAPI {
       });
       return response.data;
     } catch (error: any) {
-      console.error('Error searching reports:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to search reports. Please try again.'
@@ -276,7 +268,6 @@ export class ReportsAPI {
     try {
       await apiClient.delete(`/reports/${id}`);
     } catch (error: any) {
-      console.error('Error deleting report:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to delete report. Please try again.'
@@ -312,7 +303,6 @@ export class ReportsAPI {
       
       return response.data;
     } catch (error: any) {
-      console.error('Error exporting reports:', error);
       throw new Error(
         error.response?.data?.message || 
         'Failed to export reports. Please try again.'

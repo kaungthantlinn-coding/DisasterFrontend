@@ -41,7 +41,6 @@ export const decodeJwtToken = (token: string): JwtPayload | null => {
     
     return parsedPayload as JwtPayload;
   } catch (error) {
-    console.warn('Failed to decode JWT token:', error);
     return null;
   }
 };
@@ -201,26 +200,13 @@ export const getTokenAge = (token: string | null): number => {
  */
 export const debugToken = (token: string | null): void => {
   if (!token) {
-    console.log('🔒 No token provided');
     return;
   }
 
   const payload = decodeJwtToken(token);
   if (!payload) {
-    console.log('🔒 Invalid token structure');
     return;
   }
 
-  const isExpired = isTokenExpired(token);
-  const timeRemaining = getTokenTimeRemaining(token);
-  const expirationDate = getTokenExpirationDate(token);
-
-  console.log('🔒 JWT Token Debug Info:');
-  console.log('  - Valid Structure:', isValidTokenStructure(token));
-  console.log('  - Is Expired:', isExpired);
-  console.log('  - Time Remaining:', formatTimeRemaining(timeRemaining));
-  console.log('  - Expires At:', expirationDate?.toLocaleString());
-  console.log('  - User ID:', payload.sub);
-  console.log('  - Email:', payload.email);
-  console.log('  - Roles:', payload.roles);
+  // Debug info removed for production
 };
