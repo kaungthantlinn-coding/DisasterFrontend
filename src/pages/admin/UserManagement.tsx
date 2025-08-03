@@ -59,7 +59,7 @@ interface User {
   location?: string;
   reportsCount: number;
   lastActive: string;
-  avatar?: string;
+  photoUrl?: string;
 }
 
 // Enhanced sorting and filtering types for professional table management
@@ -111,7 +111,7 @@ const mapApiUserToLocal = (apiUser: any): User => {
     location: apiUser.location,
     reportsCount: apiUser.reportsCount || 0,
     lastActive: apiUser.lastActive || 'Unknown',
-    avatar: extractPhotoUrl(apiUser)
+    photoUrl: extractPhotoUrl(apiUser)
   };
 };
 
@@ -160,7 +160,7 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
       <td className="px-6 py-5 whitespace-nowrap">
         <div className="flex items-center">
           <Avatar
-            src={user.avatar}
+            src={user.photoUrl}
             alt={user.name}
             name={user.name}
             size="lg"

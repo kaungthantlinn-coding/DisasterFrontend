@@ -113,7 +113,7 @@ export const useRoleUpdate = (options: RoleUpdateOptions = {}) => {
       // If validation passes or is skipped, proceed with the update using existing API
       const updateData: UpdateUserDto = {
         ...otherUserData,
-        roleNames: roleData.roleNames
+        roles: roleData.roleNames.map(role => role.toLowerCase())
       };
 
       await updateUserMutation.mutateAsync({ userId, userData: updateData });
@@ -132,7 +132,7 @@ export const useRoleUpdate = (options: RoleUpdateOptions = {}) => {
   const updateRoles = async (userId: string, roleData: UpdateUserRolesDto, otherUserData: Partial<UpdateUserDto> = {}): Promise<void> => {
     const updateData: UpdateUserDto = {
       ...otherUserData,
-      roleNames: roleData.roleNames
+      roles: roleData.roleNames.map(role => role.toLowerCase())
     };
     return updateUserMutation.mutateAsync({ userId, userData: updateData });
   };

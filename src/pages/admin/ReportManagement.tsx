@@ -465,9 +465,9 @@ const ReportManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
-                        {report.submittedBy.avatar ? (
+                        {report.submittedBy.photoUrl ? (
                           <img
-                            src={report.submittedBy.avatar}
+                            src={report.submittedBy.photoUrl}
                             alt={report.submittedBy.name}
                             className="w-6 h-6 rounded-full"
                           />
@@ -633,9 +633,9 @@ const ReportManagement: React.FC = () => {
                   
                   <h4 className="text-md font-semibold text-gray-900 mb-3">Submitted By</h4>
                   <div className="flex items-center space-x-3 mb-4">
-                    {selectedReport.submittedBy.avatar ? (
+                    {selectedReport.submittedBy.photoUrl ? (
                       <img
-                        src={selectedReport.submittedBy.avatar}
+                        src={selectedReport.submittedBy.photoUrl}
                         alt={selectedReport.submittedBy.name}
                         className="w-10 h-10 rounded-full"
                       />

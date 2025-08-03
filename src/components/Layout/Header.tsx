@@ -292,6 +292,15 @@ const Header: React.FC = () => {
                       </Link>
                     )}
 
+                    <Link
+                      to="/settings"
+                      onClick={() => setIsUserDropdownOpen(false)}
+                      className="dropdown-item space-x-3 mx-2 my-1"
+                    >
+                      <Settings size={16} className="text-gray-400" />
+                      <span className="text-sm text-gray-700 font-medium">Settings</span>
+                    </Link>
+
                     <div className="mx-2 my-2 border-t border-gray-200/50"></div>
                     <button
                       onClick={handleLogout}

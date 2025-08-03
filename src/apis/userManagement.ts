@@ -42,8 +42,10 @@ export interface CreateUserDto {
 export interface UpdateUserDto {
   name?: string;
   email?: string;
-  roleNames?: string[];
-  phone?: string;
+  phoneNumber?: string | null;
+  photoUrl?: string | null;
+  roles?: string[];
+  isBlacklisted?: boolean;
 }
 
 export interface ChangeUserPasswordDto {
@@ -54,6 +56,19 @@ export interface ChangeUserPasswordDto {
 export interface BulkUserOperationDto {
   userIds: string[];
   operation: 'blacklist' | 'unblacklist' | 'delete';
+}
+
+export interface UpdateUserRolesDto {
+  roleNames: string[];
+  reason?: string;
+}
+
+export interface RoleUpdateValidationDto {
+  canUpdate: boolean;
+  warnings: string[];
+  blockers: string[];
+  affectedPermissions: string[];
+  requiresConfirmation: boolean;
 }
 
 export interface UserManagementStatsDto {
@@ -126,8 +141,24 @@ export const userManagementApi = {
 
   // Update user
   async updateUser(userId: string, userData: UpdateUserDto): Promise<UserDetailsDto> {
-    const response = await apiClient.put(`/UserManagement/${userId}`, userData);
-    return response.data;
+    console.log('🔍 UpdateUser Request:', {
+      userId,
+      userData,
+      url: `/UserManagement/${userId}`
+    });
+    
+    try {
+      const response = await apiClient.put(`/UserManagement/${userId}`, userData);
+      console.log('✅ UpdateUser Success:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ 500 Server Error Details:');
+      console.error('Status:', error.response?.status);
+      console.error('Backend Error Data:', error.response?.data);
+      console.error('Request Data:', userData);
+      console.error('User ID:', userId);
+      throw error;
+    }
   },
 
   // Delete user

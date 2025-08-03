@@ -40,7 +40,7 @@ interface User {
   location?: string;
   reportsCount: number;
   lastActive: string;
-  avatar?: string;
+  photoUrl?: string;
 }
 
 interface EditUserModalProps {
@@ -71,8 +71,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   isOpen, 
   onClose, 
   onSave, 
-  availableRoles,
-  isLoading = false 
+  availableRoles
 }) => {
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -188,12 +187,16 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
 
 
-        await onSave(user.id, {
+        const updateData = {
           name: formData.name.trim(),
           email: formData.email.trim(),
-          phone: formData.phone.trim() || undefined,
-          roleNames: properCaseRoles
-        });
+          phoneNumber: formData.phone.trim() || null,
+          photoUrl: user.photoUrl || null,
+          roles: properCaseRoles.map(role => role.toLowerCase()),
+          isBlacklisted: user.status === 'suspended' || false
+        };
+        
+        await onSave(user.id, updateData);
         onClose();
       }
     } catch (error) {
@@ -215,7 +218,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       const otherUserData = {
         name: formData.name.trim(),
         email: formData.email.trim(),
-        phone: formData.phone.trim() || undefined,
+        phoneNumber: formData.phone.trim() || null,
+                  photoUrl: user.photoUrl || null,
+        isBlacklisted: user.status === 'suspended' || false
       };
 
       await validateAndUpdateRoles(
@@ -261,7 +266,9 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       const otherUserData = {
         name: formData.name.trim(),
         email: formData.email.trim(),
-        phone: formData.phone.trim() || undefined,
+        phoneNumber: formData.phone.trim() || null,
+                  photoUrl: user.photoUrl || null,
+        isBlacklisted: user.status === 'suspended' || false
       };
 
       // Proceed with role update, skipping validation since we already confirmed
@@ -290,6 +297,33 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
     setRoleValidation(null);
   };
 
+  const handleRemoveRole = (roleToRemove: string) => {
+    // Prevent removing the last role
+    if (formData.roleNames.length <= 1) {
+      console.log('Cannot remove last role');
+      return;
+    }
+
+    const updatedRoles = formData.roleNames.filter(
+      role => role.toLowerCase() !== roleToRemove.toLowerCase()
+    );
+
+    console.log('EditUserModal - Remove Role:', {
+      removedRole: roleToRemove,
+      previousRoles: formData.roleNames,
+      updatedRoles
+    });
+
+    setFormData(prev => ({
+      ...prev,
+      roleNames: updatedRoles
+    }));
+
+    // Clear any previous validation when roles change
+    setRoleValidation(null);
+    setShowConfirmation(false);
+  };
+
   const handleRoleChange = (role: string) => {
     // Convert lowercase role back to proper case for API
     const properCaseRole = convertToProperCase(role);
@@ -303,11 +337,26 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       availableRoles
     });
 
-    // For now, only allow single role selection
+    // Add new role while keeping existing roles (avoid duplicates)
+    const existingRoles = formData.roleNames;
+    const newRoles = [...existingRoles];
+    
+    // Add the new role if it's not already present
+    if (!newRoles.some(r => r.toLowerCase() === properCaseRole.toLowerCase())) {
+      newRoles.push(properCaseRole);
+    }
+
+    console.log('EditUserModal - Updated Roles:', {
+      existingRoles,
+      newRole: properCaseRole,
+      finalRoles: newRoles
+    });
+
     setFormData(prev => ({
       ...prev,
-      roleNames: [properCaseRole]
+      roleNames: newRoles
     }));
+    
     // Clear any previous validation when role changes
     setRoleValidation(null);
     setShowConfirmation(false);
@@ -333,7 +382,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           {/* User Avatar */}
           <div className="flex items-center space-x-4">
             <Avatar
-              src={user.avatar}
+              src={user.photoUrl}
               alt={user.name}
               name={formData.name || user.name}
               size="xl"
@@ -424,23 +473,53 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
           <div>
             <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
               <Shield className="w-4 h-4 inline mr-2" />
-              Role *
+              Roles *
             </label>
+            
+            {/* Current Roles Display */}
+            {formData.roleNames.length > 0 && (
+              <div className="mb-2 p-2 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Current roles:</p>
+                <div className="flex flex-wrap gap-1">
+                  {formData.roleNames.map((role, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                    >
+                      {convertToProperCase(role)}
+                      {formData.roleNames.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRole(role)}
+                          className="ml-1 text-blue-600 hover:text-blue-800"
+                          disabled={isSaving || isRoleUpdateLoading}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <select
               id="role"
-              value={formData.roleNames[0]?.toLowerCase() || ''}
-              onChange={(e) => handleRoleChange(e.target.value)}
+              value=""
+              onChange={(e) => e.target.value && handleRoleChange(e.target.value)}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                 errors.roleNames ? 'border-red-300' : 'border-gray-300'
               }`}
               disabled={isSaving || isRoleUpdateLoading}
             >
-              <option value="">Select a role</option>
-              {availableRoles.map(role => (
-                <option key={role} value={role.toLowerCase()}>
-                  {convertToProperCase(role)}
-                </option>
-              ))}
+              <option value="">Add a role...</option>
+              {availableRoles
+                .filter(role => !formData.roleNames.some(r => r.toLowerCase() === role.toLowerCase()))
+                .map(role => (
+                  <option key={role} value={role.toLowerCase()}>
+                    {convertToProperCase(role)}
+                  </option>
+                ))}
             </select>
             {errors.roleNames && (
               <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -499,7 +578,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 <div className="mb-3">
                   <h4 className="font-medium text-yellow-700 mb-2">Warnings:</h4>
                   <ul className="list-disc list-inside text-sm text-yellow-600 space-y-1">
-                    {roleValidation.warnings.map((warning, index) => (
+                    {roleValidation.warnings.map((warning: string, index: number) => (
                       <li key={index}>{warning}</li>
                     ))}
                   </ul>
@@ -510,7 +589,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
                 <div className="mb-3">
                   <h4 className="font-medium text-blue-700 mb-2">Affected Permissions:</h4>
                   <ul className="list-disc list-inside text-sm text-blue-600 space-y-1">
-                    {roleValidation.affectedPermissions.map((permission, index) => (
+                    {roleValidation.affectedPermissions.map((permission: string, index: number) => (
                       <li key={index}>{permission}</li>
                     ))}
                   </ul>

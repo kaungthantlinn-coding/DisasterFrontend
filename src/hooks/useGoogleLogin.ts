@@ -22,10 +22,10 @@ export const useGoogleLogin = () => {
     },
     onSuccess: (data) => {
       useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken);
-      // Track successful login after auth store is updated
+      // Track successful login
       ErrorTracker.getInstance().trackUserAction('google_login_success', { userId: data.user.userId });
 
-      // Check for intended destination from location state
+   // Check for intended destination from location state
       const from = (location.state as any)?.from?.pathname;
 
       if (from && from !== '/login') {
@@ -45,7 +45,6 @@ export const useGoogleLogin = () => {
       });
     },
     retry: (failureCount, error) => {
-      // Don't retry on authentication errors
       const errorMessage = getErrorMessage(error);
       if (errorMessage.includes('unauthorized') || errorMessage.includes('Invalid')) {
         return false;
@@ -57,10 +56,10 @@ export const useGoogleLogin = () => {
 };
 
 export const useGoogleClientId = () => {
-  // Use environment variable directly instead of API call
+ // Get client ID from environment variables
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  
-  // Validate that client ID is configured and not a placeholder
+
+  // Validate client ID
   const isValidClientId = clientId && 
     clientId !== 'YOUR_ACTUAL_GOOGLE_CLIENT_ID_HERE' && 
     !clientId.includes('123456789-abcdefghijklmnopqrstuvwxyz');

@@ -96,14 +96,9 @@ export class DisasterDataService {
     return Date.now() - timestamp < this.CACHE_DURATION;
   }
 
-
-
-  // Track ongoing requests to prevent duplicate calls
   private ongoingRequests: Map<string, Promise<RealWorldDisaster[]>> = new Map();
 
-  /**
-   * Fetch earthquake data from USGS
-   */
+// Fetch USGS earthquake data
   async fetchUSGSEarthquakes(feedType: keyof typeof USGS_FEEDS = 'M2_5_DAY'): Promise<RealWorldDisaster[]> {
     const cacheKey = `usgs_${feedType}`;
     const cached = this.cache.get(cacheKey);
@@ -181,9 +176,7 @@ export class DisasterDataService {
     }
   }
 
-  /**
-   * Fetch significant earthquakes (magnitude 4.5+ or felt reports)
-   */
+// Fetch significant earthquakes
   async fetchSignificantEarthquakes(): Promise<RealWorldDisaster[]> {
     try {
       const [significantDay, m45Day] = await Promise.allSettled([
@@ -214,13 +207,9 @@ export class DisasterDataService {
     }
   }
 
-  /**
-   * Fetch all recent disasters from multiple sources
-   */
+  // Fetch all recent disasters
   async fetchAllRecentDisasters(): Promise<RealWorldDisaster[]> {
     try {
-      // For now, we're only using USGS earthquake data
-      // In the future, we can add more sources like GDACS, weather APIs, etc.
       const earthquakes = await this.fetchUSGSEarthquakes('M2_5_DAY');
 
       return earthquakes;
@@ -230,9 +219,7 @@ export class DisasterDataService {
     }
   }
 
-  /**
-   * Get disaster statistics
-   */
+  // Get disaster statistics
   async getDisasterStatistics(): Promise<{
     totalActive: number;
     critical: number;
@@ -270,9 +257,7 @@ export class DisasterDataService {
     }
   }
 
-  /**
-   * Clear cache (useful for testing or manual refresh)
-   */
+  // Clear cache
   clearCache(): void {
     this.cache.clear();
   }

@@ -27,7 +27,7 @@ interface User {
   location?: string;
   reportsCount: number;
   lastActive: string;
-  avatar?: string;
+  photoUrl?: string;
 }
 
 interface ViewProfileModalProps {
@@ -98,7 +98,7 @@ const ViewProfileModal: React.FC<ViewProfileModalProps> = ({ user, isOpen, onClo
           {/* User Avatar and Basic Info */}
           <div className="flex items-center space-x-4">
             <Avatar
-              src={user.avatar}
+              src={user.photoUrl}
               alt={user.name}
               name={user.name}
               size="xl"

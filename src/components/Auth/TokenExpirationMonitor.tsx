@@ -21,19 +21,14 @@ const TokenExpirationMonitor: React.FC<TokenExpirationMonitorProps> = ({ childre
   useEffect(() => {
     // Start monitoring when user is authenticated
     if (isAuthenticated && accessToken) {
-      console.log('🔒 TokenExpirationMonitor: Starting token expiration monitoring');
-      console.log('🔒 Auth state:', { isAuthenticated, hasToken: !!accessToken });
       tokenExpirationService.startMonitoring();
 
       // Force an immediate check
       setTimeout(() => {
-        console.log('🔒 Forcing initial token check');
         tokenExpirationService.forceCheck();
       }, 1000);
     } else {
       // Stop monitoring when user is not authenticated
-      console.log('🔒 TokenExpirationMonitor: Stopping token expiration monitoring');
-      console.log('🔒 Auth state:', { isAuthenticated, hasToken: !!accessToken });
       tokenExpirationService.stopMonitoring();
     }
 
