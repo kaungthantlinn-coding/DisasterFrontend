@@ -15,7 +15,7 @@ export interface RoleUpdateOptions {
 
 // Client-side validation logic for role updates
 const validateRoleUpdateClientSide = (roleData: UpdateUserRolesDto): RoleUpdateValidationDto => {
-  const { roleNames, reason } = roleData;
+  const { roleNames } = roleData;
 
   const warnings: string[] = [];
   const blockers: string[] = [];
@@ -59,10 +59,10 @@ const validateRoleUpdateClientSide = (roleData: UpdateUserRolesDto): RoleUpdateV
 export const useRoleUpdate = (options: RoleUpdateOptions = {}) => {
   const queryClient = useQueryClient();
 
-  // Mutation for updating user (including roles) using existing working endpoint
-  const updateUserMutation = useMutation({
-    mutationFn: ({ userId, userData }: { userId: string; userData: UpdateUserDto }) =>
-      userManagementApi.updateUser(userId, userData),
+  // Mutation for updating user roles using dedicated endpoint
+  const updateUserRolesMutation = useMutation({
+    mutationFn: ({ userId, rolesData }: { userId: string; rolesData: UpdateUserRolesDto }) =>
+      userManagementApi.updateUserRoles(userId, rolesData),
     onSuccess: () => {
       // Invalidate relevant queries to refresh data
       // Use partial matching to invalidate all user-related queries
@@ -72,11 +72,10 @@ export const useRoleUpdate = (options: RoleUpdateOptions = {}) => {
       });
       queryClient.invalidateQueries({ queryKey: ['userManagementStats'] });
 
-
       options.onUpdateSuccess?.();
     },
     onError: (error) => {
-      console.error('Failed to update user:', error);
+      console.error('Failed to update user roles:', error);
       options.onUpdateError?.(error);
     },
   });
@@ -85,7 +84,6 @@ export const useRoleUpdate = (options: RoleUpdateOptions = {}) => {
   const validateAndUpdateRoles = async (
     userId: string,
     roleData: UpdateUserRolesDto,
-    otherUserData: Partial<UpdateUserDto> = {},
     skipValidation: boolean = false
   ): Promise<void> => {
     try {
@@ -110,13 +108,13 @@ export const useRoleUpdate = (options: RoleUpdateOptions = {}) => {
         }
       }
 
-      // If validation passes or is skipped, proceed with the update using existing API
-      const updateData: UpdateUserDto = {
-        ...otherUserData,
-        roles: roleData.roleNames.map(role => role.toLowerCase())
+      // If validation passes or is skipped, proceed with the update using dedicated roles API
+      const rolesUpdateData: UpdateUserRolesDto = {
+        roleNames: roleData.roleNames.map(role => role.toLowerCase()),
+        reason: roleData.reason
       };
 
-      await updateUserMutation.mutateAsync({ userId, userData: updateData });
+      await updateUserRolesMutation.mutateAsync({ userId, rolesData: rolesUpdateData });
     } catch (error) {
       // Re-throw the error so the calling component can handle it
       throw error;
@@ -124,17 +122,17 @@ export const useRoleUpdate = (options: RoleUpdateOptions = {}) => {
   };
 
   // Function to validate roles only (without updating)
-  const validateRoles = async (userId: string, roleData: UpdateUserRolesDto): Promise<RoleUpdateValidationDto> => {
+  const validateRoles = async (roleData: UpdateUserRolesDto): Promise<RoleUpdateValidationDto> => {
     return Promise.resolve(validateRoleUpdateClientSide(roleData));
   };
 
   // Function to update user with roles (without validation)
-  const updateRoles = async (userId: string, roleData: UpdateUserRolesDto, otherUserData: Partial<UpdateUserDto> = {}): Promise<void> => {
-    const updateData: UpdateUserDto = {
-      ...otherUserData,
-      roles: roleData.roleNames.map(role => role.toLowerCase())
+  const updateRoles = async (userId: string, roleData: UpdateUserRolesDto): Promise<void> => {
+    const rolesUpdateData: UpdateUserRolesDto = {
+      roleNames: roleData.roleNames.map(role => role.toLowerCase()),
+      reason: roleData.reason
     };
-    return updateUserMutation.mutateAsync({ userId, userData: updateData });
+    await updateUserRolesMutation.mutateAsync({ userId, rolesData: rolesUpdateData });
   };
 
   return {
@@ -145,19 +143,19 @@ export const useRoleUpdate = (options: RoleUpdateOptions = {}) => {
 
     // Loading states
     isValidating: false, // Client-side validation is synchronous
-    isUpdating: updateUserMutation.isPending,
-    isLoading: updateUserMutation.isPending,
+    isUpdating: updateUserRolesMutation.isPending,
+    isLoading: updateUserRolesMutation.isPending,
 
     // Error states
     validationError: null, // Client-side validation doesn't have async errors
-    updateError: updateUserMutation.error,
-    error: updateUserMutation.error,
+    updateError: updateUserRolesMutation.error,
+    error: updateUserRolesMutation.error,
 
     // Reset functions
     resetValidation: () => {}, // No async validation to reset
-    resetUpdate: updateUserMutation.reset,
+    resetUpdate: updateUserRolesMutation.reset,
     reset: () => {
-      updateUserMutation.reset();
+      updateUserRolesMutation.reset();
     }
   };
 };

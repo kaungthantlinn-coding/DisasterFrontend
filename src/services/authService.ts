@@ -10,6 +10,8 @@ export interface ApiUser {
   id?: string;        // Fallback for other endpoints
   email: string;
   name: string;
+  fullName?: string;  // Alternative name field
+  displayName?: string; // Display name field
   role?: string;
   roles?: string[];   // Backend might return roles array
   // Photo URL fields from various OAuth providers
@@ -36,8 +38,27 @@ export interface GoogleLoginResponse {
 
 // Helper function to convert API user to app user
 const mapApiUserToUser = (apiUser: ApiUser): User => {
+  console.log('🔍 AuthService - Raw API User Data:', apiUser);
+  console.log('🔍 AuthService - Available fields:', Object.keys(apiUser || {}));
+  
   // Extract userId from various possible fields (including direct userId)
   const userId = apiUser.userId || apiUser.user_id || apiUser.auth_id || apiUser.id || '';
+  console.log('🔍 AuthService - UserId mapping:', {
+    userId: apiUser.userId,
+    user_id: apiUser.user_id,
+    auth_id: apiUser.auth_id,
+    id: apiUser.id,
+    final: userId
+  });
+  
+  // Extract name from various possible fields
+  const name = apiUser.name || apiUser.fullName || apiUser.displayName || '';
+  console.log('🔍 AuthService - Name mapping:', {
+    name: apiUser.name,
+    fullName: apiUser.fullName,
+    displayName: apiUser.displayName,
+    final: name
+  });
   
   // Extract roles from various possible formats
   let roles: string[] = [];
@@ -48,43 +69,62 @@ const mapApiUserToUser = (apiUser: ApiUser): User => {
   } else {
     roles = ['user']; // Default role
   }
+  console.log('🔍 AuthService - Roles mapping:', {
+    roles: apiUser.roles,
+    role: apiUser.role,
+    final: roles
+  });
   
   // Use the centralized photo URL extraction utility
   const photoUrl = extractPhotoUrl(apiUser);
   
-  return {
+  const mappedUser = {
     userId,
-    name: apiUser.name,
+    name,
     email: apiUser.email,
     photoUrl,
     roles,
   };
+  
+  console.log('🔍 AuthService - Final mapped user:', mappedUser);
+  return mappedUser;
 };
 
 // Helper function to convert API response to app response
 const mapApiResponse = (apiResponse: any) => {
+  console.log('🔍 AuthService - Complete API Response:', apiResponse);
+  console.log('🔍 AuthService - API Response keys:', Object.keys(apiResponse || {}));
+  
   // Handle different possible response structures
   let user: ApiUser;
   
   if (apiResponse.user) {
     // Standard response with user object
+    console.log('🔍 AuthService - Using apiResponse.user');
     user = apiResponse.user;
   } else if (apiResponse.auth_id || apiResponse.user_id || apiResponse.email) {
     // Direct user data in response
+    console.log('🔍 AuthService - Using direct user data from response');
     user = apiResponse;
   } else {
     // Fallback - create empty user
+    console.log('🔍 AuthService - Using fallback empty user');
     user = {
       email: '',
       name: '',
     };
   }
   
-  return {
+  console.log('🔍 AuthService - Selected user object:', user);
+  
+  const mappedResponse = {
     user: mapApiUserToUser(user),
     token: apiResponse.token || apiResponse.accessToken || '',
     refreshToken: apiResponse.refreshToken || '',
   };
+  
+  console.log('🔍 AuthService - Final mapped response:', mappedResponse);
+  return mappedResponse;
 };
 
 export const authService = {
@@ -199,14 +239,18 @@ export const authService = {
 
   async getProfile(): Promise<Result<User>> {
     try {
+      console.log('🔍 AuthService - Getting profile from API...');
       const apiData = await errorHandler.withRetry(
         () => apiService.auth.getProfile(),
         { maxRetries: 3 }
       );
       
+      console.log('🔍 AuthService - Profile API response:', apiData);
       const data = mapApiUserToUser(apiData);
+      console.log('🔍 AuthService - Mapped profile data:', data);
       return { success: true, data };
     } catch (error) {
+      console.error('🔍 AuthService - Profile API error:', error);
       ErrorTracker.getInstance().track(error as Error, {
         component: 'AuthService',
         action: 'get_profile',

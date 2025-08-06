@@ -53,33 +53,33 @@ const Home: React.FC = () => {
   const canViewReports = isAuthenticated && (isAdmin() || isCj());
   const canCreateReports = !isAuthenticated || !isOnlyUser();
 
-  // Hero content with stunning real disaster response images
+  // Hero content with refined professional disaster response images
   const heroSlides = [
     {
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-      title: 'Emergency Response Excellence',
-      subtitle: 'Advanced disaster management powered by AI and real-time data analytics',
+      image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'Real World Emergency Response Excellence',
+      subtitle: 'Professional disaster management teams coordinating real-world emergency responses with AI-powered analytics and real-time data from NOAA, FEMA, and global monitoring networks',
       stats: { value: '24/7', label: 'Global Monitoring' },
-      category: 'Earthquake Response'
+      category: 'Emergency Operations'
     },
     {
-      image: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-      title: 'Flood Response & Recovery',
-      subtitle: 'Rapid flood response with advanced water management and evacuation systems',
+      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'Real World Flood Response & Recovery',
+      subtitle: 'Rapid flood response teams with advanced water management systems, evacuation coordination, and real-time monitoring from National Weather Service and local emergency management agencies',
       stats: { value: '99.9%', label: 'Response Rate' },
       category: 'Flood Management'
     },
     {
       image: 'https://images.unsplash.com/photo-1574482620811-1aa16ffe3c82?ixlib=rb-4.0.3&auto=format&fit=crop&w=2072&q=80',
-      title: 'Wildfire Management',
-      subtitle: 'AI-powered wildfire detection and suppression coordination systems',
+      title: 'Real World Wildfire Management',
+      subtitle: 'Professional firefighting teams with AI-powered wildfire detection, suppression coordination systems, and real-time satellite monitoring for immediate response deployment',
       stats: { value: '15M+', label: 'Acres Protected' },
       category: 'Fire Suppression'
     },
     {
-      image: 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-      title: 'Storm Tracking & Alerts',
-      subtitle: 'Advanced meteorological monitoring for hurricane and storm preparedness',
+      image: 'https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'Real World Storm Tracking & Alerts',
+      subtitle: 'Advanced meteorological monitoring teams working with National Hurricane Center for real-world hurricane tracking, storm preparedness, and community evacuation coordination',
       stats: { value: '2.4M', label: 'Lives Protected' },
       category: 'Weather Monitoring'
     }
@@ -131,42 +131,42 @@ const Home: React.FC = () => {
       icon: Shield,
       title: 'Emergency Preparedness',
       description: 'AI-powered risk assessment and comprehensive emergency planning resources for maximum protection.',
-      image: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       gradient: 'from-blue-600 to-blue-700'
     },
     {
       icon: Users,
       title: 'Community Response Network',
       description: 'Connected emergency responders and community support networks sharing real-time insights.',
-      image: 'https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       gradient: 'from-emerald-600 to-teal-600'
     },
     {
       icon: Zap,
-      title: 'Instant Alert System',
-      description: 'Lightning-fast emergency notifications with predictive analytics for proactive safety measures.',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      title: 'Real World Instant Alert System',
+      description: 'Lightning-fast emergency notifications for real-world disasters: earthquake early warnings, wildfire evacuation alerts, flood warnings, and severe weather notifications with predictive analytics for proactive safety measures.',
+      image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       gradient: 'from-purple-600 to-indigo-600'
     },
     {
       icon: MapPin,
       title: 'Real-Time Mapping',
       description: 'Advanced GIS mapping with live disaster tracking and resource allocation optimization.',
-      image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       gradient: 'from-orange-600 to-red-600'
     },
     {
       icon: Activity,
       title: 'Recovery Analytics',
       description: 'Data-driven recovery planning with progress tracking and resource optimization tools.',
-      image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       gradient: 'from-cyan-600 to-blue-600'
     },
     {
       icon: Target,
       title: 'Precision Response',
       description: 'Targeted emergency response coordination with AI-powered resource deployment strategies.',
-      image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1574482620811-1aa16ffe3c82?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       gradient: 'from-indigo-600 to-purple-600'
     }
   ];
@@ -180,7 +180,7 @@ const Home: React.FC = () => {
       severity: 'Critical',
       time: '2 hours ago',
       status: 'Active Response',
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       verified: true
     },
     {
@@ -200,7 +200,7 @@ const Home: React.FC = () => {
       severity: 'Medium',
       time: '6 hours ago',
       status: 'Monitoring',
-      image: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       verified: true
     },
     {
@@ -210,7 +210,7 @@ const Home: React.FC = () => {
       severity: 'Critical',
       time: '8 hours ago',
       status: 'Tracking',
-      image: 'https://images.unsplash.com/photo-1446776877081-d282a0f896e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      image: 'https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       verified: true
     }
   ];

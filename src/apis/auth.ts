@@ -49,7 +49,22 @@ export const authApi = {
   // Get current user
   getCurrentUser: async (): Promise<User> => {
     const response = await apiClient.get('/Auth/me');
-    return response.data;
+    console.log('🔍 getCurrentUser API Response:', response.data);
+    console.log('🔍 User name field:', response.data?.name);
+    console.log('🔍 All user fields:', Object.keys(response.data || {}));
+    
+    // Map API response to User type to handle different field names
+    const apiUser = response.data;
+    const mappedUser: User = {
+      userId: apiUser.userId || apiUser.user_id || apiUser.auth_id || apiUser.id || '',
+      name: apiUser.name || apiUser.fullName || '',
+      email: apiUser.email || '',
+      photoUrl: apiUser.photoUrl || apiUser.photo_url || apiUser.picture || apiUser.avatar || apiUser.profile_picture,
+      roles: Array.isArray(apiUser.roles) ? apiUser.roles : (apiUser.role ? [apiUser.role] : ['user'])
+    };
+    
+    console.log('🔍 Mapped User:', mappedUser);
+    return mappedUser;
   },
 
   // Validate token

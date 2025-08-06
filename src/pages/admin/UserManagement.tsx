@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ViewProfileModal from '../../components/modals/ViewProfileModal';
-import EditUserModal from '../../components/modals/EditUserModal';
+import RoleEditModal from '../../components/modals/RoleEditModal';
 import {
   Users,
   Search,
@@ -312,7 +312,7 @@ const UserManagement: React.FC = () => {
     user: null
   });
 
-  const [editUserModal, setEditUserModal] = useState<{
+  const [roleEditModal, setRoleEditModal] = useState<{
     isOpen: boolean;
     user: User | null;
   }>({
@@ -409,7 +409,7 @@ const UserManagement: React.FC = () => {
   };
 
   const handleEditUser = (user: User) => {
-    setEditUserModal({
+    setRoleEditModal({
       isOpen: true,
       user: user
     });
@@ -422,8 +422,8 @@ const UserManagement: React.FC = () => {
     });
   };
 
-  const handleCloseEditUser = () => {
-    setEditUserModal({
+  const handleCloseRoleEdit = () => {
+    setRoleEditModal({
       isOpen: false,
       user: null
     });
@@ -433,7 +433,7 @@ const UserManagement: React.FC = () => {
     try {
       await updateUser(userId, userData);
       // Modal will close automatically on success
-      handleCloseEditUser();
+      handleCloseRoleEdit();
     } catch (error) {
       // Error handling is done in the hook via toast
       throw error;
@@ -1032,10 +1032,10 @@ const UserManagement: React.FC = () => {
         onClose={handleCloseViewProfile}
       />
 
-      <EditUserModal
-        user={editUserModal.user}
-        isOpen={editUserModal.isOpen}
-        onClose={handleCloseEditUser}
+      <RoleEditModal
+        user={roleEditModal.user}
+        isOpen={roleEditModal.isOpen}
+        onClose={handleCloseRoleEdit}
         onSave={handleSaveUser}
         availableRoles={availableRoles}
         isLoading={false}

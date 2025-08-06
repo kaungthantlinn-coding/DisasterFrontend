@@ -162,7 +162,7 @@ export const apiService = {
     },
     
     getProfile: async () => {
-      const response = await api.get('/Auth/validate');
+      const response = await api.get('/Auth/me');
       return response.data;
     },
   },

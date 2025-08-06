@@ -11,6 +11,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
 import Avatar from '../Common/Avatar';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
+import AuthDebug from '../Debug/AuthDebug';
 
 interface NavItem {
   name: string;

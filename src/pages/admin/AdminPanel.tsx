@@ -32,7 +32,8 @@ import {
   Minimize2,
   Calendar,
   Wifi,
-  WifiOff
+  WifiOff,
+  History
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { userManagementApi } from '../../apis/userManagement';
@@ -43,6 +44,7 @@ import UserManagement from './UserManagement';
 import Analytics from './Analytics';
 import SystemSettings from './systemsettings';
 import ReportManagement from './ReportManagement';
+import AuditLogsPage from './AuditLogsPage';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -355,7 +357,12 @@ const AdminPanel: React.FC = () => {
       icon: <FileText className="w-5 h-5" />,
       active: location.pathname.includes('/admin/reports')
     },
-
+    {
+      title: 'Audit Logs',
+      href: '/admin/audit-logs',
+      icon: <History className="w-5 h-5" />,
+      active: location.pathname.includes('/admin/audit-logs')
+    },
     {
       title: 'Analytics',
       href: '/admin/analytics',
@@ -1129,7 +1136,7 @@ const AdminPanel: React.FC = () => {
               <Route path="/" element={<AdminDashboard />} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/reports" element={<ReportManagement />} />
-
+              <Route path="/audit-logs" element={<AuditLogsPage />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<SystemSettings />} />
             </Routes>

@@ -185,6 +185,28 @@ export const userManagementApi = {
     return response.data;
   },
 
+  // Update user roles (dedicated endpoint)
+  async updateUserRoles(userId: string, rolesData: UpdateUserRolesDto): Promise<UserDetailsDto> {
+    console.log('🔍 UpdateUserRoles Request:', {
+      userId,
+      rolesData,
+      url: `/UserManagement/${userId}/roles`
+    });
+    
+    try {
+      const response = await apiClient.put(`/UserManagement/${userId}/roles`, rolesData);
+      console.log('✅ UpdateUserRoles Success:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ UpdateUserRoles Error Details:');
+      console.error('Status:', error.response?.status);
+      console.error('Backend Error Data:', error.response?.data);
+      console.error('Request Data:', rolesData);
+      console.error('User ID:', userId);
+      throw error;
+    }
+  },
+
   // Bulk operations
   async bulkOperation(operationData: BulkUserOperationDto): Promise<{ affectedCount: number; message: string }> {
     const response = await apiClient.post('/UserManagement/bulk-operation', operationData);

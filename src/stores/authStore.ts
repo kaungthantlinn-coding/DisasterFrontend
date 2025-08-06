@@ -35,7 +35,15 @@ export const useAuthStore = create<AuthStore>()(
       tokenExpiresAt: null,
 
       // Actions
-      setUser: (user) => set({ user }),
+      setUser: (user) => {
+        console.log('🔍 AuthStore - Setting user:', user);
+        console.log('🔍 AuthStore - User validation:');
+        console.log('  - Has userId:', !!user?.userId);
+        console.log('  - Has name:', !!user?.name);
+        console.log('  - Has email:', !!user?.email);
+        console.log('  - Has roles:', user?.roles?.length > 0);
+        set({ user });
+      },
 
       setTokens: (accessToken, refreshToken, expiresAt) =>
         set({
