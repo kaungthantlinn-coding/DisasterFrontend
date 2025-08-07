@@ -65,7 +65,7 @@ export const useAuditLog = ({
         )
       });
 
-      const response = await api.get(`/admin/audit-logs?${params}`);
+      const response = await api.get(`/audit-logs?${params}`);
       setData(response.data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch audit logs');
@@ -107,7 +107,7 @@ export const useAuditLogStats = () => {
     setError(null);
 
     try {
-      const response = await api.get('/admin/audit-logs/stats');
+      const response = await api.get('/audit-logs/stats');
       setStats(response.data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch audit log statistics');

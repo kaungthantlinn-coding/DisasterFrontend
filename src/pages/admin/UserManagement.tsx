@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ViewProfileModal from '../../components/modals/ViewProfileModal';
 import RoleEditModal from '../../components/modals/RoleEditModal';
+import UserHistoryModal from '../../components/modals/UserHistoryModal';
 import {
   Users,
   Search,
@@ -31,6 +32,7 @@ import {
   ArrowDown,
   X,
   Info,
+  History,
   Calendar,
   Mail,
   Phone
@@ -60,6 +62,7 @@ interface User {
   reportsCount: number;
   lastActive: string;
   photoUrl?: string;
+  roleNames?: string[]; // Add roleNames to preserve full role data
 }
 
 // Enhanced sorting and filtering types for professional table management
@@ -88,8 +91,6 @@ const mapApiUserToLocal = (apiUser: any): User => {
   const primaryRole = hasRole('admin') ? 'admin' :
                      hasRole('cj') ? 'cj' : 'user';
 
-
-
   // Determine status - handle both UserListItemDto and UserDetailsDto
   const status = apiUser.isBlacklisted ? 'suspended' :
                  apiUser.status ? apiUser.status : 'active';
@@ -111,7 +112,8 @@ const mapApiUserToLocal = (apiUser: any): User => {
     location: apiUser.location,
     reportsCount: apiUser.reportsCount || 0,
     lastActive: apiUser.lastActive || 'Unknown',
-    photoUrl: extractPhotoUrl(apiUser)
+    photoUrl: extractPhotoUrl(apiUser),
+    roleNames: roleNames // Preserve the full roleNames array
   };
 };
 
@@ -122,9 +124,10 @@ interface UserRowProps {
   onBlacklist: (userId: string) => void;
   onUnblacklist: (userId: string) => void;
   onDelete: (userId: string) => void;
+  onViewHistory: (user: User) => void;
 }
 
-const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlacklist, onUnblacklist, onDelete }) => {
+const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlacklist, onUnblacklist, onDelete, onViewHistory }) => {
   const [showActions, setShowActions] = useState(false);
 
   const getRoleColor = (role: string) => {
@@ -263,6 +266,13 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
                   <Edit className="w-4 h-4 text-green-500" />
                   <span className="font-medium">Edit User</span>
                 </button>
+                <button
+                  onClick={() => { onViewHistory(user); setShowActions(false); }}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-purple-100 hover:text-purple-700 flex items-center space-x-3 transition-all duration-200"
+                >
+                  <History className="w-4 h-4 text-purple-500" />
+                  <span className="font-medium">View History</span>
+                </button>
                 <div className="border-t border-gray-100 my-1"></div>
 
                 {/* Enhanced Conditional Blacklist/Unblacklist Button */}
@@ -313,6 +323,14 @@ const UserManagement: React.FC = () => {
   });
 
   const [roleEditModal, setRoleEditModal] = useState<{
+    isOpen: boolean;
+    user: User | null;
+  }>({
+    isOpen: false,
+    user: null
+  });
+
+  const [userHistoryModal, setUserHistoryModal] = useState<{
     isOpen: boolean;
     user: User | null;
   }>({
@@ -429,9 +447,47 @@ const UserManagement: React.FC = () => {
     });
   };
 
+  const handleViewHistory = (user: User) => {
+    setUserHistoryModal({
+      isOpen: true,
+      user: user
+    });
+  };
+
+  const handleCloseUserHistory = () => {
+    setUserHistoryModal({
+      isOpen: false,
+      user: null
+    });
+  };
+
   const handleSaveUser = async (userId: string, userData: any) => {
     try {
-      await updateUser(userId, userData);
+      // Check if this is a role update with forceUpdate flag
+      if (userData.forceUpdate) {
+        // Remove forceUpdate flag before sending to API
+        const { forceUpdate, ...cleanUserData } = userData;
+        
+        // For confirmed role updates, use the regular updateUser API with complete payload
+        // This ensures the roles array contains the final complete role list
+        console.log('🔍 HandleSaveUser - Force Update Role Change:', {
+          userId,
+          roles: cleanUserData.roles,
+          reason: cleanUserData.reason
+        });
+        
+        await updateUser(userId, cleanUserData);
+      } else {
+        // Regular user update with complete role list in single payload
+        console.log('🔍 HandleSaveUser - Regular Role Update:', {
+          userId,
+          roles: userData.roles,
+          reason: userData.reason
+        });
+        
+        await updateUser(userId, userData);
+      }
+      
       // Modal will close automatically on success
       handleCloseRoleEdit();
     } catch (error) {
@@ -914,6 +970,7 @@ const UserManagement: React.FC = () => {
                       onBlacklist={handleBlacklistUser}
                       onUnblacklist={handleUnblacklistUser}
                       onDelete={handleDeleteUser}
+                      onViewHistory={handleViewHistory}
                     />
                   ))
                 )}
@@ -1039,6 +1096,12 @@ const UserManagement: React.FC = () => {
         onSave={handleSaveUser}
         availableRoles={availableRoles}
         isLoading={false}
+      />
+
+      <UserHistoryModal
+        user={userHistoryModal.user}
+        isOpen={userHistoryModal.isOpen}
+        onClose={handleCloseUserHistory}
       />
 
       {/* Beautiful Confirmation Modal */}

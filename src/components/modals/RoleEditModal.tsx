@@ -38,6 +38,7 @@ interface User {
   reportsCount: number;
   lastActive: string;
   photoUrl?: string;
+  roleNames?: string[]; // Add roleNames to access full role data
 }
 
 interface RoleEditModalProps {
@@ -73,17 +74,17 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({
   // Initialize form data when user changes
   useEffect(() => {
     if (user) {
-      // Convert user role to proper case for API consistency
-      const userRole = user.role;
-      const properCaseRole = convertToProperCase(userRole);
-      const userRoles = [properCaseRole];
+      // Use roleNames array if available, otherwise fall back to single role
+      const userRoles = user.roleNames && user.roleNames.length > 0 
+        ? user.roleNames.map(convertToProperCase)
+        : [convertToProperCase(user.role)];
 
       console.log('RoleEditModal - Role Initialization:', {
-        userRole,
-        properCaseRole,
+        userRole: user.role,
+        userRoleNames: user.roleNames,
         userRoles,
         availableRoles,
-        dropdownValue: properCaseRole?.toLowerCase()
+        dropdownValue: userRoles[0]?.toLowerCase()
       });
 
       setRoleNames(userRoles);
@@ -148,23 +149,17 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({
       // Ensure role names are in proper case for API
       const properCaseRoles = roleNames.map(convertToProperCase);
 
-      // Prepare other user data (keep existing data unchanged)
-      const otherUserData = {
+      // Use single payload approach - call onSave directly with complete user data including roles
+      // This allows the parent component to handle both role validation and update in one operation
+      await onSave(user.id, {
         name: user.name,
         email: user.email,
         phoneNumber: user.phone || null,
         photoUrl: user.photoUrl || null,
-        isBlacklisted: user.status === 'suspended' || false
-      };
-
-      await validateAndUpdateRoles(
-        user.id,
-        {
-          roleNames: properCaseRoles,
-          reason: 'Role updated via admin panel'
-        },
-        otherUserData
-      );
+        roles: properCaseRoles, // Complete final role list
+        isBlacklisted: user.status === 'suspended' || false,
+        reason: 'Role updated via admin panel'
+      });
 
       showSuccessToast('User role updated successfully');
       onClose();
@@ -192,24 +187,18 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({
       // Ensure role names are in proper case for API
       const properCaseRoles = roleNames.map(convertToProperCase);
 
-      // Prepare other user data (keep existing data unchanged)
-      const otherUserData = {
+      // Use single payload approach with force confirmation flag
+      // This allows the parent component to handle the confirmed role update in one operation
+      await onSave(user.id, {
         name: user.name,
         email: user.email,
         phoneNumber: user.phone || null,
         photoUrl: user.photoUrl || null,
-        isBlacklisted: user.status === 'suspended' || false
-      };
-
-      await validateAndUpdateRoles(
-        user.id,
-        {
-          roleNames: properCaseRoles,
-          reason: 'Role updated via admin panel (confirmed)'
-        },
-        otherUserData,
-        true // Force update
-      );
+        roles: properCaseRoles, // Complete final role list
+        isBlacklisted: user.status === 'suspended' || false,
+        reason: 'Role updated via admin panel (confirmed)',
+        forceUpdate: true // Indicate this is a confirmed update
+      });
 
       showSuccessToast('User role updated successfully');
       setShowConfirmation(false);

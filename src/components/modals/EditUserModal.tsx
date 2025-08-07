@@ -185,15 +185,14 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
         // Ensure role names are in proper case even for non-role updates
         const properCaseRoles = formData.roleNames.map(convertToProperCase);
 
-
-
         const updateData = {
           name: formData.name.trim(),
           email: formData.email.trim(),
           phoneNumber: formData.phone.trim() || null,
           photoUrl: user.photoUrl || null,
-          roles: properCaseRoles.map(role => role.toLowerCase()),
-          isBlacklisted: user.status === 'suspended' || false
+          roles: properCaseRoles, // Complete final role list (even for non-role updates)
+          isBlacklisted: user.status === 'suspended' || false,
+          reason: 'User profile updated via admin panel'
         };
         
         await onSave(user.id, updateData);
@@ -212,25 +211,17 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       // Ensure role names are in proper case for API
       const properCaseRoles = formData.roleNames.map(convertToProperCase);
 
-
-
-      // Prepare other user data that might have changed
-      const otherUserData = {
+      // Use single payload approach - call onSave directly with complete user data including roles
+      // This allows the parent component to handle both role validation and update in one operation
+      await onSave(user.id, {
         name: formData.name.trim(),
         email: formData.email.trim(),
         phoneNumber: formData.phone.trim() || null,
-                  photoUrl: user.photoUrl || null,
-        isBlacklisted: user.status === 'suspended' || false
-      };
-
-      await validateAndUpdateRoles(
-        user.id,
-        {
-          roleNames: properCaseRoles,
-          reason: 'Role updated via admin panel'
-        },
-        otherUserData
-      );
+        photoUrl: user.photoUrl || null,
+        roles: properCaseRoles, // Complete final role list
+        isBlacklisted: user.status === 'suspended' || false,
+        reason: 'Role updated via admin panel'
+      });
 
       showSuccessToast('User role updated successfully');
       onClose();
@@ -260,33 +251,26 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
       // Ensure role names are in proper case for API
       const properCaseRoles = formData.roleNames.map(convertToProperCase);
 
-
-
-      // Prepare other user data that might have changed
-      const otherUserData = {
+      // Use single payload approach with force confirmation flag
+      // This allows the parent component to handle the confirmed role update in one operation
+      await onSave(user.id, {
         name: formData.name.trim(),
         email: formData.email.trim(),
         phoneNumber: formData.phone.trim() || null,
-                  photoUrl: user.photoUrl || null,
-        isBlacklisted: user.status === 'suspended' || false
-      };
-
-      // Proceed with role update, skipping validation since we already confirmed
-      await validateAndUpdateRoles(
-        user.id,
-        {
-          roleNames: properCaseRoles,
-          reason: 'Role updated via admin panel (confirmed)'
-        },
-        otherUserData,
-        true // Skip validation
-      );
+        photoUrl: user.photoUrl || null,
+        roles: properCaseRoles, // Complete final role list
+        isBlacklisted: user.status === 'suspended' || false,
+        reason: 'Role updated via admin panel (confirmed)',
+        forceUpdate: true // Indicate this is a confirmed update
+      });
 
       showSuccessToast('User role updated successfully');
+      setShowConfirmation(false);
+      setRoleValidation(null);
       onClose();
     } catch (error) {
-      console.error('Failed to update user roles:', error);
-      // Error handling is done in the parent component via toast
+      console.error('Failed to confirm role update:', error);
+      // Error will be handled by parent component
     } finally {
       setIsSaving(false);
     }
