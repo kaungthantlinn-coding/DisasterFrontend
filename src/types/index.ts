@@ -83,7 +83,7 @@ export interface Report {
       lng: number;
     };
   };
-  disasterType: 'flood' | 'fire' | 'earthquake' | 'storm' | 'drought' | 'landslide' | 'tsunami' | 'volcano' | 'hurricane' | 'tornado' | 'wildfire' | 'chemical_spill' | 'nuclear_incident' | 'industrial_accident' | 'structural_failure' | 'transportation_accident' | 'cyber_attack' | 'power_outage' | 'infrastructure_failure' | 'other';
+  // disasterType: 'flood' | 'fire' | 'earthquake' | 'storm' | 'drought' | 'landslide' | 'tsunami' | 'volcano' | 'hurricane' | 'tornado' | 'wildfire' | 'chemical_spill' | 'nuclear_incident' | 'industrial_accident' | 'structural_failure' | 'transportation_accident' | 'cyber_attack' | 'power_outage' | 'infrastructure_failure' | 'other';
   disasterDetail: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
   status: 'pending' | 'verified' | 'resolved';
