@@ -1,27 +1,31 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
-import './i18n'; // Initialize i18n
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import EmailOTPPage from './pages/EmailOTPPage';
-import TermsPage from './pages/TermsPage';
-import PrivacyPage from './pages/PrivacyPage';
-import Dashboard from './pages/Dashboard';
-import Home from './pages/Home';
-import Reports from './pages/Reports';
-import ReportDetail from './pages/ReportDetail';
-import ReportImpact from './pages/ReportImpact';
-import AdminPanel from './pages/admin/AdminPanel';
-import About from './pages/About';
-import WhatWeDo from './pages/WhatWeDo';
-import GetInvolved from './pages/GetInvolved';
-import Contact from './pages/Contact';
-import Donate from './pages/Donate';
-import Partnership from './pages/Partnership';
-import CJDashboard from './pages/CJDashboard';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
+import "./i18n"; // Initialize i18n
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import EmailOTPPage from "./pages/EmailOTPPage";
+import TermsPage from "./pages/TermsPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import Dashboard from "./pages/Dashboard";
+import Home from "./pages/Home";
+import Reports from "./pages/Reports";
+import ReportDetail from "./pages/ReportDetail";
+import ReportImpact from "./pages/ReportImpact";
+import AdminPanel from "./pages/admin/AdminPanel";
+import About from "./pages/About";
+import WhatWeDo from "./pages/WhatWeDo";
+import GetInvolved from "./pages/GetInvolved";
+import Contact from "./pages/Contact";
+import Donate from "./pages/Donate";
+import Partnership from "./pages/Partnership";
 
 import AvatarDebug from "./components/Debug/AvatarDebug";
 import TokenDebugPage from "./pages/TokenDebugPage";
@@ -41,6 +45,8 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Get authToken from localStorage, fallback to empty string
+  const authToken = localStorage.getItem("authToken") ?? "";
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -52,30 +58,33 @@ function App() {
             }}
           >
             <div className="min-h-screen bg-gray-50">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/email-otp" element={<EmailOTPPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/terms" element={<TermsPage />} />
-              <Route path="/privacy" element={<PrivacyPage />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              {/* Public routes */}
-              <Route path="/about" element={<About />} />
-              <Route path="/what-we-do" element={<WhatWeDo />} />
-              <Route path="/get-involved" element={<GetInvolved />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/donate" element={<Donate />} />
-              <Route path="/partnership" element={<Partnership />} />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/email-otp" element={<EmailOTPPage />} />
+                <Route
+                  path="/forgot-password"
+                  element={<ForgotPasswordPage />}
+                />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Public routes */}
+                <Route path="/about" element={<About />} />
+                <Route path="/what-we-do" element={<WhatWeDo />} />
+                <Route path="/get-involved" element={<GetInvolved />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/donate" element={<Donate />} />
+                <Route path="/partnership" element={<Partnership />} />
 
                 <Route path="/debug/avatar" element={<AvatarDebug />} />
                 <Route path="/debug/token" element={<TokenDebugPage />} />
@@ -101,7 +110,7 @@ function App() {
                   path="/report/new"
                   element={
                     <ProtectedRoute excludeRoles={["user"]}>
-                      <ReportImpact />
+                      <ReportImpact authToken={authToken} />
                     </ProtectedRoute>
                   }
                 />
@@ -109,7 +118,7 @@ function App() {
                   path="/report/edit/:id"
                   element={
                     <ProtectedRoute excludeRoles={["user"]}>
-                      <ReportImpact />
+                      <ReportImpact authToken={authToken} />
                     </ProtectedRoute>
                   }
                 />
