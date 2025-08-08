@@ -658,7 +658,6 @@ const Home: React.FC = () => {
                       <div className="bg-slate-800 rounded-2xl h-80 overflow-hidden">
                         <SimpleLeafletMap
                           disasters={disasters || []}
-                          loading={disastersLoading}
                           className="w-full h-full rounded-2xl"
                         />
                       </div>

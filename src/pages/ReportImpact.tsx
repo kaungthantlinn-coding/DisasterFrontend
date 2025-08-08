@@ -1,1183 +1,1180 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ChevronRight,
-  ChevronLeft,
-  MapPin,
-
+  Users,
+  FileText,
+  BarChart3,
+  Settings,
+  Shield,
   AlertTriangle,
-  Target,
-  Camera,
-  X,
   CheckCircle,
   Clock,
-  Users,
-  Phone,
-  Mail,
-  FileText,
-  Zap
+  TrendingUp,
+  Activity,
+  Globe,
+  UserCheck,
+  Database,
+  Bell,
+  Loader2,
+  Home,
+  Search,
+  Menu,
+  X,
+  LogOut,
+  ChevronRight,
+  Sparkles,
+  Zap,
+  Star,
+  RefreshCw,
+  Download,
+  Maximize2,
+  Minimize2,
+  Calendar,
+  Wifi,
+  WifiOff,
+  History
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import Header from '../components/Layout/Header';
-import Footer from '../components/Layout/Footer';
-import LocationPicker from '../components/Map/LocationPicker';
+import { userManagementApi } from '../apis/userManagement';
 import { ReportsAPI } from '../apis/reports';
 
-// Enhanced form data interface with better validation
-interface FormData {
-  // Step 1: Disaster Information
-  disasterType: string;
-  disasterDetail: string;
-  customDisasterDetail: string;
-  description: string;
-  severity: 'low' | 'medium' | 'high' | 'critical' | '';
-  dateTime: string;
-  
-  // Step 2: Location & Impact
-  location: {
-    address: string;
-    lat: number;
-    lng: number;
-  } | null;
-  impactType: string[];
-  customImpactType: string;
-  impactDescription: string;
-  photos: File[];
-  
-  // Step 3: Assistance & Contact
-  assistanceNeeded: string[];
-  customAssistanceType: string;
-  assistanceDescription: string;
-  urgencyLevel: 'immediate' | 'within_24h' | 'within_week' | 'non_urgent' | '';
-  contactName: string;
-  contactPhone: string;
-  contactEmail: string;
-  isEmergency: boolean;
-}
+// Import admin pages
+import UserManagement from './admin/UserManagement';
+import Analytics from './admin/Analytics';
+import SystemSettings from './admin/systemsettings';
+import ReportManagement from './admin/ReportManagement';
+import AuditLogsPage from './admin/AuditLogsPage';
+import AdminDashboard from '../components/AdminDashboard';
+import AdminSupportRequestManagement from './admin/AdminSupportRequestManagement';
 
-// Enhanced disaster types with clean, real-world categories
-const disasterTypes = {
-  natural: {
-    label: 'Natural Disasters',
-    icon: Target,
-    color: 'from-green-500 to-emerald-600',
-    options: [
-      'Earthquake',
-      'Flood',
-      'Hurricane/Typhoon',
-      'Tornado',
-      'Wildfire',
-      'Landslide',
-      'Tsunami',
-      'Volcanic Eruption',
-      'Drought',
-      'Blizzard/Ice Storm',
-      'Hailstorm',
-      'Other Natural'
-    ]
-  },
-  nonNatural: {
-    label: 'Non-Natural Disasters',
-    icon: AlertTriangle,
-    color: 'from-red-500 to-orange-600',
-    options: [
-      'Industrial Accident',
-      'Chemical Spill',
-      'Oil Spill',
-      'Nuclear Incident',
-      'Building Collapse',
-      'Transportation Accident',
-      'Cyber Attack',
-      'Infrastructure Failure',
-      'Civil Unrest',
-      'Other Non-Natural'
-    ]
+// Error Boundary Component
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
   }
-};
 
-const impactTypes = [
-  'Property Damage',
-  'Infrastructure Damage',
-  'Environmental Impact',
-  'Human Casualties',
-  'Economic Loss',
-  'Service Disruption',
-  'Agricultural Loss',
-  'Cultural Heritage Damage',
-  'Other'
-];
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
 
-const assistanceTypes = [
-  'Emergency Rescue',
-  'Medical Assistance',
-  'Food & Water',
-  'Temporary Shelter',
-  'Transportation',
-  'Communication Support',
-  'Financial Aid',
-  'Cleanup & Restoration',
-  'Psychological Support',
-  'Legal Assistance',
-  'Technical Expertise',
-  'Volunteer Coordination',
-  'Other'
-];
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Admin Panel Error:', error, errorInfo);
+  }
 
-interface ReportImpactProps {
-  testMode?: boolean;
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+            <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
+            <p className="text-gray-600 mb-4">
+              The admin panel encountered an unexpected error. Please refresh the page or contact support.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
-const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  const [formData, setFormData] = useState<FormData>({
-    disasterType: '',
-    disasterDetail: '',
-    customDisasterDetail: '',
-    description: '',
-    severity: '',
-    dateTime: '',
-    location: null,
-    impactType: [],
-    customImpactType: '',
-    impactDescription: '',
-    photos: [],
-    assistanceNeeded: [],
-    customAssistanceType: '',
-    assistanceDescription: '',
-    urgencyLevel: '',
-    contactName: user?.name || '',
-    contactPhone: '',
-    contactEmail: user?.email || '',
-    isEmergency: false
-  });
 
-  // Enhanced validation with specific error messages
-  const validateStep = useCallback((step: number): boolean => {
-    const newErrors: Record<string, string> = {};
 
-    switch (step) {
-      case 1:
-        if (!formData.disasterType) newErrors.disasterType = 'Please select a disaster category';
-        if (!formData.disasterDetail) newErrors.disasterDetail = 'Please specify the type of disaster';
-        if (formData.disasterDetail === 'Other Natural' || formData.disasterDetail === 'Other Non-Natural') {
-          if (!formData.customDisasterDetail) newErrors.customDisasterDetail = 'Please specify the disaster type';
-        }
-        if (!formData.description.trim()) {
-          newErrors.description = 'Please provide a description';
-        } else if (formData.description.length < 20) {
-          newErrors.description = 'Description must be at least 20 characters';
-        }
-        if (!formData.severity) newErrors.severity = 'Please select severity level';
-        if (!formData.dateTime) newErrors.dateTime = 'Please specify when the disaster occurred';
-        break;
-        
-      case 2:
-        if (!formData.location) newErrors.location = 'Please select a location on the map';
-        if (formData.impactType.length === 0) newErrors.impactType = 'Please select at least one impact type';
-        if (formData.impactType.includes('Other') && !formData.customImpactType) {
-          newErrors.customImpactType = 'Please specify the custom impact type';
-        }
-        if (!formData.impactDescription.trim()) {
-          newErrors.impactDescription = 'Please provide a detailed description of the impact';
-        } else if (formData.impactDescription.length < 20) {
-          newErrors.impactDescription = 'Impact description must be at least 20 characters';
-        }
-        break;
-        
-      case 3:
-        if (formData.assistanceNeeded.length === 0) newErrors.assistanceNeeded = 'Please select at least one type of assistance needed';
-        if (formData.assistanceNeeded.includes('Other') && !formData.customAssistanceType) {
-          newErrors.customAssistanceType = 'Please specify the custom assistance type';
-        }
-        if (!formData.assistanceDescription.trim()) newErrors.assistanceDescription = 'Please describe the assistance needed';
-        if (!formData.urgencyLevel) newErrors.urgencyLevel = 'Please select urgency level';
-        if (!formData.contactName.trim()) newErrors.contactName = 'Contact name is required';
-        if (!formData.contactPhone.trim() && !formData.contactEmail.trim()) {
-          newErrors.contact = 'Please provide either phone number or email';
-        }
-        break;
+interface AdminStatCardProps {
+  icon: React.ReactNode;
+  title: string;
+  value: string | number;
+  change?: string;
+  changeType?: 'increase' | 'decrease' | 'neutral';
+  bgGradient: string;
+  iconBg: string;
+  onClick?: () => void;
+  isLoading?: boolean;
+}
+
+interface QuickActionProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  link: string;
+  color: string;
+}
+
+const AdminStatCard: React.FC<AdminStatCardProps> = ({
+  icon,
+  title,
+  value,
+  change,
+  changeType = 'neutral',
+  bgGradient,
+  onClick,
+  isLoading = false
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const getChangeColor = () => {
+    switch (changeType) {
+      case 'increase': return 'text-emerald-400';
+      case 'decrease': return 'text-red-400';
+      default: return 'text-gray-400';
     }
+  };
 
-    setErrors(newErrors);
-    const isValid = Object.keys(newErrors).length === 0;
-    return isValid;
-  }, [formData]);
-
-  // Check if current step can proceed without setting errors
-  const checkCanProceed = useCallback((step: number): boolean => {
-    switch (step) {
-      case 1:
-        return !!(
-          formData.disasterType && 
-          formData.disasterDetail && 
-          formData.description.trim() && 
-          formData.description.length >= 20 &&
-          formData.severity && 
-          formData.dateTime &&
-          (formData.disasterDetail !== 'Other Natural' && 
-           formData.disasterDetail !== 'Other Non-Natural' || 
-           formData.customDisasterDetail)
-        );
-        
-      case 2:
-        return !!(
-          formData.location &&
-          formData.impactType.length > 0 &&
-          (!formData.impactType.includes('Other') || formData.customImpactType) &&
-          formData.impactDescription.trim() &&
-          formData.impactDescription.length >= 20
-        );
-        
-      case 3:
-        return !!(
-          formData.assistanceNeeded.length > 0 &&
-          (!formData.assistanceNeeded.includes('Other') || formData.customAssistanceType) &&
-          formData.assistanceDescription.trim() &&
-          formData.urgencyLevel &&
-          formData.contactName.trim() &&
-          (formData.contactPhone.trim() || formData.contactEmail.trim())
-        );
-        
-      default:
-        return true;
+  const getChangeIcon = () => {
+    switch (changeType) {
+      case 'increase': return <TrendingUp className="w-3 h-3" />;
+      case 'decrease': return <TrendingUp className="w-3 h-3 rotate-180" />;
+      default: return <Activity className="w-3 h-3" />;
     }
-  }, [formData]);
+  };
 
-  // Only run validation when explicitly needed, not on every form change
-  const canProceed = useMemo(() => {
-    return checkCanProceed(currentStep);
-  }, [currentStep, checkCanProceed]);
-
-  const handleNext = useCallback(() => {
-    const isValid = validateStep(currentStep);
-
-    if (isValid) {
-      setCurrentStep(prev => Math.min(prev + 1, 4));
-      setErrors({});
-    }
-    // If validation fails, errors will be set by validateStep
-  }, [currentStep, validateStep]);
-
-  // Handle Next button click - always validate, even if button would be disabled
-  const handleNextClick = useCallback(() => {
-    if (canProceed) {
-      handleNext();
-    } else {
-      // Even if we can't proceed, run validation to show errors
-      validateStep(currentStep);
-    }
-  }, [canProceed, handleNext, validateStep, currentStep]);
-
-  const handleBack = useCallback(() => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-    setErrors({});
-  }, []);
-
-  const handleLocationSelect = useCallback((lat: number, lng: number, address: string) => {
-    setFormData(prev => ({ ...prev, location: { address, lat, lng } }));
-  }, []);
-
-  const handlePhotoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    const validFiles = files.filter(file => {
-      const isValidType = file.type.startsWith('image/');
-      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
-      return isValidType && isValidSize;
-    });
-    
-    setFormData(prev => ({
-      ...prev,
-      photos: [...prev.photos, ...validFiles].slice(0, 10) // Max 10 photos
-    }));
-  }, []);
-
-  const removePhoto = useCallback((index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      photos: prev.photos.filter((_, i) => i !== index)
-    }));
-  }, []);
-
-  const toggleImpactType = useCallback((type: string) => {
-    setFormData(prev => ({
-      ...prev,
-      impactType: prev.impactType.includes(type)
-        ? prev.impactType.filter(t => t !== type)
-        : [...prev.impactType, type]
-    }));
-  }, []);
-
-  const toggleAssistanceType = useCallback((type: string) => {
-    setFormData(prev => ({
-      ...prev,
-      assistanceNeeded: prev.assistanceNeeded.includes(type)
-        ? prev.assistanceNeeded.filter(t => t !== type)
-        : [...prev.assistanceNeeded, type]
-    }));
-  }, []);
-
-  // Map UI disaster types to backend disaster types
-  const mapDisasterType = useCallback((disasterDetail: string): string => {
-    const mapping: Record<string, string> = {
-      // Natural disasters
-      'Earthquake': 'earthquake',
-      'Flood': 'flood',
-      'Hurricane/Typhoon': 'hurricane',
-      'Tornado': 'tornado',
-      'Wildfire': 'wildfire',
-      'Landslide': 'landslide',
-      'Tsunami': 'tsunami',
-      'Volcanic Eruption': 'volcano',
-      'Drought': 'drought',
-      'Blizzard/Ice Storm': 'storm',
-      'Hailstorm': 'storm',
-      // Human-made disasters
-      'Industrial Accident': 'industrial_accident',
-      'Chemical Spill': 'chemical_spill',
-      'Oil Spill': 'chemical_spill',
-      'Nuclear Incident': 'nuclear_incident',
-      'Building Collapse': 'structural_failure',
-      'Transportation Accident': 'transportation_accident',
-      'Cyber Attack': 'cyber_attack',
-      'Terrorism': 'other',
-      'Civil Unrest': 'other',
-      // Health emergencies
-      'Disease Outbreak': 'other',
-      'Pandemic': 'other',
-      'Food Poisoning': 'other',
-      'Water Contamination': 'other',
-      'Air Quality Crisis': 'other',
-      'Medical Emergency': 'other'
-    };
-    
-    return mapping[disasterDetail] || 'other';
-  }, []);
-
-  const handleSubmit = useCallback(async () => {
-    if (!isAuthenticated) {
-      setShowLoginPrompt(true);
-      return;
-    }
-
-    if (!validateStep(3)) return;
-
-    setIsSubmitting(true);
-    
-    try {
-      // Ensure required fields are not empty before submission
-      if (!formData.severity) {
-        setErrors({ severity: 'Please select severity level' });
-        return;
-      }
+  return (
+    <div 
+      className={`group relative overflow-hidden rounded-3xl ${bgGradient} p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 ${onClick ? 'cursor-pointer' : ''} border border-white/20`}
+      onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Animated background elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-20 translate-x-20 group-hover:scale-150 transition-transform duration-700"></div>
+      <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-16 -translate-x-16 group-hover:scale-125 transition-transform duration-700"></div>
       
-      if (!formData.urgencyLevel) {
-        setErrors({ urgencyLevel: 'Please select urgency level' });
-        return;
-      }
+      {/* Sparkle effects */}
+      <div className={`absolute top-4 right-4 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+        <Sparkles className="w-4 h-4 text-white/60" />
+      </div>
       
-      // Prepare submission data with proper disaster type mapping
-      const submissionData = {
-        disasterType: mapDisasterType(formData.disasterDetail),
-        disasterDetail: formData.disasterDetail,
-        customDisasterDetail: formData.customDisasterDetail,
-        description: formData.description,
-        severity: formData.severity as 'low' | 'medium' | 'high' | 'critical',
-        dateTime: formData.dateTime,
-        location: {
-          address: formData.location?.address || '',
-          lat: formData.location?.lat || 0,
-          lng: formData.location?.lng || 0
-        },
-        impactType: formData.impactType,
-        customImpactType: formData.customImpactType,
-        impactDescription: formData.impactDescription,
-        assistanceNeeded: formData.assistanceNeeded,
-        customAssistanceType: formData.customAssistanceType,
-        assistanceDescription: formData.assistanceDescription,
-        urgencyLevel: formData.urgencyLevel as 'immediate' | 'within_24h' | 'within_week' | 'non_urgent',
-        contactName: formData.contactName,
-        contactPhone: formData.contactPhone,
-        contactEmail: formData.contactEmail,
-        isEmergency: formData.isEmergency,
-        photos: formData.photos
-      };
-      
-      // Submit the report using the API
-      //await ReportsAPI.submitReport(submissionData);
-      
-      setSubmitSuccess(true);
-      
-      // Reset form after successful submission
-      setTimeout(() => {
-        navigate('/reports');
-      }, 3000);
-      
-    } catch (error) {
-      setErrors({ submit: 'Failed to submit report. Please try again.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [isAuthenticated, validateStep, formData, navigate, mapDisasterType]);
-
-  const stepTitles = [
-    'Disaster Information',
-    'Location & Impact',
-    'Assistance & Contact',
-    'Review & Submit'
-  ];
-
-  if (submitSuccess) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-4 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={32} className="text-green-600" />
+      <div className="relative z-10">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-white/70 text-sm font-medium mb-3 tracking-wide uppercase">{title}</p>
+            {isLoading ? (
+              <div className="flex items-center space-x-2 mb-2">
+                <Loader2 className="w-6 h-6 animate-spin text-white/60" />
+                <span className="text-2xl font-black text-white/60">Loading...</span>
+              </div>
+            ) : (
+              <p className="text-4xl font-black mb-2 tracking-tight">{value}</p>
+            )}
+            {change && !isLoading && (
+              <div className={`flex items-center space-x-1 text-sm ${getChangeColor()}`}>
+                {getChangeIcon()}
+                <span className="font-medium">{change}</span>
+              </div>
+            )}
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Report Submitted Successfully!</h2>
-          <p className="text-gray-600 mb-6">
-            Thank you for reporting this disaster. Our team will review your submission and take appropriate action.
-          </p>
-          <div className="flex items-center justify-center text-sm text-gray-500">
-            <Clock size={16} className="mr-2" />
-            Redirecting to reports page...
+          <div className={`p-4 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300`}>
+            <div className="group-hover:rotate-12 transition-transform duration-300">
+              {icon}
+            </div>
           </div>
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      
-      <main className="navbar-spacing pb-12">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8">
-          {/* Clean Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4">
-              Report a Disaster Impact
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Help your community by reporting disaster impacts and requesting assistance
-            </p>
-          </div>
-          
-          {/* Beautiful Progress Steps */}
-          <div className="flex items-center justify-center mb-16">
-            <div className="flex items-center space-x-8">
-              {stepTitles.map((title, index) => {
-                const stepNumber = index + 1;
-                const isActive = currentStep === stepNumber;
-                const isCompleted = currentStep > stepNumber;
-                
-                return (
-                  <div key={stepNumber} className="flex items-center">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                        isCompleted
-                          ? 'bg-blue-600 text-white shadow-lg'
-                          : isActive
-                          ? 'bg-blue-600 text-white shadow-lg scale-110'
-                          : 'bg-gray-200 text-gray-500'
-                      }`}>
-                        {isCompleted ? <CheckCircle size={20} /> : stepNumber}
-                      </div>
-                      <span className={`mt-3 text-sm font-medium text-center ${
-                        isActive ? 'text-blue-600' : isCompleted ? 'text-blue-600' : 'text-gray-400'
-                      }`}>
-                        {title}
-                      </span>
-                    </div>
-                    {index < stepTitles.length - 1 && (
-                      <div className={`w-16 h-0.5 mx-6 transition-colors duration-300 ${
-                        isCompleted ? 'bg-blue-600' : 'bg-gray-200'
-                      }`} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Clean Form Container */}
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 lg:p-12">
-            {/* Emergency Alert */}
-            {formData.isEmergency && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start">
-                <AlertTriangle size={20} className="text-red-600 mr-3 mt-0.5" />
-                <div>
-                  <h3 className="font-semibold text-red-800">Emergency Situation Detected</h3>
-                  <p className="text-red-700 text-sm mt-1">
-                    For immediate life-threatening emergencies, please call emergency services (911) first.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Step 1: Disaster Information */}
-            {currentStep === 1 && (
-              <div className="space-y-8">
-                <div>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-6">Disaster Information</h2>
-                  
-                  {/* Emergency Toggle */}
-                  <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.isEmergency}
-                        onChange={(e) => setFormData(prev => ({ ...prev, isEmergency: e.target.checked }))}
-                        className="mr-3 text-red-600 focus:ring-red-500"
-                      />
-                      <div>
-                        <span className="font-semibold text-orange-800">This is an emergency situation</span>
-                        <p className="text-sm text-orange-700">Check this if immediate response is needed</p>
-                      </div>
-                    </label>
-                  </div>
-
-                  {/* Refined Disaster Type Selection */}
-                  <div className="mb-8">
-                    <label className="block text-lg font-semibold text-gray-900 mb-6">
-                      Disaster Type
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(disasterTypes).map(([key, category]) => (
-                        <label
-                          key={key}
-                          className={`group relative flex items-center p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
-                            formData.disasterType === key
-                              ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md'
-                              : 'border-gray-200 hover:border-blue-300 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="disasterType"
-                            value={key}
-                            checked={formData.disasterType === key}
-                            onChange={(e) => setFormData(prev => ({ ...prev, disasterType: e.target.value, disasterDetail: '' }))}
-                            className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 focus:ring-2 mr-4"
-                          />
-                          <div className="flex-1">
-                            <span className={`text-lg font-semibold transition-colors duration-200 ${
-                              formData.disasterType === key ? 'text-blue-900' : 'text-gray-900 group-hover:text-blue-800'
-                            }`}>
-                              {category.label}
-                            </span>
-                          </div>
-                          {/* Selection indicator */}
-                          {formData.disasterType === key && (
-                            <div className="absolute top-3 right-3 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                              <CheckCircle size={16} className="text-white" />
-                            </div>
-                          )}
-                        </label>
-                      ))}
-                    </div>
-                    {errors.disasterType && (
-                      <p className="mt-3 text-sm text-red-600 flex items-center" data-testid="disasterType-error">
-                        <AlertTriangle size={16} className="mr-2" />
-                        {errors.disasterType}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Specific Disaster Type */}
-                  {formData.disasterType && (
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-4">
-                        Specific Type *
-                      </label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {disasterTypes[formData.disasterType as keyof typeof disasterTypes].options.map((option) => (
-                          <button
-                            key={option}
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, disasterDetail: option }))}
-                            className={`p-3 border rounded-xl text-sm transition-all duration-200 ${
-                              formData.disasterDetail === option
-                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            {option}
-                          </button>
-                        ))}
-                      </div>
-                      {errors.disasterDetail && (
-                        <p className="mt-2 text-sm text-red-600" data-testid="disasterDetail-error">{errors.disasterDetail}</p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Custom Disaster Detail */}
-                  {(formData.disasterDetail === 'Other Natural' || 
-                    formData.disasterDetail === 'Other Non-Natural') && (
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Please specify *
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.customDisasterDetail}
-                        onChange={(e) => setFormData(prev => ({ ...prev, customDisasterDetail: e.target.value }))}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Specify the type of disaster"
-                      />
-                      {errors.customDisasterDetail && (
-                        <p className="mt-2 text-sm text-red-600" data-testid="customDisasterDetail-error">{errors.customDisasterDetail}</p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Severity Level */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-4">
-                      Severity Level *
-                    </label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {[
-                        { value: 'low', label: 'Low', color: 'from-green-500 to-green-600' },
-                        { value: 'medium', label: 'Medium', color: 'from-yellow-500 to-yellow-600' },
-                        { value: 'high', label: 'High', color: 'from-orange-500 to-orange-600' },
-                        { value: 'critical', label: 'Critical', color: 'from-red-500 to-red-600' }
-                      ].map((severity) => (
-                        <button
-                          key={severity.value}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, severity: severity.value as any }))}
-                          className={`p-3 border rounded-xl transition-all duration-200 ${
-                            formData.severity === severity.value
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${severity.color} mx-auto mb-2`} />
-                          <span className="text-sm font-medium">{severity.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                    {errors.severity && (
-                      <p className="mt-2 text-sm text-red-600" data-testid="severity-error">{errors.severity}</p>
-                    )}
-                  </div>
-
-                  {/* Date and Time */}
-                  <div className="mb-6">
-                    <label htmlFor="dateTime" className="block text-sm font-medium text-gray-700 mb-2">
-                      When did this occur? *
-                    </label>
-                    <input
-                      id="dateTime"
-                      type="datetime-local"
-                      value={formData.dateTime}
-                      onChange={(e) => setFormData(prev => ({ ...prev, dateTime: e.target.value }))}
-                      max={new Date().toISOString().slice(0, 16)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    {errors.dateTime && (
-                      <p className="mt-2 text-sm text-red-600" data-testid="dateTime-error">{errors.dateTime}</p>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Detailed Description *
-                    </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      rows={4}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Provide detailed information about what happened, current situation, and any immediate concerns..."
-                    />
-                    <div className="flex justify-between mt-2">
-                      <div>
-                        {errors.description && (
-                          <p className="text-sm text-red-600" data-testid="description-error">{errors.description}</p>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        {formData.description.length}/500 characters
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Location & Impact */}
-            {currentStep === 2 && (
-              <div className="space-y-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Location & Impact Assessment</h2>
-
-                {/* Location Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-4">
-                    Location *
-                  </label>
-                  <div className="border border-gray-200 rounded-xl relative">
-                    <LocationPicker
-                      onLocationSelect={handleLocationSelect}
-                      height="450px"
-                    />
-                  </div>
-                  {formData.location && (
-                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center">
-                      <MapPin size={16} className="text-green-600 mr-2" />
-                      <span className="text-sm text-green-800">{formData.location.address}</span>
-                    </div>
-                  )}
-                  {errors.location && (
-                    <p className="mt-2 text-sm text-red-600" data-testid="location-error">{errors.location}</p>
-                  )}
-                </div>
-
-                {/* Impact Types */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-4">
-                    Type of Impact *
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {impactTypes.map((type) => (
-                      <label key={type} className="flex items-center p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all duration-200">
-                        <input
-                          type="checkbox"
-                          checked={formData.impactType.includes(type)}
-                          onChange={() => toggleImpactType(type)}
-                          className="mr-3 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm">{type}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {errors.impactType && (
-                    <p className="mt-2 text-sm text-red-600" data-testid="impactType-error">{errors.impactType}</p>
-                  )}
-                </div>
-
-                {/* Custom Impact Type */}
-                {formData.impactType.includes('Other') && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Please specify other impact type *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.customImpactType}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customImpactType: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Specify the type of impact"
-                    />
-                    {errors.customImpactType && (
-                      <p className="mt-2 text-sm text-red-600" data-testid="customImpactType-error">{errors.customImpactType}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Impact Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Detailed Impact Description *
-                  </label>
-                  <textarea
-                    value={formData.impactDescription}
-                    onChange={(e) => setFormData(prev => ({ ...prev, impactDescription: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    rows={4}
-                    maxLength={500}
-                    placeholder="Provide detailed information about the impact, current situation, and any immediate concerns..."
-                  />
-                  <div className="flex justify-between items-center mt-2">
-                    {errors.impactDescription && (
-                      <p className="text-sm text-red-600" data-testid="impactDescription-error">{errors.impactDescription}</p>
-                    )}
-                    <p className="text-sm text-gray-500 ml-auto">
-                      {formData.impactDescription.length}/500 characters
-                    </p>
-                  </div>
-                </div>
-
-                {/* Photo Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-4">
-                    Photos (Optional - Max 10 photos, 10MB each)
-                  </label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                      id="photo-upload"
-                    />
-                    <label htmlFor="photo-upload" className="cursor-pointer">
-                      <Camera size={48} className="mx-auto text-gray-400 mb-4" />
-                      <p className="text-gray-600 mb-2">Click to upload photos</p>
-                      <p className="text-sm text-gray-500">PNG, JPG, GIF up to 10MB each</p>
-                    </label>
-                  </div>
-
-                  {formData.photos.length > 0 && (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
-                      {formData.photos.map((photo, index) => (
-                        <div key={index} className="relative group">
-                          <img
-                            src={URL.createObjectURL(photo)}
-                            alt={`Upload ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-xl"
-                          />
-                          <button
-                            onClick={() => removePhoto(index)}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Assistance & Contact */}
-            {currentStep === 3 && (
-              <div className="space-y-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Assistance Needed & Contact Information</h2>
-
-                {/* Urgency Level */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-4">
-                    Urgency Level *
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {[
-                      { value: 'immediate', label: 'Immediate', desc: 'Life-threatening', color: 'from-red-500 to-red-600', icon: Zap },
-                      { value: 'within_24h', label: 'Within 24h', desc: 'Urgent', color: 'from-orange-500 to-orange-600', icon: Clock },
-                      { value: 'within_week', label: 'Within Week', desc: 'Important', color: 'from-yellow-500 to-yellow-600', icon: Clock },
-                      { value: 'non_urgent', label: 'Non-urgent', desc: 'When possible', color: 'from-green-500 to-green-600', icon: Clock }
-                    ].map((urgency) => {
-                      const Icon = urgency.icon;
-                      return (
-                        <button
-                          key={urgency.value}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, urgencyLevel: urgency.value as any }))}
-                          className={`p-4 border rounded-xl transition-all duration-200 text-center ${
-                            formData.urgencyLevel === urgency.value
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${urgency.color} mx-auto mb-2 flex items-center justify-center`}>
-                            <Icon size={20} className="text-white" />
-                          </div>
-                          <div className="text-sm font-medium">{urgency.label}</div>
-                          <div className="text-xs text-gray-500">{urgency.desc}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {errors.urgencyLevel && (
-                    <p className="mt-2 text-sm text-red-600" data-testid="urgencyLevel-error">{errors.urgencyLevel}</p>
-                  )}
-                </div>
-
-                {/* Assistance Types */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-4">
-                    Type of Assistance Needed *
-                  </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {assistanceTypes.map((type) => (
-                      <label key={type} className="flex items-center p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all duration-200">
-                        <input
-                          type="checkbox"
-                          checked={formData.assistanceNeeded.includes(type)}
-                          onChange={() => toggleAssistanceType(type)}
-                          className="mr-3 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm">{type}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {errors.assistanceNeeded && (
-                    <p className="mt-2 text-sm text-red-600" data-testid="assistanceNeeded-error">{errors.assistanceNeeded}</p>
-                  )}
-                </div>
-
-                {/* Custom Assistance Type */}
-                {formData.assistanceNeeded.includes('Other') && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Please specify other assistance type *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.customAssistanceType}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customAssistanceType: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Specify the type of assistance needed"
-                    />
-                    {errors.customAssistanceType && (
-                      <p className="mt-2 text-sm text-red-600" data-testid="customAssistanceType-error">{errors.customAssistanceType}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Assistance Description */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Detailed Assistance Description *
-                  </label>
-                  <textarea
-                    value={formData.assistanceDescription}
-                    onChange={(e) => setFormData(prev => ({ ...prev, assistanceDescription: e.target.value }))}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Please provide specific details about what help is needed, how many people are affected, any special requirements, accessibility needs, etc."
-                  />
-                  {errors.assistanceDescription && (
-                    <p className="mt-2 text-sm text-red-600" data-testid="assistanceDescription-error">{errors.assistanceDescription}</p>
-                  )}
-                </div>
-
-
-              </div>
-            )}
-
-            {/* Step 4: Review & Submit */}
-            {currentStep === 4 && (
-              <div className="space-y-8">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Review & Submit</h2>
-
-                <div className="bg-gray-50 rounded-xl p-6 space-y-6">
-                  {/* Disaster Information */}
-                  <div className="border-b border-gray-200 pb-4">
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-                      <FileText size={20} className="mr-2" />
-                      Disaster Information
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Type:</span>
-                        <p className="font-medium">
-                          {formData.disasterDetail || formData.customDisasterDetail}
-                          {formData.isEmergency && <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">EMERGENCY</span>}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Severity:</span>
-                        <p className="font-medium capitalize">{formData.severity}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Date & Time:</span>
-                        <p className="font-medium">{new Date(formData.dateTime).toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Urgency:</span>
-                        <p className="font-medium capitalize">{formData.urgencyLevel?.replace('_', ' ')}</p>
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <span className="text-gray-600">Description:</span>
-                      <p className="font-medium mt-1">{formData.description}</p>
-                    </div>
-                  </div>
-
-                  {/* Location & Impact */}
-                  <div className="border-b border-gray-200 pb-4">
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-                      <MapPin size={20} className="mr-2" />
-                      Location & Impact
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Location:</span>
-                        <p className="font-medium">{formData.location?.address}</p>
-                        <p className="text-xs text-gray-500">
-                          {formData.location?.lat.toFixed(6)}, {formData.location?.lng.toFixed(6)}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <span className="text-gray-600">Impact Types:</span>
-                        <p className="font-medium">
-                          {formData.impactType.join(', ')}
-                          {formData.impactType.includes('Other') && formData.customImpactType &&
-                            ` (${formData.customImpactType})`
-                          }
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Impact Description:</span>
-                        <p className="font-medium text-sm leading-relaxed">{formData.impactDescription}</p>
-                      </div>
-                      {/* {formData.estimatedDamage && (
-                        <div>
-                          <span className="text-gray-600">Estimated Damage:</span>
-                          <p className="font-medium capitalize">{formData.estimatedDamage}</p>
-                        </div>
-                      )} */}
-                    </div>
-                    
-                    {formData.photos.length > 0 && (
-                      <div className="mt-3">
-                        <span className="text-gray-600">Photos ({formData.photos.length}):</span>
-                        <div className="flex space-x-2 mt-2">
-                          {formData.photos.slice(0, 5).map((photo, index) => (
-                            <img
-                              key={index}
-                              src={URL.createObjectURL(photo)}
-                              alt={`Preview ${index + 1}`}
-                              className="w-16 h-16 object-cover rounded-lg"
-                            />
-                          ))}
-                          {formData.photos.length > 5 && (
-                            <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center text-sm text-gray-600">
-                              +{formData.photos.length - 5}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Assistance & Contact */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-                      <Users size={20} className="mr-2" />
-                      Assistance & Contact
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Assistance Needed:</span>
-                        <p className="font-medium">
-                          {formData.assistanceNeeded.join(', ')}
-                          {formData.assistanceNeeded.includes('Other') && formData.customAssistanceType &&
-                            ` (${formData.customAssistanceType})`
-                          }
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Contact:</span>
-                        <p className="font-medium">{formData.contactName}</p>
-                        {formData.contactPhone && <p className="text-gray-600">{formData.contactPhone}</p>}
-                        {formData.contactEmail && <p className="text-gray-600">{formData.contactEmail}</p>}
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <span className="text-gray-600">Assistance Description:</span>
-                      <p className="font-medium mt-1">{formData.assistanceDescription}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Important Notice */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start">
-                  <AlertTriangle size={20} className="text-blue-600 mr-3 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-blue-800">Important Notice</h3>
-                    <p className="text-blue-700 text-sm mt-1">
-                      Your report will be reviewed by our emergency response team. We may contact you for additional information. 
-                      For immediate life-threatening emergencies, please call emergency services (911) directly.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Submit Error */}
-                {errors.submit && (
-                  <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                    <p className="text-red-700">{errors.submit}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Login Prompt Modal */}
-            {showLoginPrompt && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-xl p-6 max-w-md mx-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Login Required</h3>
-                  <p className="text-gray-600 mb-6">
-                    You need to be logged in to submit a disaster impact report. This helps us verify reports and contact you if needed.
-                  </p>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => navigate('/login')}
-                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Login
-                    </button>
-                    <button
-                      onClick={() => setShowLoginPrompt(false)}
-                      className="flex-1 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-8 border-t border-gray-100">
-              <button
-                onClick={handleBack}
-                disabled={currentStep === 1}
-                className="flex items-center px-6 py-3 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ChevronLeft size={20} className="mr-2" />
-                Back
-              </button>
-
-              {currentStep < 4 ? (
-                <button
-                  onClick={handleNextClick}
-                  className={`flex items-center px-6 py-3 rounded-xl transition-all duration-200 shadow-sm ${
-                    canProceed 
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700' 
-                      : 'bg-gray-300 text-gray-600 cursor-pointer'
-                  }`}
-                >
-                  Next
-                  <ChevronRight size={20} className="ml-2" />
-                </button>
-              ) : (
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || !canProceed}
-                  className="flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                      Submitting...
-                    </>
-                  ) : (
-                    'Submit Report'
-                  )}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </main>
-
-      <Footer />
     </div>
   );
 };
 
-export default ReportImpact;
+const QuickActionCard: React.FC<QuickActionProps> = ({ icon, title, description, link, color }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <Link 
+      to={link}
+      className="group relative bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-6 hover:shadow-2xl transition-all duration-500 hover:border-blue-300/50 hover:-translate-y-1 hover:bg-white overflow-hidden"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-purple-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      
+      {/* Floating particles effect */}
+      <div className={`absolute top-2 right-2 transition-all duration-700 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
+        <Star className="w-3 h-3 text-yellow-400" />
+      </div>
+      <div className={`absolute bottom-2 left-2 transition-all duration-700 delay-100 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <Zap className="w-3 h-3 text-blue-400" />
+      </div>
+      
+      <div className="relative z-10">
+        <div className="flex items-start space-x-4">
+          <div className={`p-4 rounded-2xl ${color} group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg group-hover:shadow-xl`}>
+            <div className="group-hover:scale-110 transition-transform duration-300">
+              {icon}
+            </div>
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-300 text-lg">{title}</h3>
+            <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300 leading-relaxed">{description}</p>
+            
+            {/* Animated arrow */}
+            <div className="mt-3 flex items-center text-blue-600 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-0 group-hover:translate-x-1">
+              <span className="text-sm font-medium mr-1">Explore</span>
+              <ChevronRight className="w-4 h-4" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+const AdminPanel: React.FC = () => {
+  const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
+  // Enhanced state management
+  const [timeRange, setTimeRange] = useState('7d');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{
+    id: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    message: string;
+    timestamp: Date;
+  }>>([]);
+
+  // Update time every minute - optimized
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Network status monitoring
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Notification system - optimized to prevent memory leaks
+  const addNotification = useCallback((type: 'success' | 'error' | 'warning' | 'info', message: string) => {
+    const id = Date.now().toString();
+    setNotifications(prev => {
+      // Limit notifications to prevent memory issues
+      const newNotifications = [...prev, { id, type, message, timestamp: new Date() }];
+      return newNotifications.slice(-5); // Keep only last 5 notifications
+    });
+    
+    // Auto-remove after 5 seconds with cleanup
+    const timeoutId = setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+    
+    // Store timeout ID for cleanup
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  // Manual refresh functionality
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries();
+      addNotification('success', 'Data refreshed successfully');
+    } catch (error) {
+      addNotification('error', 'Failed to refresh data');
+    } finally {
+      setTimeout(() => setRefreshing(false), 1000);
+    }
+  }, [queryClient, addNotification]);
+
+  // Fullscreen toggle
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'r':
+            e.preventDefault();
+            handleRefresh();
+            break;
+          case 'k':
+            e.preventDefault();
+            document.querySelector<HTMLInputElement>('input[placeholder="Search..."]')?.focus();
+            break;
+          case 'b':
+            e.preventDefault();
+            setSidebarOpen(prev => !prev);
+            break;
+        }
+      }
+      if (e.key === 'Escape') {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleRefresh]);
+
+  // Check if we're on the main admin panel page
+  const isMainPanel = location.pathname === '/admin' || location.pathname === '/admin/';
+
+  // Navigation items with CMS functionality
+  const navItems = [
+    {
+      title: 'Dashboard',
+      href: '/admin',
+      icon: <Home className="w-5 h-5" />,
+      active: isMainPanel
+    },
+    {
+      title: 'User Management',
+      href: '/admin/users',
+      icon: <Users className="w-5 h-5" />,
+      active: location.pathname.includes('/admin/users')
+    },
+    {
+      title: 'Report Management',
+      href: '/admin/reports',
+      icon: <FileText className="w-5 h-5" />,
+      active: location.pathname.includes('/admin/reports')
+    },
+    {
+      title: 'Support Request Management',
+      href: '/admin/support-requests',
+      icon: <Shield className="w-5 h-5" />,
+      active: location.pathname.includes('/admin/support-requests')
+    },
+    {
+      title: 'Audit Logs',
+      href: '/admin/audit-logs',
+      icon: <History className="w-5 h-5" />,
+      active: location.pathname.includes('/admin/audit-logs')
+    },
+    {
+      title: 'Analytics',
+      href: '/admin/analytics',
+      icon: <BarChart3 className="w-5 h-5" />,
+      active: location.pathname.includes('/admin/analytics')
+    },
+    {
+      title: 'Settings',
+      href: '/admin/settings',
+      icon: <Settings className="w-5 h-5" />,
+      active: location.pathname.includes('/admin/settings')
+    }
+  ];
+
+  // Debug logging
+  console.log('Total navItems:', navItems.length);
+  console.log('System items (slice 4):', navItems.slice(4));
+  console.log('System items length:', navItems.slice(4).length);
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/login';
+  };
+
+  // Enhanced data fetching with better error handling
+  const {
+    data: userStats,
+    isLoading: isLoadingUserStats,
+    error: userStatsError,
+    isRefetching: isRefetchingUserStats
+  } = useQuery({
+    queryKey: ['adminDashboardStats', timeRange],
+    queryFn: () => userManagementApi.getDashboardStats(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 3;
+    },
+    refetchInterval: isOnline ? 10 * 60 * 1000 : false, // Reduced frequency - 10 minutes
+    enabled: isOnline
+  });
+
+  const {
+    data: reportsStats,
+    isLoading: isLoadingReportsStats,
+    error: reportsStatsError,
+    isRefetching: isRefetchingReportsStats
+  } = useQuery({
+    queryKey: ['adminReportsStats', timeRange],
+    queryFn: () => ReportsAPI.getReportsStatistics(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false;
+      return failureCount < 3;
+    },
+    refetchInterval: isOnline ? 10 * 60 * 1000 : false, // Reduced frequency - 10 minutes
+    enabled: isOnline
+  });
+
+
+
+  // Enhanced loading and error states
+  const isLoadingAnyStats = isLoadingUserStats || isLoadingReportsStats;
+  const isRefreshingAnyStats = isRefetchingUserStats || isRefetchingReportsStats || refreshing;
+  const hasAnyError = userStatsError || reportsStatsError;
+
+  // Memoized calculations for better performance
+  const enhancedStats = useMemo(() => {
+    const baseStats = {
+      totalUsers: (userStats as any)?.totalUsers || 0,
+      totalReports: (reportsStats as any)?.totalReports || 0,
+      pendingVerification: (reportsStats as any)?.pendingReports || 0,
+      systemHealth: 98.5, // TODO: Add system health API
+      activeUsers: (userStats as any)?.activeUsers || 0,
+      verifiedReports: (reportsStats as any)?.verifiedReports || 0,
+      blacklistedUsers: (userStats as any)?.suspendedUsers || 0,
+      serverUptime: '99.9%' // TODO: Add system health API
+    };
+
+    // Calculate growth percentages
+    const userGrowth = (userStats as any)?.previousPeriodUsers 
+      ? ((baseStats.totalUsers - (userStats as any).previousPeriodUsers) / (userStats as any).previousPeriodUsers * 100).toFixed(1)
+      : '0';
+    
+    const reportGrowth = (reportsStats as any)?.previousPeriodReports
+      ? ((baseStats.totalReports - (reportsStats as any).previousPeriodReports) / (reportsStats as any).previousPeriodReports * 100).toFixed(1)
+      : '0';
+
+    const userGrowthNum = parseFloat(userGrowth);
+    const reportGrowthNum = parseFloat(reportGrowth);
+
+    return {
+      ...baseStats,
+      userGrowth: `${userGrowthNum >= 0 ? '+' : ''}${userGrowth}%`,
+      reportGrowth: `${reportGrowthNum >= 0 ? '+' : ''}${reportGrowth}%`,
+      userGrowthType: userGrowthNum >= 0 ? 'increase' as const : 'decrease' as const,
+      reportGrowthType: reportGrowthNum >= 0 ? 'increase' as const : 'decrease' as const
+    };
+  }, [userStats, reportsStats]);
+
+  const quickActions = [
+    {
+      icon: <Users className="w-6 h-6 text-white" />,
+      title: 'User Management',
+      description: 'Manage users, roles, and permissions',
+      link: '/admin/users',
+      color: 'bg-blue-500'
+    },
+    {
+      icon: <FileText className="w-6 h-6 text-white" />,
+      title: 'Report Management',
+      description: 'Review and verify disaster reports',
+      link: '/admin/reports',
+      color: 'bg-green-500'
+    },
+    {
+      icon: <BarChart3 className="w-6 h-6 text-white" />,
+      title: 'Analytics Dashboard',
+      description: 'View detailed analytics and insights',
+      link: '/admin/analytics',
+      color: 'bg-purple-500'
+    },
+    {
+      icon: <Settings className="w-6 h-6 text-white" />,
+      title: 'System Settings',
+      description: 'Configure system parameters and settings',
+      link: '/admin/settings',
+      color: 'bg-gray-600'
+    },
+    {
+      icon: <Database className="w-6 h-6 text-white" />,
+      title: 'Database Management',
+      description: 'Monitor and manage database operations',
+      link: '/admin/database',
+      color: 'bg-indigo-500'
+    },
+    {
+      icon: <Bell className="w-6 h-6 text-white" />,
+      title: 'Notifications',
+      description: 'Manage system notifications and alerts',
+      link: '/admin/notifications',
+      color: 'bg-yellow-500'
+    }
+  ];
+
+  // Enhanced recent activities with real-time data
+  const recentActivities = useMemo(() => {
+    const activities = [
+      {
+        id: 1,
+        action: 'New user registration',
+        user: 'Sarah Johnson',
+        time: '2 minutes ago',
+        type: 'user',
+        icon: <UserCheck className="w-4 h-4" />,
+        priority: 'low'
+      },
+      {
+        id: 2,
+        action: 'Report verified',
+        user: 'Admin',
+        time: '15 minutes ago',
+        type: 'report',
+        icon: <CheckCircle className="w-4 h-4" />,
+        priority: 'medium'
+      },
+      {
+        id: 3,
+        action: 'System backup completed',
+        user: 'System',
+        time: '1 hour ago',
+        type: 'system',
+        icon: <Database className="w-4 h-4" />,
+        priority: 'low'
+      },
+      {
+        id: 4,
+        action: 'Critical alert resolved',
+        user: 'Admin Team',
+        time: '2 hours ago',
+        type: 'alert',
+        icon: <AlertTriangle className="w-4 h-4" />,
+        priority: 'high'
+      }
+    ];
+
+    // Filter activities based on search query
+    if (searchQuery) {
+      return activities.filter(activity => 
+        activity.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        activity.user.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    return activities;
+  }, [searchQuery]);
+
+
+
+  const AdminDashboard = () => (
+    <div className="space-y-8">
+      {/* Welcome Section */}
+      <div className="relative">
+        <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl p-8 text-white overflow-hidden relative">
+          {/* Animated background elements */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent"></div>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-48 translate-x-48 animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-32 -translate-x-32 animate-pulse delay-1000"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-green-300 text-sm font-medium">System Online</span>
+                  <span className="text-white/60 text-sm">{currentTime.toLocaleTimeString()}</span>
+                </div>
+                <h2 className="text-4xl font-black mb-3 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                  Welcome back, {user?.name || 'Admin'}! ✨
+                </h2>
+                <p className="text-blue-100 text-lg leading-relaxed mb-4">
+                  Here's what's happening with your disaster response platform today.
+                </p>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                    <TrendingUp className="w-4 h-4 text-green-300" />
+                    <span className="text-sm font-medium">All systems operational</span>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
+                    <Users className="w-4 h-4 text-blue-300" />
+                    <span className="text-sm font-medium">{enhancedStats.activeUsers} active users</span>
+                  </div>
+                </div>
+              </div>
+              <div className="hidden md:block">
+                <div className="relative">
+                  <div className="w-32 h-32 bg-gradient-to-br from-white/20 to-white/10 rounded-3xl flex items-center justify-center backdrop-blur-md border border-white/30 shadow-2xl">
+                    <Activity className="w-16 h-16 text-white animate-pulse" />
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl opacity-50"></div>
+        <div className="relative p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
+              <Sparkles className="w-6 h-6 text-purple-600" />
+              <span>Platform Analytics</span>
+            </h3>
+            <div className="flex items-center space-x-2 text-sm text-gray-600">
+              <div className={`w-2 h-2 rounded-full ${isLoadingAnyStats ? 'bg-yellow-500 animate-pulse' : 'bg-green-500 animate-pulse'}`}></div>
+              <span>{isLoadingAnyStats ? 'Loading Data...' : 'Live Data'}</span>
+              {(userStatsError || reportsStatsError) && (
+                <span className="text-red-500 text-xs">
+                  • {userStatsError ? 'User stats error' : ''} {reportsStatsError ? 'Reports stats error' : ''}
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Error State */}
+          {hasAnyError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+                <div>
+                  <h4 className="text-red-800 font-medium">Data Loading Issues</h4>
+                  <p className="text-red-600 text-sm">
+                    Some statistics may be outdated. 
+                    {!isOnline && ' You are currently offline.'}
+                    <button 
+                      onClick={handleRefresh}
+                      className="ml-2 text-red-700 underline hover:no-underline"
+                    >
+                      Try refreshing
+                    </button>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '0ms'}}>
+              <AdminStatCard
+                icon={<Users className="w-6 h-6" />}
+                title="Total Users"
+                value={isLoadingUserStats ? 0 : enhancedStats.totalUsers.toLocaleString()}
+                change={enhancedStats.userGrowth !== '+0%' ? `${enhancedStats.userGrowth} from last period` : undefined}
+                changeType={enhancedStats.userGrowthType}
+                bgGradient="bg-gradient-to-br from-blue-500 to-blue-600"
+                iconBg="bg-blue-400"
+                onClick={() => navigate('/admin/users')}
+                isLoading={isLoadingUserStats}
+              />
+            </div>
+            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '100ms'}}>
+              <AdminStatCard
+                icon={<FileText className="w-6 h-6" />}
+                title="Total Reports"
+                value={isLoadingReportsStats ? 0 : enhancedStats.totalReports.toLocaleString()}
+                change={enhancedStats.reportGrowth !== '+0%' ? `${enhancedStats.reportGrowth} from last period` : undefined}
+                changeType={enhancedStats.reportGrowthType}
+                bgGradient="bg-gradient-to-br from-green-500 to-emerald-600"
+                iconBg="bg-green-400"
+                onClick={() => navigate('/admin/reports')}
+                isLoading={isLoadingReportsStats}
+              />
+            </div>
+            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '200ms'}}>
+              <AdminStatCard
+                icon={<Clock className="w-6 h-6" />}
+                title="Pending Verification"
+                value={isLoadingReportsStats ? 0 : enhancedStats.pendingVerification}
+                change={(reportsStats as any)?.averageResponseTime ? `${(reportsStats as any).averageResponseTime} avg response` : undefined}
+                changeType={enhancedStats.pendingVerification > 10 ? "decrease" as const : "neutral" as const}
+                bgGradient="bg-gradient-to-br from-yellow-500 to-orange-500"
+                iconBg="bg-yellow-400"
+                onClick={() => navigate('/admin/reports?filter=pending')}
+                isLoading={isLoadingReportsStats}
+              />
+            </div>
+            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '300ms'}}>
+              <AdminStatCard
+                icon={<TrendingUp className="w-6 h-6" />}
+                title="System Health"
+                value={`${enhancedStats.systemHealth}%`}
+                change={enhancedStats.systemHealth >= 95 ? "Excellent performance" : enhancedStats.systemHealth >= 85 ? "Good performance" : "Needs attention"}
+                changeType={enhancedStats.systemHealth >= 95 ? "increase" as const : enhancedStats.systemHealth >= 85 ? "neutral" as const : "decrease" as const}
+                bgGradient="bg-gradient-to-br from-purple-500 to-purple-600"
+                iconBg="bg-purple-400"
+                onClick={() => navigate('/admin/settings?tab=system')}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 rounded-3xl opacity-60"></div>
+        <div className="relative p-6">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
+                <Zap className="w-6 h-6 text-indigo-600" />
+                <span>Quick Actions</span>
+              </h3>
+              <p className="text-gray-600 mt-1">Streamline your workflow with these powerful tools</p>
+            </div>
+            <div className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium">
+              <Star className="w-4 h-4" />
+              <span>Pro Tools</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {quickActions.map((action, index) => (
+              <div key={index} className="transform transition-all duration-700 hover:scale-105" style={{animationDelay: `${index * 150}ms`}}>
+                <QuickActionCard {...action} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Activity */}
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
+          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+                <Activity className="w-5 h-5 text-blue-600" />
+                <span>Recent Activity</span>
+              </h3>
+              <Link 
+                to="/admin/activity" 
+                className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1 bg-blue-50 px-3 py-1 rounded-full hover:bg-blue-100 transition-all"
+              >
+                <span>View All</span>
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {recentActivities.map((activity) => (
+                <div key={activity.id} className="flex items-start space-x-4 p-4 rounded-xl hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-blue-200 group/item">
+                  <div className={`p-2 rounded-lg group-hover/item:scale-110 transition-transform ${
+                    activity.type === 'user' ? 'bg-blue-100 text-blue-600' :
+                    activity.type === 'report' ? 'bg-green-100 text-green-600' :
+                    activity.type === 'system' ? 'bg-purple-100 text-purple-600' :
+                    'bg-yellow-100 text-yellow-600'
+                  }`}>
+                    {activity.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900 group-hover/item:text-blue-900 transition-colors">{activity.action}</p>
+                    <p className="text-xs text-gray-500 flex items-center space-x-1">
+                      <span>by {activity.user}</span>
+                      <span>•</span>
+                      <Clock className="w-3 h-3" />
+                      <span>{activity.time}</span>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* System Status */}
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
+          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+                <Shield className="w-5 h-5 text-green-600" />
+                <span>System Status</span>
+              </h3>
+              <div className="flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-full">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs font-medium text-green-700">All Systems Operational</span>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 hover:shadow-md transition-all group/status">
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full animate-pulse"></div>
+                  <Globe className="w-5 h-5 text-green-600 group-hover/status:scale-110 transition-transform" />
+                  <span className="font-semibold text-gray-900">Server Uptime</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="text-green-700 font-bold">{enhancedStats.serverUptime}</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200 hover:shadow-md transition-all group/status">
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-pulse"></div>
+                  <Activity className="w-5 h-5 text-blue-600 group-hover/status:scale-110 transition-transform" />
+                  <span className="font-semibold text-gray-900">Active Users</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="w-4 h-4 text-blue-600" />
+                  <span className="text-blue-700 font-bold">{enhancedStats.activeUsers}</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 hover:shadow-md transition-all group/status">
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full animate-pulse"></div>
+                  <CheckCircle className="w-5 h-5 text-purple-600 group-hover/status:scale-110 transition-transform" />
+                  <span className="font-semibold text-gray-900">Verified Reports</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Star className="w-4 h-4 text-purple-600" />
+                  <span className="text-purple-700 font-bold">{enhancedStats.verifiedReports}</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-200 hover:shadow-md transition-all group/status">
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></div>
+                  <AlertTriangle className="w-5 h-5 text-red-600 group-hover/status:scale-110 transition-transform" />
+                  <span className="font-semibold text-gray-900">Blacklisted Users</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <X className="w-4 h-4 text-red-600" />
+                  <span className="text-red-700 font-bold">{enhancedStats.blacklistedUsers}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            className={`p-4 rounded-lg shadow-lg border-l-4 bg-white max-w-sm transform transition-all duration-300 ${
+              notification.type === 'success' ? 'border-green-500' :
+              notification.type === 'error' ? 'border-red-500' :
+              notification.type === 'warning' ? 'border-yellow-500' :
+              'border-blue-500'
+            }`}
+          >
+            <div className="flex items-start space-x-3">
+              <div className={`flex-shrink-0 ${
+                notification.type === 'success' ? 'text-green-500' :
+                notification.type === 'error' ? 'text-red-500' :
+                notification.type === 'warning' ? 'text-yellow-500' :
+                'text-blue-500'
+              }`}>
+                {notification.type === 'success' && <CheckCircle className="w-5 h-5" />}
+                {notification.type === 'error' && <AlertTriangle className="w-5 h-5" />}
+                {notification.type === 'warning' && <AlertTriangle className="w-5 h-5" />}
+                {notification.type === 'info' && <Bell className="w-5 h-5" />}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">{notification.message}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {notification.timestamp.toLocaleTimeString()}
+                </p>
+              </div>
+              <button
+                onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
+                className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
+          <div className="flex items-center space-x-3">
+              <Shield className="w-8 h-8 text-blue-600" />
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">DisasterResponse</h1>
+                <p className="text-xs text-gray-500">Admin Panel</p>
+              </div>
+            </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden p-1 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* User Profile */}
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-semibold text-sm">
+                {user?.name?.charAt(0) || 'A'}
+              </span>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin User'}</p>
+              <p className="text-xs text-gray-500">Super Admin</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {/* Main Navigation */}
+          <div className="mb-6">
+            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Main</h3>
+            {navItems.slice(0, 4).map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                onClick={() => setSidebarOpen(false)}
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                  item.active
+                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className={`${item.active ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                    {item.icon}
+                  </div>
+                  <span>{item.title}</span>
+                </div>
+                {item.active && (
+                  <ChevronRight className="w-4 h-4 text-blue-600" />
+                )}
+              </Link>
+            ))}
+          </div>
+
+          {/* System Section */}
+          {navItems.slice(4).length > 0 && (
+            <div>
+              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">System</h3>
+              {navItems.slice(4).map((item) => (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                    item.active
+                      ? 'bg-purple-50 text-purple-700 border-r-2 border-purple-600'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`${item.active ? 'text-purple-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
+                      {item.icon}
+                    </div>
+                    <span>{item.title}</span>
+                  </div>
+                  {item.active && (
+                    <ChevronRight className="w-4 h-4 text-purple-600" />
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
+        </nav>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-gray-200">
+          <button
+            onClick={handleLogout}
+            className="flex items-center space-x-3 w-full px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Enhanced Top Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
+                title="Open sidebar (Ctrl+B)"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="flex items-center space-x-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
+                    <span>{navItems.find(item => item.active)?.title || 'Dashboard'}</span>
+                    {hasAnyError && (
+                      <AlertTriangle className="w-4 h-4 text-red-500" />
+                    )}
+                    {!isOnline && (
+                      <WifiOff className="w-4 h-4 text-orange-500" />
+                    )}
+                  </h2>
+                  <p className="text-sm text-gray-500 flex items-center space-x-2">
+                    <span>Manage your disaster response platform</span>
+                    <span>•</span>
+                    <span className="flex items-center space-x-1">
+                      {isOnline ? (
+                        <Wifi className="w-3 h-3 text-green-500" />
+                      ) : (
+                        <WifiOff className="w-3 h-3 text-orange-500" />
+                      )}
+                      <span className={isOnline ? 'text-green-600' : 'text-orange-600'}>
+                        {isOnline ? 'Online' : 'Offline'}
+                      </span>
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {/* Enhanced Search */}
+              <div className="relative hidden md:block">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search... (Ctrl+K)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Time Range Selector */}
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <select 
+                  value={timeRange} 
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none cursor-pointer"
+                  title="Select time range"
+                >
+                  <option value="1h">Last Hour</option>
+                  <option value="24h">Last 24 Hours</option>
+                  <option value="7d">Last 7 Days</option>
+                  <option value="30d">Last 30 Days</option>
+                  <option value="90d">Last 90 Days</option>
+                  <option value="1y">Last Year</option>
+                </select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-1">
+                {/* Refresh Button */}
+                <button 
+                  onClick={handleRefresh}
+                  disabled={isRefreshingAnyStats}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Refresh data (Ctrl+R)"
+                >
+                  <RefreshCw className={`w-5 h-5 ${isRefreshingAnyStats ? 'animate-spin' : ''}`} />
+                </button>
+
+                {/* Fullscreen Toggle */}
+                <button 
+                  onClick={toggleFullscreen}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden lg:block"
+                  title="Toggle fullscreen"
+                >
+                  {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                </button>
+
+                {/* Export Button */}
+                <button 
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Export data"
+                  onClick={() => {
+                    // TODO: Implement export functionality
+                    console.log('Export data');
+                  }}
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+
+                {/* Notifications */}
+                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative">
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Loading Bar */}
+          {isRefreshingAnyStats && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-200">
+              <div className="h-full bg-blue-600 animate-pulse"></div>
+            </div>
+          )}
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+          <div className="p-6">
+            <Routes>
+              <Route path="/" element={<AdminDashboard />} />
+              <Route path="/users" element={<UserManagement />} />
+              <Route path="/reports" element={<ReportManagement />} />
+              <Route path="/support-requests" element={<AdminSupportRequestManagement />} />
+              <Route path="/audit-logs" element={<AuditLogsPage />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/settings" element={<SystemSettings />} />
+            </Routes>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+// Wrapped component with error boundary
+const AdminPanelWithErrorBoundary: React.FC = () => (
+  <ErrorBoundary>
+    <AdminPanel />
+  </ErrorBoundary>
+);
+
+export default AdminPanelWithErrorBoundary;

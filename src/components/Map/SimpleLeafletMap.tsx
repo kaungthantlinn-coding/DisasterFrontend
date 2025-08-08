@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { RealWorldDisaster } from '../../types';
 import { format } from 'date-fns';
-import DisasterMapSkeleton from '../Loading/DisasterMapSkeleton';
 
 interface SimpleLeafletMapProps {
   disasters: RealWorldDisaster[];
   height?: string;
   showControls?: boolean;
   className?: string;
-  loading?: boolean;
 }
 
 const SimpleLeafletMap: React.FC<SimpleLeafletMapProps> = ({
@@ -16,7 +14,6 @@ const SimpleLeafletMap: React.FC<SimpleLeafletMapProps> = ({
   height = "400px",
   showControls = true,
   className = "",
-  loading = false,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -152,7 +149,7 @@ const SimpleLeafletMap: React.FC<SimpleLeafletMapProps> = ({
           });
 
           // Add hover effects
-          marker.on('mouseover', function() {
+          marker.on('mouseover', function(this: any) {
             const iconElement = this.getElement();
             if (iconElement) {
               const markerDiv = iconElement.querySelector('div');
@@ -163,7 +160,7 @@ const SimpleLeafletMap: React.FC<SimpleLeafletMapProps> = ({
             }
           });
 
-          marker.on('mouseout', function() {
+          marker.on('mouseout', function(this: any) {
             const iconElement = this.getElement();
             if (iconElement) {
               const markerDiv = iconElement.querySelector('div');

@@ -14,7 +14,8 @@ import Home from './pages/Home';
 import Reports from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
 import ReportImpact from './pages/ReportImpact';
-import AdminPanel from './pages/admin/AdminPanel';
+import SupportRequest from './pages/SupportRequest';
+import AdminPanel from './pages/ReportImpact';
 import About from './pages/About';
 import WhatWeDo from './pages/WhatWeDo';
 import GetInvolved from './pages/GetInvolved';
@@ -76,6 +77,7 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/donate" element={<Donate />} />
               <Route path="/partnership" element={<Partnership />} />
+              <Route path="/support-request" element={<SupportRequest />} />
 
               <Route path="/debug/avatar" element={<AvatarDebug />} />
               <Route path="/debug/token" element={<TokenDebugPage />} />
@@ -210,4 +212,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
