@@ -1,316 +1,558 @@
-import React, { useState, useEffect } from 'react';
-import { MessageCircle, X, Minimize2, Send, AlertTriangle, Headphones, Zap, Shield } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { MessageCircle, Headphones, Minimize2, X, Send, ImagePlus } from "lucide-react";
+import { fetchCjUsers } from '../../apis/userManagement';
+import { sendMessageToCj, fetchConversation, fetchSendersToCj } from '../../apis/chat';
+import ImageViewer from "../Common/ImageViewer";
+import "../../pages/CjChatList.css";
 
-interface ChatWidgetProps {
-  position?: 'bottom-right' | 'bottom-left';
+// Add helper to get/set unread count in localStorage
+const UNREAD_CHAT_KEY = 'unread_chat_count';
+export function getUnreadChatCount() {
+  return parseInt(window.localStorage.getItem(UNREAD_CHAT_KEY) || '0', 10);
+}
+export function clearUnreadChatCount() {
+  window.localStorage.setItem(UNREAD_CHAT_KEY, '0');
+}
+export function incrementUnreadChatCount() {
+  const current = getUnreadChatCount();
+  window.localStorage.setItem(UNREAD_CHAT_KEY, String(current + 1));
 }
 
-interface Message {
-  id: number;
-  text: string;
-  sender: 'user' | 'bot';
-  timestamp: Date;
-  type?: 'emergency' | 'info' | 'warning';
+// Helper functions for per-CJ unread state
+function getUnreadCjIds(): string[] {
+  try {
+    return JSON.parse(window.localStorage.getItem('unread_cj_ids') || '[]');
+  } catch {
+    return [];
+  }
+}
+function addUnreadCjId(userId: string) {
+  const ids = getUnreadCjIds();
+  if (!ids.includes(userId)) {
+    ids.push(userId);
+    window.localStorage.setItem('unread_cj_ids', JSON.stringify(ids));
+  }
+}
+function clearUnreadCjId(userId: string) {
+  const ids = getUnreadCjIds().filter((id: string) => id !== userId);
+  window.localStorage.setItem('unread_cj_ids', JSON.stringify(ids));
+}
+
+interface ChatWidgetProps {
+  position?: 'bottom-right' | 'bottom-left' | 'center';
+  currentUserId: string;
 }
 
 const ChatWidget: React.FC<ChatWidgetProps> = ({
   position = 'bottom-right',
+  currentUserId,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [selectedCj, setSelectedCj] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [message, setMessage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [unreadCjIds, setUnreadCjIds] = useState<string[]>([]);
+  const [cjUsers, setCjUsers] = useState<any[]>([]);
+  const [senderList, setSenderList] = useState<any[]>([]);
+  const [isCjRole, setIsCjRole] = useState(false);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string>("");
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const positionClasses = {
-    'bottom-right': 'bottom-6 right-6',
-    'bottom-left': 'bottom-6 left-6',
-  };
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize with welcome message
+  // Fetch CJ users on component mount
   useEffect(() => {
-    const welcomeMessage: Message = {
-      id: 1,
-      text: "🚨 Emergency Support Online! I'm here to help you with disaster reporting, emergency assistance, and safety guidance. How can I help you today?",
-      sender: 'bot',
-      timestamp: new Date(),
-      type: 'emergency'
-    };
-    setMessages([welcomeMessage]);
+    fetchCjUsers().then(setCjUsers).catch(() => setCjUsers([]));
   }, []);
 
-  // Simulate bot responses
-  const getBotResponse = (userMessage: string): Message => {
-    const lowerMessage = userMessage.toLowerCase();
-    let response = "";
-    let type: 'emergency' | 'info' | 'warning' = 'info';
-
-    if (lowerMessage.includes('emergency') || lowerMessage.includes('help') || lowerMessage.includes('urgent')) {
-      response = "🚨 This sounds urgent! For immediate emergencies, call 911. I can also help you file a disaster report or connect you with local emergency services. What type of emergency are you experiencing?";
-      type = 'emergency';
-    } else if (lowerMessage.includes('flood') || lowerMessage.includes('fire') || lowerMessage.includes('earthquake')) {
-      response = "⚠️ I understand you're dealing with a natural disaster. I can help you report this incident and connect you with appropriate resources. Please stay safe and follow local evacuation orders if any.";
-      type = 'warning';
-    } else if (lowerMessage.includes('report') || lowerMessage.includes('incident')) {
-      response = "📋 I can help you file an incident report. This will alert local authorities and emergency services. Would you like me to guide you through the reporting process?";
-      type = 'info';
-    } else {
-      response = "I'm here to help with emergency situations, disaster reporting, and safety guidance. You can ask me about filing reports, emergency contacts, or safety procedures. How can I assist you?";
-      type = 'info';
+  // Determine if current user is CJ role
+  useEffect(() => {
+    try {
+      if (window?.localStorage?.getItem('roles')) {
+        const roles = JSON.parse(window.localStorage.getItem('roles') || '[]');
+        setIsCjRole(roles.includes('cj'));
+      } else if (currentUserId && cjUsers.some(u => u.userId === currentUserId)) {
+        setIsCjRole(true);
+      }
+    } catch (err) {
+      setIsCjRole(false);
     }
+  }, [currentUserId, cjUsers]);
 
-    return {
-      id: Date.now(),
-      text: response,
-      sender: 'bot',
-      timestamp: new Date(),
-      type
-    };
-  };
-
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      const userMessage: Message = {
-        id: Date.now(),
-        text: message,
-        sender: 'user',
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, userMessage]);
-      setMessage('');
-      setIsTyping(true);
-
-      // Simulate bot response delay
-      setTimeout(() => {
-        const botResponse = getBotResponse(message);
-        setMessages(prev => [...prev, botResponse]);
-        setIsTyping(false);
-        
-        if (!isOpen) {
-          setUnreadCount(prev => prev + 1);
-        }
-      }, 1500);
+  // Fetch senders for CJ role
+  useEffect(() => {
+    if (isCjRole && currentUserId) {
+      fetchSendersToCj(currentUserId).then(setSenderList).catch(() => setSenderList([]));
     }
-  };
+  }, [isCjRole, currentUserId]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  // Fetch conversation when selectedCj changes
+  useEffect(() => {
+    if (selectedCj) {
+      setIsLoading(true);
+      fetchConversation({ userId: currentUserId, cjId: selectedCj.userId })
+        .then((messages) => {
+          console.log('Fetched messages:', messages);
+          console.log('Messages with attachments:', messages.filter((m: any) => m.attachmentUrl));
+          setMessages(messages);
+        })
+        .catch((error) => {
+          console.error('Error fetching messages:', error);
+          setMessages([]);
+        })
+        .finally(() => setIsLoading(false));
     }
-  };
+  }, [selectedCj, currentUserId]);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   const handleOpenChat = () => {
     setIsOpen(true);
-    setUnreadCount(0);
+    setIsMinimized(false);
+    clearUnreadChatCount(); // Clear unread count when opening chat
   };
 
-  const getMessageStyle = (type?: string) => {
-    switch (type) {
-      case 'emergency':
-        return 'bg-gradient-to-r from-red-50 to-orange-50 border-l-4 border-red-500';
-      case 'warning':
-        return 'bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500';
-      default:
-        return 'bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500';
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   };
 
-  return (
-    <div className={`fixed ${positionClasses[position]} z-50`}>
-      {!isOpen ? (
-        // Beautiful Chat Trigger Button
-        <div className="relative">
-          <button
-            onClick={handleOpenChat}
-            className="group relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1"
-            aria-label="Open emergency chat"
-          >
-            {/* Pulsing ring animation */}
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 animate-ping opacity-20"></div>
-            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse opacity-30"></div>
-            
-            <MessageCircle
-              size={28}
-              className="relative z-10 group-hover:scale-110 transition-transform duration-300"
-            />
-            
-            {/* Emergency indicator */}
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-              <AlertTriangle size={10} className="text-white" />
-            </div>
-          </button>
+  const handleSend = async () => {
+    try {
+      if (!selectedCj || (!message.trim() && !imageFile)) return;
+      
+      const messageToSend = message.trim();
+      
+      console.log('Sending message with image:', {
+        senderId: currentUserId,
+        receiverId: selectedCj.userId,
+        message: messageToSend,
+        imageFile: imageFile ? `${imageFile.name} (${imageFile.size} bytes)` : 'none'
+      });
+      
+      const response = await sendMessageToCj({
+        senderId: currentUserId,
+        receiverId: selectedCj.userId,
+        message: messageToSend,
+        image: imageFile || undefined,
+      });
+      
+      console.log('Message sent successfully:', response);
+      
+      setMessage("");
+      setImageFile(null);
+      setImagePreview("");
+      
+      // Move the selected CJ to the top of the list
+      const updatedCjUsers = [
+        selectedCj,
+        ...cjUsers.filter(cj => cj.userId !== selectedCj.userId)
+      ];
+      setCjUsers(updatedCjUsers);
+      
+      fetchConversation({ userId: currentUserId, cjId: selectedCj.userId }).then(setMessages).catch(() => setMessages([]));
+      // Increment unread count in localStorage for CJ
+      incrementUnreadChatCount();
+      if (!isCjRole) {
+        addUnreadCjId(selectedCj.userId);
+        setUnreadCjIds(getUnreadCjIds());
+      }
+    } catch (err) {
+      const errorMsg = typeof err === 'object' && err && 'message' in err ? (err as any).message : String(err);
+      alert('Failed to send message: ' + (errorMsg || 'Unknown error'));
+    }
+  };
 
-          {/* Unread count badge */}
-          {unreadCount > 0 && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold animate-bounce">
-              {unreadCount}
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+  };
+
+  const handleImageClick = (imageUrl: string, index: number) => {
+    setSelectedImage(imageUrl);
+    setSelectedImageIndex(index);
+    setImageViewerOpen(true);
+  };
+
+  const handleImageViewerClose = () => {
+    setImageViewerOpen(false);
+    setSelectedImage("");
+    setSelectedImageIndex(0);
+  };
+
+  const handleImageNavigate = (index: number) => {
+    setSelectedImageIndex(index);
+  };
+
+  try {
+    return (
+      <>
+        {/* Floating chat icon in corner */}
+        {!isCjRole && !isOpen && (
+          <div className="fixed bottom-6 right-6 z-50">
+            <div className="relative">
+              <button
+                onClick={handleOpenChat}
+                className="group relative bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white p-4 rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1"
+                aria-label="Open chat"
+              >
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 animate-ping opacity-20"></div>
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse opacity-30"></div>
+                <MessageCircle size={28} className="relative z-10 group-hover:scale-110 transition-transform duration-300" />
+              </button>
+            </div>
+          </div>
+        )}
+                 {/* Chat widget in center when open */}
+         {isOpen && (
+           <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
+             <div
+               className="bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/30 transition-all duration-500 h-[700px] w-[600px] relative overflow-hidden"
+             >
+               {/* Animated background elements */}
+               <div className="absolute inset-0 overflow-hidden">
+                 <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-pulse"></div>
+                 <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-blue-300/10 to-purple-300/10 rounded-full blur-3xl animate-pulse delay-500"></div>
+               </div>
+               
+               {/* Header with enhanced design */}
+               <div className="relative z-10 flex items-center justify-between p-6 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-t-3xl relative overflow-hidden">
+                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20"></div>
+                 <div className="absolute inset-0">
+                   <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full -translate-x-16 -translate-y-16 animate-pulse"></div>
+                   <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/10 rounded-full translate-x-12 translate-y-12 animate-pulse delay-1000"></div>
+                 </div>
+                 <div className="flex items-center space-x-4 relative z-10">
+                   <div className="relative">
+                     <div className="w-14 h-14 bg-gradient-to-br from-white/30 to-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 shadow-lg">
+                       <Headphones size={24} className="text-white drop-shadow-lg" />
+                     </div>
+                     <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-2 border-white shadow-lg animate-pulse"></div>
+                     <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white animate-ping"></div>
+                   </div>
+                   <div>
+                     <h3 className="font-bold text-xl bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent drop-shadow-lg">CJ Chat</h3>
+                     <div className="flex items-center space-x-2 text-sm text-blue-100">
+                       <div className="w-2.5 h-2.5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg"></div>
+                       <span className="font-medium">Online & Ready</span>
+                     </div>
+                   </div>
+                 </div>
+                 <div className="flex items-center space-x-2 relative z-10">
+                   <button
+                     onClick={() => setIsOpen(false)}
+                     className="p-3 hover:bg-white/20 rounded-xl transition-all duration-300 transform hover:scale-110 hover:rotate-90 bg-white/10 backdrop-blur-sm border border-white/20"
+                     aria-label="Close chat"
+                   >
+                     <X size={20} className="text-white drop-shadow-lg" />
+                   </button>
+                 </div>
+               </div>
+               
+               {/* Content area with enhanced styling */}
+               <div className="flex-1 flex flex-col h-[calc(700px-120px)] relative z-10">
+                                     {/* CJ role user: sender list */}
+                   {isCjRole && !selectedCj && (
+                     <div className="px-6 py-4">
+                       <label className="block text-sm font-semibold mb-4 text-gray-700 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Chat Users</label>
+                       <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                         {senderList.length === 0 && (
+                           <div className="text-center py-8">
+                             <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+                               <MessageCircle size={24} className="text-gray-400" />
+                             </div>
+                             <div className="text-gray-400 text-sm">No users have sent you a message yet.</div>
+                           </div>
+                         )}
+                         {senderList.map((u) => (
+                           <button
+                             key={u.userId}
+                             onClick={() => setSelectedCj(u)}
+                             className="w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200/50 hover:border-blue-300/50 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all duration-300 group shadow-sm hover:shadow-md"
+                           >
+                             <div className="relative">
+                               {u.photoUrl ? (
+                                 <img src={u.photoUrl} alt={u.name} className="w-12 h-12 rounded-full border-2 border-white shadow-lg group-hover:border-blue-200 transition-all duration-300" />
+                               ) : (
+                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
+                                   {u.name?.charAt(0)?.toUpperCase()}
+                                 </div>
+                               )}
+                               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full border-2 border-white shadow-sm"></div>
+                             </div>
+                             <div className="flex-1 text-left">
+                               <div className="font-semibold text-gray-800 group-hover:text-blue-700 transition-colors duration-300">{u.name}</div>
+                               <div className="text-xs text-gray-500 group-hover:text-gray-600 transition-colors duration-300">{u.email}</div>
+                             </div>
+                             <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                             </div>
+                           </button>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+                   {/* User role: CJ user list */}
+                   {!isCjRole && !selectedCj && (
+                     <div className="px-6 py-4">
+                       <label className="block text-sm font-semibold mb-4 text-gray-700 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CJ User များ</label>
+                       <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                         {cjUsers.map((u) => (
+                           <button
+                             key={u.userId}
+                             onClick={() => {
+                               setSelectedCj(u);
+                               clearUnreadCjId(u.userId);
+                               setUnreadCjIds(getUnreadCjIds());
+                             }}
+                             className="w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200/50 hover:border-blue-300/50 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-purple-50/50 transition-all duration-300 group shadow-sm hover:shadow-md relative"
+                           >
+                             <div className="relative">
+                               {u.photoUrl ? (
+                                 <img src={u.photoUrl} alt={u.name} className="w-12 h-12 rounded-full border-2 border-white shadow-lg group-hover:border-blue-200 transition-all duration-300" />
+                               ) : (
+                                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
+                                   {u.name?.charAt(0)?.toUpperCase()}
+                                 </div>
+                               )}
+                               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm"></div>
+                             </div>
+                             <div className="flex-1 text-left">
+                               <div className="font-semibold text-gray-800 group-hover:text-blue-700 transition-colors duration-300 flex items-center">
+                                 {u.name}
+                                 {unreadCjIds.includes(u.userId) && (
+                                   <span className="ml-3 inline-flex items-center justify-center w-5 h-5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg">
+                                     <span className="text-white text-xs font-bold">!</span>
+                                   </span>
+                                 )}
+                               </div>
+                               <div className="text-xs text-gray-500 group-hover:text-gray-600 transition-colors duration-300">{u.email}</div>
+                             </div>
+                             <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                             </div>
+                           </button>
+                         ))}
+                       </div>
+                     </div>
+                   )}
+                                     {/* Chat area: CJ or user */}
+                   {selectedCj && (
+                     <>
+                       {/* Back button to sender/CJ list */}
+                       <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50/30 to-purple-50/30">
+                         <button
+                           onClick={() => setSelectedCj(null)}
+                           className="p-2 hover:bg-white/50 rounded-xl transition-all duration-300 text-blue-600 hover:text-blue-700"
+                         >
+                           <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">←</div>
+                         </button>
+                         <div className="relative">
+                           {selectedCj.photoUrl ? (
+                             <img src={selectedCj.photoUrl} alt={selectedCj.name} className="w-12 h-12 rounded-full border-2 border-white shadow-lg" />
+                           ) : (
+                             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
+                               {selectedCj.name?.charAt(0)?.toUpperCase()}
+                             </div>
+                           )}
+                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white shadow-sm"></div>
+                         </div>
+                         <div>
+                           <div className="font-semibold text-gray-800">{selectedCj.name}</div>
+                           <div className="text-xs text-gray-500 flex items-center">
+                             <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                             Active now
+                           </div>
+                         </div>
+                       </div>
+                       
+                                               {/* Messages area */}
+                        <div className="flex-1 px-6 py-4 overflow-y-auto bg-gradient-to-b from-gray-50/30 to-white/30 backdrop-blur-sm">
+
+                         {isLoading && (
+                           <div className="text-center py-8">
+                             <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center animate-pulse">
+                               <MessageCircle size={24} className="text-gray-400" />
+                             </div>
+                             <div className="text-gray-400 text-sm">Loading messages...</div>
+                           </div>
+                         )}
+                         {!isLoading && messages.length === 0 && (
+                           <div className="text-center py-8">
+                             <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+                               <MessageCircle size={24} className="text-gray-400" />
+                             </div>
+                             <div className="text-gray-400 text-sm">No messages yet. Start the conversation!</div>
+                           </div>
+                         )}
+                         <div className="space-y-4">
+                           {messages.map((m, index) => {
+                             // DEBUG: Log the first message object to inspect its structure
+                             if (index === 0) {
+                               console.log("Inspecting message object:", m);
+                             }
+                             return (
+                               <div
+                                 key={m.id}
+                                 className={`flex ${m.senderId === currentUserId ? "justify-end" : "justify-start"}`}
+                               >
+                                 <div
+                                   className={`max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-md transition-all duration-300 ${
+                                     m.senderId === currentUserId
+                                       ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-lg"
+                                       : "bg-white text-gray-800 rounded-bl-lg"
+                                   }`}
+                                 >
+                                   {/* Display text message if it exists */}
+                                   {m.message && <p className="text-sm break-words">{m.message}</p>}
+
+                                   {/* Display image if AttachmentUrl exists */}
+                                   {m.attachmentUrl && (
+                                     <div className={`mt-2 ${m.message ? 'mt-2' : ''}`}>
+                                       <img
+                                         src={`http://localhost:5057${m.attachmentUrl}`}
+                                         alt="Attachment"
+                                         className="rounded-lg max-w-full h-auto cursor-pointer object-cover"
+                                         onClick={() => handleImageClick(
+                                           `http://localhost:5057${m.attachmentUrl}`,
+                                           messages.filter(msg => msg.attachmentUrl).findIndex(msg => msg.id === m.id)
+                                         )}
+                                         style={{ maxHeight: '200px' }} // Constrain image height
+                                       />
+                                     </div>
+                                   )}
+
+                                   {/* Timestamp */}
+                                   <div
+                                     className={`text-xs mt-1.5 ${m.senderId === currentUserId ? 'text-blue-200' : 'text-gray-500'}`}
+                                   >
+                                     {m.sentAt
+                                       ? new Date(m.sentAt).toLocaleTimeString([], {
+                                           hour: "2-digit",
+                                           minute: "2-digit",
+                                         })
+                                       : ""}
+                                   </div>
+                                 </div>
+                               </div>
+                             );
+                           })}
+                           <div ref={messagesEndRef} />
+                         </div>
+                       </div>
+                       
+                                               {/* Input area */}
+                        <div className="p-4 bg-white/70 backdrop-blur-sm border-t border-gray-200/80">
+                          {imagePreview && (
+                            <div className="mb-3">
+                              <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-50/50 to-purple-50/50 rounded-lg border border-blue-200/50">
+                                <div className="flex items-center gap-2">
+                                  <ImagePlus size={14} className="text-blue-600" />
+                                  <div className="text-xs text-blue-600 font-medium">Image Preview</div>
+                                </div>
+                                <button
+                                  onClick={handleRemoveImage}
+                                  className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-300"
+                                  aria-label="Remove image"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                              <div className="mt-2 relative group">
+                                <img 
+                                  src={imagePreview} 
+                                  alt="Preview" 
+                                  className="w-20 h-20 object-cover rounded-xl shadow-md border-2 border-white"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  <ImagePlus size={16} className="text-white drop-shadow-lg" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="messenger-bar">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageSelect}
+                              className="hidden"
+                              id="image-input"
+                              ref={imageInputRef}
+                            />
+                            <button 
+                              onClick={() => imageInputRef.current?.click()}
+                              className="messenger-attach-btn"
+                              aria-label="Attach image"
+                            >
+                              <ImagePlus size={20} />
+                            </button>
+                            <input
+                              type="text"
+                              value={message}
+                              onChange={(e) => setMessage(e.target.value)}
+                              onKeyDown={handleKeyPress}
+                              placeholder="Type your message..."
+                              className="messenger-input"
+                              disabled={!selectedCj}
+                            />
+                            <button
+                              onClick={handleSend}
+                              disabled={!selectedCj || (!message.trim() && !imageFile)}
+                              className="messenger-send-btn"
+                              aria-label="Send message"
+                            >
+                              <Send size={20} />
+                            </button>
+                          </div>
+                        </div>
+                     </>
+                   )}
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Floating help text */}
-          <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-            <div className="bg-gray-900 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap">
-              Emergency Support Chat
-              <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        // Beautiful Chat Interface
-        <div
-          className={`bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 transition-all duration-500 ${
-            isMinimized ? 'h-20 w-80' : 'h-[500px] w-96'
-          }`}
-        >
-          {/* Elegant Chat Header */}
-          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white rounded-t-3xl relative overflow-hidden">
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-16 -translate-y-16"></div>
-              <div className="absolute bottom-0 right-0 w-24 h-24 bg-white rounded-full translate-x-12 translate-y-12"></div>
-            </div>
-            
-            <div className="flex items-center space-x-4 relative z-10">
-              <div className="relative">
-                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                  <Headphones size={20} className="text-white" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white"></div>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg">Emergency Support</h3>
-                <div className="flex items-center space-x-2 text-sm text-blue-100">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span>Online • Response time: &lt; 2min</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2 relative z-10">
-              <button
-                onClick={() => setIsMinimized(!isMinimized)}
-                className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 transform hover:scale-110"
-                aria-label="Minimize chat"
-              >
-                <Minimize2 size={18} />
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 transform hover:scale-110"
-                aria-label="Close chat"
-              >
-                <X size={18} />
-              </button>
-            </div>
-          </div>
+          {/* Image Viewer Modal */}
+          <ImageViewer
+            isOpen={imageViewerOpen}
+            onClose={handleImageViewerClose}
+            imageUrl={selectedImage}
+            alt="Chat image"
+            images={messages.filter(m => m.attachmentUrl).map(m => `http://localhost:5057${m.attachmentUrl}`)}
+            currentIndex={selectedImageIndex}
+            onNavigate={handleImageNavigate}
+          />
+        </>
+      );
+    } catch (err) {
+      return <div className="p-4 text-red-500">ChatWidget error: {String(err)}</div>;
+    }
+  };
 
-          {/* Chat Content */}
-          {!isMinimized && (
-            <>
-              {/* Messages Area */}
-              <div className="flex-1 p-6 h-80 overflow-y-auto bg-gradient-to-b from-gray-50/50 to-white/50 backdrop-blur-sm">
-                <div className="space-y-4">
-                  {messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      {msg.sender === 'bot' && (
-                        <div className="flex items-start space-x-3 max-w-xs">
-                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
-                            {msg.type === 'emergency' ? (
-                              <AlertTriangle size={16} className="text-white" />
-                            ) : msg.type === 'warning' ? (
-                              <Shield size={16} className="text-white" />
-                            ) : (
-                              <Zap size={16} className="text-white" />
-                            )}
-                          </div>
-                          <div className={`rounded-2xl rounded-tl-md p-4 shadow-lg ${getMessageStyle(msg.type)}`}>
-                            <p className="text-sm text-gray-800 leading-relaxed">{msg.text}</p>
-                            <p className="text-xs text-gray-500 mt-2">
-                              {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {msg.sender === 'user' && (
-                        <div className="max-w-xs">
-                          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl rounded-tr-md p-4 shadow-lg">
-                            <p className="text-sm leading-relaxed">{msg.text}</p>
-                            <p className="text-xs text-blue-100 mt-2">
-                              {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  
-                  {/* Typing indicator */}
-                  {isTyping && (
-                    <div className="flex items-start space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <MessageCircle size={16} className="text-white" />
-                      </div>
-                      <div className="bg-gray-100 rounded-2xl rounded-tl-md p-4 shadow-lg">
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100"></div>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Beautiful Message Input */}
-              <div className="p-6 bg-white/80 backdrop-blur-sm border-t border-gray-200/50 rounded-b-3xl">
-                <div className="flex items-center space-x-3">
-                  <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Type your emergency message..."
-                      className="w-full px-4 py-3 bg-gray-50/80 backdrop-blur-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200 placeholder-gray-500"
-                    />
-                  </div>
-                  <button
-                    onClick={handleSendMessage}
-                    disabled={!message.trim()}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 rounded-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 shadow-lg"
-                    aria-label="Send message"
-                  >
-                    <Send size={18} />
-                  </button>
-                </div>
-                
-                {/* Quick Actions */}
-                <div className="flex items-center space-x-2 mt-3">
-                  <button className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium hover:bg-red-200 transition-colors">
-                    🚨 Emergency
-                  </button>
-                  <button className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors">
-                    📋 Report
-                  </button>
-                  <button className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium hover:bg-green-200 transition-colors">
-                    ℹ️ Info
-                  </button>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default ChatWidget;
+  export default ChatWidget;

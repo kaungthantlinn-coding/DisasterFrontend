@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   CheckCircle,
   ArrowRight,
+  ArrowUp,
   Shield,
   Star,
   Award,
@@ -35,6 +36,7 @@ import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 import ChatWidget from '../components/Chat/ChatWidget';
 import SimpleLeafletMap from '../components/Map/SimpleLeafletMap';
+import FloatingChatButton from '../components/Chat/FloatingChatButton';
 
 import { useDisasterData } from '../hooks/useDisasterData';
 import { useAuth } from '../hooks/useAuth';
@@ -1441,7 +1443,6 @@ const Home: React.FC = () => {
       </main>
 
       <Footer />
-      <ChatWidget />
 
       {/* Floating Scroll to Top */}
       {showScrollTop && (
@@ -1450,7 +1451,7 @@ const Home: React.FC = () => {
           className="fixed bottom-8 right-8 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-2xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-110 z-50 group"
           aria-label="Scroll to top"
         >
-          <ArrowRight size={24} className="rotate-[-90deg] group-hover:scale-110 transition-transform duration-300" />
+          <ArrowUp size={24} className="group-hover:scale-110 transition-transform duration-300" />
         </button>
       )}
     </div>

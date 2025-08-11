@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '../types';
+import { authApi } from '../apis/auth';
 
 interface AuthState {
   user: User | null;
@@ -48,13 +49,22 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: true 
         }),
       
-      logout: () => 
+      logout: async () => {
+        const { refreshToken } = useAuthStore.getState();
+        if (refreshToken) {
+          try {
+            await authApi.logout(refreshToken);
+          } catch (error) {
+            console.error('API logout failed', error);
+          }
+        }
         set({ 
           user: null, 
           accessToken: null, 
           refreshToken: null, 
           isAuthenticated: false 
-        }),
+        });
+      },
       
       setLoading: (isLoading) => set({ isLoading }),
     }),

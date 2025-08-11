@@ -36,6 +36,7 @@ import {
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 import ReportMap from '../components/Map/ReportMap';
+import FloatingChatButton from '../components/Chat/FloatingChatButton';
 
 // Hooks
 import { useRoles } from '../hooks/useRoles';

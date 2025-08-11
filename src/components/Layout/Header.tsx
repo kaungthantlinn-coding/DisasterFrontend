@@ -1,16 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, Menu, X, ChevronDown, User, LogOut, Settings, Shield,
   Heart, Globe, Users, Target, Award, HandHeart, Phone,
   AlertTriangle, Info, HelpCircle, MapPin, Zap, BookOpen, FileText,
-  Languages, DollarSign, Sparkles
+  Languages, DollarSign, Sparkles, MessageCircle
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
 import Avatar from '../Common/Avatar';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
+import ChatWidget from '../Chat/ChatWidget';
+import { getUnreadChatCount, clearUnreadChatCount } from '../Chat/ChatWidget';
+import SettingsModal from '../Settings/SettingsModal';
 
 interface NavItem {
   name: string;
@@ -29,12 +32,17 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [showChat, setShowChat] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const location = useLocation();
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useAuth();
   const { isAdmin, isCj, hasAdminOrCjRole, isOnlyUser, formatRoleName } = useRoles();
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [unreadChat, setUnreadChat] = useState(getUnreadChatCount());
+  const notificationSoundRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -50,13 +58,39 @@ const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newCount = getUnreadChatCount();
+      if (newCount > unreadChat) {
+        notificationSoundRef.current?.play().catch(error => console.error("Audio play failed:", error));
+      }
+      setUnreadChat(newCount);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [unreadChat]);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setActiveDropdown(null);
+        setIsUserDropdownOpen(false);
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
   const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
       { name: t('navigation.home'), path: '/' },
       { name: t('navigation.about'), path: '/about' }
     ];
 
-
+    // if (isAuthenticated && !isCj()) {
+    //   baseItems.push({ name: 'Chat', path: '/cj-chat-list' });
+    // }
 
     // Add "Contact" only if user is not CJ role
     if (!isCj()) {
@@ -100,9 +134,10 @@ const Header: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     setIsUserDropdownOpen(false);
+    navigate('/login');
   };
 
   // Keyboard navigation handler
@@ -112,20 +147,6 @@ const Header: React.FC = () => {
       action();
     }
   };
-
-  // Close dropdowns on Escape key
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setActiveDropdown(null);
-        setIsUserDropdownOpen(false);
-        setIsMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
 
   return (
     <>
@@ -246,73 +267,93 @@ const Header: React.FC = () => {
               <span className="relative z-10">{t('navigation.donate')}</span>
             </Link>
 
-            {isAuthenticated ? (
-              /* User Profile Dropdown */
-              <div className="relative" ref={userDropdownRef}>
-                <button
-                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                  className="glass-button flex items-center space-x-3 px-4 py-2.5 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-300 shadow-sm"
-                >
-                  <Avatar
-                    src={user?.photoUrl}
-                    alt={user?.name}
-                    name={user?.name}
-                    size="sm"
-                  />
-                  <div className="text-left hidden xl:block">
-                    <div className="text-sm font-semibold text-gray-900">{user?.name}</div>
-                    <div className="text-xs text-gray-500 font-medium">
-                      {user?.roles?.filter(role => role).map(role => formatRoleName(role)).join(', ') || 'User'}
-                    </div>
-                  </div>
-                  <ChevronDown
-                    size={16}
-                    className={`transition-transform duration-300 text-gray-400 ${
-                      isUserDropdownOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
-
-                {/* User Dropdown Menu */}
-                {isUserDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-3 w-64 glass-dropdown rounded-2xl py-2 z-50 overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
-                      <div className="text-sm font-bold text-gray-900">{user?.name}</div>
-                      <div className="text-xs text-gray-600 font-medium">{user?.email}</div>
-                    </div>
-
-                    {!isOnlyUser() && !isAdmin() && (
-                      <Link
-                        to="/dashboard"
-                        onClick={() => setIsUserDropdownOpen(false)}
-                        className="dropdown-item space-x-3 mx-2 my-1"
-                      >
-                        <User size={16} className="text-gray-400" />
-                        <span className="text-sm text-gray-700 font-medium">Dashboard</span>
-                      </Link>
-                    )}
-
-                    <div className="mx-2 my-2 border-t border-gray-200/50"></div>
-                    <button
-                      onClick={handleLogout}
-                      className="dropdown-item space-x-3 mx-2 my-1 w-full"
-                    >
-                      <LogOut size={16} className="text-gray-400" />
-                      <span className="text-sm text-gray-700 font-medium">Logout</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Login Button */
-              <Link
-                to="/login"
-                className="glass-button flex items-center space-x-2 px-4 py-2.5 rounded-xl text-gray-700 hover:text-blue-600 transition-all duration-300 font-semibold text-sm shadow-sm"
+            {/* CJ role user: Navigate to CJ chat page */}
+            {isCj() && (
+              <button
+                onClick={() => {
+                  navigate('/cj-chat-list');
+                  clearUnreadChatCount();
+                  setUnreadChat(0);
+                }}
+                className="relative flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900"
+                aria-label={t('header.chat.open')}
               >
-                <User size={16} />
-                <span>Login</span>
-              </Link>
+                <MessageCircle size={24} className="transition-transform duration-300 group-hover:scale-110" />
+                {unreadChat > 0 && (
+                  <span className="absolute top-0 right-0 block h-4 w-4 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center transform translate-x-1/3 -translate-y-1/3 ring-2 ring-white">
+                    {unreadChat}
+                  </span>
+                )}
+              </button>
             )}
+
+            {/* User Dropdown */}
+            <div className="relative" ref={userDropdownRef}>
+              <button
+                onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                className="glass-button flex items-center space-x-3 px-4 py-2.5 rounded-xl text-gray-700 hover:text-gray-900 transition-all duration-300"
+              >
+                <Avatar
+                  src={user?.photoUrl}
+                  alt={user?.name}
+                  name={user?.name}
+                  size="sm"
+                />
+                <div className="text-left hidden xl:block">
+                  <div className="text-sm font-semibold text-gray-900">{user?.name}</div>
+                  <div className="text-xs text-gray-500 font-medium">
+                    {user?.roles?.filter(role => role).map(role => formatRoleName(role)).join(', ') || 'User'}
+                  </div>
+                </div>
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-300 text-gray-400 ${
+                    isUserDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {/* User Dropdown Menu */}
+              {isUserDropdownOpen && (
+                <div className="absolute top-full right-0 mt-3 w-64 glass-dropdown rounded-2xl py-2 z-50 overflow-hidden">
+                  <div className="px-6 py-4 border-b border-gray-100/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50">
+                    <div className="text-sm font-bold text-gray-900">{user?.name}</div>
+                    <div className="text-xs text-gray-600 font-medium">{user?.email}</div>
+                  </div>
+
+                  {!isOnlyUser() && !isAdmin() && (
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setIsUserDropdownOpen(false)}
+                      className="dropdown-item space-x-3 mx-2 my-1"
+                    >
+                      <User size={16} className="text-gray-400" />
+                      <span className="text-sm text-gray-700 font-medium">Dashboard</span>
+                    </Link>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setIsSettingsOpen(true);
+                      setIsUserDropdownOpen(false);
+                    }}
+                    className="dropdown-item space-x-3 mx-2 my-1 w-full"
+                  >
+                    <Settings size={16} className="text-gray-400" />
+                    <span className="text-sm text-gray-700 font-medium">{t('settings.title')}</span>
+                  </button>
+
+                  <div className="mx-2 my-2 border-t border-gray-200/50"></div>
+                  <button
+                    onClick={handleLogout}
+                    className="dropdown-item space-x-3 mx-2 my-1 w-full"
+                  >
+                    <LogOut size={16} className="text-gray-400" />
+                    <span className="text-sm text-gray-700 font-medium">Logout</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile Menu Button */}
@@ -398,6 +439,17 @@ const Header: React.FC = () => {
 
                   <button
                     onClick={() => {
+                      setIsSettingsOpen(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="flex items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors py-2 w-full text-left"
+                  >
+                    <Settings size={20} />
+                    <span className="text-lg font-medium">{t('settings.title')}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
                       handleLogout();
                       setIsMenuOpen(false);
                     }}
@@ -431,7 +483,16 @@ const Header: React.FC = () => {
           </div>
         </div>
       )}
+      {/* CJ role user only: ChatWidget */}
+      {/* (No longer render ChatWidget for CJ role user) */}
     </header>
+
+    {/* Settings Modal */}
+    <SettingsModal
+      isOpen={isSettingsOpen}
+      onClose={() => setIsSettingsOpen(false)}
+    />
+    <audio ref={notificationSoundRef} src="/sounds/notification.mp3" preload="auto"></audio>
     </>
   );
 };
