@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from "react";
 import { fetchSendersToCj, fetchConversation, sendMessageToCj } from '../apis/chat';
 import { useAuth } from '../hooks/useAuth';
 import { useLocation } from 'react-router-dom';
-import { Send, Home, BarChart3, FileText, MapPin, Clock, Check, CheckCheck, Camera } from 'lucide-react';
+import { Send, Home, BarChart3, FileText, MapPin, Clock, Check, CheckCheck } from 'lucide-react';
 import "./CjChatList.css";
 import ChatModalWrapper from '../components/Chat/ChatModalWrapper';
 import ImageViewer from '../components/Common/ImageViewer';
@@ -19,10 +19,7 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [lastMessageTimestamp, setLastMessageTimestamp] = useState<Date | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get route information
   const getRouteInfo = () => {
@@ -171,12 +168,6 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       fetchConversation({ userId: selectedUser.userId, cjId: currentUserId })
         .then((conversation) => {
           setMessages(conversation);
-          if (conversation.length > 0) {
-            const latestMessage = conversation[conversation.length - 1];
-            if (latestMessage.sentAt) {
-              setLastMessageTimestamp(new Date(latestMessage.sentAt));
-            }
-          }
         })
         .catch((error) => {
           console.error('CjChatList - Error fetching messages:', error);

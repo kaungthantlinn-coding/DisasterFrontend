@@ -39,8 +39,8 @@ const Home: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Auth and roles
-  const { isAuthenticated } = useAuth();
-  const { isAdmin, isCj, isOnlyUser } = useRoles();
+  const { user, isAuthenticated } = useAuth();
+  const { isOnlyUser } = useRoles();
 
   // Real-world disaster data
   const { disasters, loading: disastersLoading, error: disastersError, statistics, refresh } = useDisasterData({
@@ -51,7 +51,6 @@ const Home: React.FC = () => {
 
   // Check permissions
   const canCreateReports = !isAuthenticated || !isOnlyUser();
-  const { t } = useTranslation();
 
   // Hero content with refined professional disaster response images
   const heroSlides = [
