@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '../types';
 import { isTokenExpired } from '../utils/jwtUtils';
+import { authApi } from '../apis/auth';
 
 interface AuthState {
   user: User | null;
@@ -36,8 +37,8 @@ export const useAuthStore = create<AuthStore>()(
 
       // Actions
       setUser: (user) => {
-        console.log('🔍 AuthStore - Setting user:', user);
-        console.log('🔍 AuthStore - User validation:');
+        console.log(' AuthStore - Setting user:', user);
+        console.log(' AuthStore - User validation:');
         console.log('  - Has userId:', !!user?.userId);
         console.log('  - Has name:', !!user?.name);
         console.log('  - Has email:', !!user?.email);
@@ -62,15 +63,23 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: true
         }),
 
-      logout: () =>
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          tokenExpiresAt: null,
-          isAuthenticated: false
-        }),
-
+      logout: async () => {
+        const { refreshToken } = get();
+        if (refreshToken) {
+          try {
+            await authApi.logout(refreshToken);
+          } catch (error) {
+            console.error('API logout failed', error);
+          }
+        }
+        set({ 
+          user: null, 
+          accessToken: null, 
+          refreshToken: null, 
+          isAuthenticated: false 
+        });
+      },
+      
       setLoading: (isLoading) => set({ isLoading }),
 
       isTokenExpired: () => {

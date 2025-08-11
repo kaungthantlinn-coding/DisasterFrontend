@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   CheckCircle,
   ArrowRight,
+  ArrowUp,
   Shield,
   Play,
   ChevronLeft,
@@ -26,7 +27,6 @@ import {
 // Components
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
-import ChatWidget from '../components/Chat/ChatWidget';
 import SimpleLeafletMap from '../components/Map/SimpleLeafletMap';
 
 import { useDisasterData } from '../hooks/useDisasterData';
@@ -50,8 +50,8 @@ const Home: React.FC = () => {
   });
 
   // Check permissions
-  const canViewReports = isAuthenticated && (isAdmin() || isCj());
   const canCreateReports = !isAuthenticated || !isOnlyUser();
+  const { t } = useTranslation();
 
   // Hero content with refined professional disaster response images
   const heroSlides = [
@@ -834,7 +834,6 @@ const Home: React.FC = () => {
       </main>
 
       <Footer />
-      <ChatWidget />
 
       {/* Scroll to Top Button */}
       {showScrollTop && (
@@ -842,7 +841,7 @@ const Home: React.FC = () => {
           onClick={scrollToTop}
           className="fixed bottom-8 right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-300 z-50"
         >
-          <ArrowRight size={20} className="transform -rotate-90" />
+          <ArrowUp size={24} className="group-hover:scale-110 transition-transform duration-300" />
         </button>
       )}
     </div>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
+import { Report } from '../types';
 import {
   Search,
   MapPin,
@@ -10,15 +11,11 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  SlidersHorizontal,
-  ImageIcon,
   CheckCircle,
-  Clock,
   AlertTriangle,
   Grid3X3,
   List,
   Map,
-  Shield,
   Activity,
   Flame,
   Waves,
@@ -30,9 +27,7 @@ import {
   TrendingUp,
   Heart,
   Eye,
-  Filter,
-  Star,
-  Award
+  Filter
 } from 'lucide-react';
 
 // Components
@@ -61,7 +56,7 @@ const Reports: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // API call to fetch reports
-  const { data: reportsData, isLoading, error, refetch } = useReports({
+  const { data: reportsData, isLoading, refetch } = useReports({
     page: currentPage,
     pageSize: itemsPerPage,
     filters: {
@@ -70,11 +65,6 @@ const Reports: React.FC = () => {
       status: selectedStatus !== 'all' ? selectedStatus : undefined,
     }
   });
-
-  // Filter options
-  const disasterTypes = ['all', 'flood', 'fire', 'earthquake', 'storm', 'landslide', 'accident', 'other'];
-  const severityLevels = ['all', 'low', 'medium', 'high', 'critical'];
-  const statusOptions = ['all', 'pending', 'verified', 'resolved'];
   const sortOptions = [
     { value: 'newest', label: 'Newest First' },
     { value: 'oldest', label: 'Oldest First' },
@@ -83,7 +73,7 @@ const Reports: React.FC = () => {
   ];
 
   // Get reports from API data
-  const reports = reportsData?.reports || [];
+  const reports: Report[] = reportsData?.reports || [];
 
   // Filter and sort reports (client-side filtering for search and images only)
   const filteredAndSortedReports = useMemo(() => {
@@ -532,97 +522,33 @@ const Reports: React.FC = () => {
               <>
                 {/* Reports Grid/List/Map */}
                 {viewMode === 'map' ? (
-              <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
-                <div className="p-6 border-b border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Reports Map View</h3>
-                  <p className="text-gray-600">Interactive map showing disaster report locations</p>
-                </div>
-                <div className="relative">
-                  {/* Map Container */}
-                  <div className="h-96 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Map size={32} className="text-blue-600" />
-                      </div>
-                      <h4 className="text-xl font-semibold text-gray-900 mb-2">Interactive Map</h4>
-                      <p className="text-gray-600 mb-6 max-w-md">
-                        Map integration would show all {filteredAndSortedReports.length} reports with interactive markers
-                      </p>
-                      <div className="flex flex-wrap gap-2 justify-center">
-                        {Array.from(new Set(filteredAndSortedReports.map(r => r.disasterType))).map(type => (
-                          <div key={type} className={`inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(type)} text-white text-sm font-semibold`}>
-                            {getDisasterIcon(type)}
-                            <span className="ml-2 capitalize">{type}</span>
-                          </div>
-                        ))}
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                    <div className="p-6 border-b border-gray-100">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Reports Map View</h3>
+                      <p className="text-gray-600">Interactive map showing disaster report locations</p>
+                    </div>
+                    <div className="h-96 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Map size={32} className="text-blue-600" />
+                        </div>
+                        <h4 className="text-xl font-semibold text-gray-900 mb-2">Interactive Map</h4>
+                        <p className="text-gray-600 mb-6 max-w-md">
+                          Map integration would show all {filteredAndSortedReports.length} reports with interactive markers
+                        </p>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Map Legend */}
-                  <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-xs">
-                    <h5 className="font-semibold text-gray-900 mb-3">Legend</h5>
-                    <div className="space-y-2">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                        <span className="text-sm text-gray-600">Critical ({filteredAndSortedReports.filter(r => r.severity === 'critical').length})</span>
                       </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                        <span className="text-sm text-gray-600">High ({filteredAndSortedReports.filter(r => r.severity === 'high').length})</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                        <span className="text-sm text-gray-600">Medium ({filteredAndSortedReports.filter(r => r.severity === 'medium').length})</span>
-                      </div>
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                        <span className="text-sm text-gray-600">Low ({filteredAndSortedReports.filter(r => r.severity === 'low').length})</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                </div>
-                
-                {/* Map Controls */}
-                <div className="p-6 border-t border-gray-100 bg-gray-50">
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4">
-                      <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <MapPin size={16} className="mr-2" />
-                        Show All Markers
-                      </button>
-                      <button className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-                        <Filter size={16} className="mr-2" />
-                        Filter by Severity
-                      </button>
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      Showing {filteredAndSortedReports.length} reports on map
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {paginatedReports.map((report) => (
-                  <div
-                    key={report.id}
-                    className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80 cursor-pointer"
-                    onClick={() => navigate(`/reports/${report.id}`)}
-                  >
-                    {/* Image */}
-                    <div className="aspect-[4/3] overflow-hidden relative">
-                      <img
-                        src={report.photos?.[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
-                        alt={report.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      
-                      {/* Disaster Type Badge */}
-                      <div className={`absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(report.disasterType)} text-white text-sm font-semibold flex items-center shadow-lg`}>
-                        {getDisasterIcon(report.disasterType)}
-                        <span className="ml-2 capitalize">{report.disasterType}</span>
-                      </div>
+                ) : (
+                  <div className="space-y-6">
+                    {paginatedReports.map((report) => (
+                      <div
+                        key={report.id}
+                        className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100/80 cursor-pointer"
+                        onClick={() => navigate(`/reports/${report.id}`)}
 
                       {/* Severity Badge */}
                       <div className={`absolute top-4 right-4 w-3 h-3 rounded-full ${getSeverityColor(report.severity)} shadow-lg`}></div>
@@ -641,35 +567,6 @@ const Reports: React.FC = () => {
                       </div>
 
                       {/* Title */}
-                      <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
-                        {report.title}
-                      </h3>
-
-                      {/* Description */}
-                      <p className="text-gray-600 mb-4 line-clamp-2">
-                        {report.description}
-                      </p>
-
-                      {/* Location */}
-                      <div className="flex items-center text-gray-500 mb-4">
-                        <MapPin size={16} className="mr-2" />
-                        <span className="text-sm">{report.location.address}</span>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div className="flex items-center text-gray-500">
-                          <User size={16} className="mr-2" />
-                          <span className="text-sm">{report.reporterName}</span>
-                        </div>
-                        <div className="flex items-center text-blue-600 font-medium">
-                          <span className="text-sm">View Details</span>
-                          <ArrowRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
               </div>
             ) : (
               <div className="space-y-6">
@@ -692,15 +589,14 @@ const Reports: React.FC = () => {
                       {/* Content */}
                       <div className="flex-1">
                         <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
-                            <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(report.disasterType)} text-white text-sm font-semibold flex items-center`}>
-                              {getDisasterIcon(report.disasterType)}
-                              <span className="ml-2 capitalize">{report.disasterType}</span>
-                            </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(report.status)}`}>
-                              {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                            </span>
+                          {/* Placeholder for disaster type badges */}
+                          <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(report.disasterDetail)} text-white text-sm font-semibold flex items-center`}>
+                            {getDisasterIcon(report.disasterDetail)}
+                            <span className="ml-2 capitalize">{report.disasterDetail}</span>
                           </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(report.status)}`}>
+                            {report.status.charAt(0).toUpperCase() + report.status.slice(1)}
+                          </span>
                           <div className={`w-3 h-3 rounded-full ${getSeverityColor(report.severity)}`}></div>
                         </div>
 
@@ -965,8 +861,6 @@ const Reports: React.FC = () => {
                 </button>
               </div>
             )}
-              </>
-            )}
           </div>
         </section>
 
@@ -981,59 +875,6 @@ const Reports: React.FC = () => {
               <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
                 Critical <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-red-600">Emergency Situations</span>
               </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                High-priority disaster reports requiring immediate attention and response efforts.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {reports.filter(r => r.severity === 'critical' || r.severity === 'high').slice(0, 3).map((report) => (
-                <div
-                  key={report.id}
-                  className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80"
-                >
-                  <div className="aspect-[4/3] overflow-hidden relative">
-                    <img
-                      src={report.photos?.[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
-                      alt={report.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-4 left-4">
-                      <div className={`px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(report.disasterType)} text-white text-sm font-semibold flex items-center shadow-lg`}>
-                        {getDisasterIcon(report.disasterType)}
-                        <span className="ml-2 capitalize">{report.disasterType}</span>
-                      </div>
-                    </div>
-                    <div className="absolute top-4 right-4">
-                      <div className="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm font-semibold">
-                        <AlertTriangle size={14} className="mr-1" />
-                        {report.severity.charAt(0).toUpperCase() + report.severity.slice(1)}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">{report.title}</h3>
-                    <p className="text-gray-600 mb-4 line-clamp-2">{report.description}</p>
-                    <div className="flex items-center text-gray-500 mb-4">
-                      <MapPin size={16} className="mr-2" />
-                      <span className="text-sm">{report.location.address}</span>
-                    </div>
-                    <Link
-                      to={`/reports/${report.id}`}
-                      className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      View Details
-                      <ArrowRight size={16} className="ml-1" />
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section - Matching your design system */}
-        <section className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
           <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
@@ -1063,6 +904,8 @@ const Reports: React.FC = () => {
           </div>
         </section>
       </main>
+
+    </main>
 
       <Footer />
     </div>

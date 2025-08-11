@@ -242,3 +242,9 @@ export const userManagementApi = {
     return response.data;
   }
 };
+
+// CJ user list ကို fetch လုပ်တဲ့ function
+export const fetchCjUsers = async () => {
+  const response = await apiClient.get('/UserManagement/cj-users');
+  return response.data;
+};

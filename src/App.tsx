@@ -33,20 +33,17 @@ import TokenDebugPage from "./pages/TokenDebugPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ErrorBoundary from "./components/ErrorBoundary";
 import TokenExpirationMonitor from "./components/Auth/TokenExpirationMonitor";
+import { useAuth } from './hooks/useAuth';
+import ChatWidget from './components/Chat/ChatWidget';
 
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+// Create QueryClient instance
+const queryClient = new QueryClient();
 
 function App() {
-  // Get authToken from localStorage, fallback to empty string
+  const { user } = useAuth();
+  // Get authToken from localStorage for components that need it
   const authToken = localStorage.getItem("authToken") ?? "";
+  
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -105,32 +102,18 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
-                {/* Report creation - hide from regular users */}
                 <Route
-                  path="/report/new"
+                  path="/reports/:id/impact"
                   element={
-                    <ProtectedRoute excludeRoles={["user"]}>
+                    <ProtectedRoute>
                       <ReportImpact authToken={authToken} />
                     </ProtectedRoute>
                   }
-                />
-                <Route
-                  path="/report/edit/:id"
-                  element={
-                    <ProtectedRoute excludeRoles={["user"]}>
-                      <ReportImpact authToken={authToken} />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/assistance/:id" element={<ReportDetail />} />
-                <Route
-                  path="/assistance/received/:id"
-                  element={<ReportDetail />}
                 />
 
-                {/* Admin routes */}
+                {/* Admin-only routes */}
                 <Route
-                  path="/admin/*"
+                  path="/admin"
                   element={
                     <ProtectedRoute requiredRoles={["admin"]}>
                       <AdminPanel />
@@ -161,6 +144,7 @@ function App() {
                 />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+              {user && <ChatWidget currentUserId={user.userId} position="bottom-right" />}
             </div>
           </Router>
         </TokenExpirationMonitor>
