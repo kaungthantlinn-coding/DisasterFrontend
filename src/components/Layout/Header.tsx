@@ -7,6 +7,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
+import { getUnreadChatCount, clearUnreadChatCount } from '../Chat/ChatWidget';
 import Avatar from '../Common/Avatar';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import SettingsModal from '../Settings/SettingsModal';
@@ -29,6 +30,7 @@ const Header: React.FC = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
   const location = useLocation();
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -36,7 +38,6 @@ const Header: React.FC = () => {
   const { isAdmin, isCj, isOnlyUser } = useRoles();
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const notificationSoundRef = useRef<HTMLAudioElement>(null);
 
   const handleClickOutside = (event: MouseEvent) => {
     if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
@@ -64,6 +65,21 @@ const Header: React.FC = () => {
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
+
+  // Poll for unread chat messages for CJ users
+  useEffect(() => {
+    if (!isAuthenticated || !isCj()) return;
+
+    const updateUnreadCount = () => {
+      const count = getUnreadChatCount();
+      setUnreadChatCount(count);
+    };
+
+    updateUnreadCount();
+    const interval = setInterval(updateUnreadCount, 2000); // Check every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, isCj]);
 
   const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
@@ -104,6 +120,11 @@ const Header: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleChatIconClick = () => {
+    clearUnreadChatCount();
+    setUnreadChatCount(0);
   };
 
   // Keyboard navigation handler
@@ -216,6 +237,23 @@ const Header: React.FC = () => {
                 <span className="relative z-10">{t('navigation.donate')}</span>
               </Link>
 
+              {/* CJ Chat Button - Only show for CJ users */}
+              {isAuthenticated && isCj() && (
+                <Link
+                  to="/cj-chat-list"
+                  onClick={handleChatIconClick}
+                  className="relative flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 group"
+                  title="CJ Chat"
+                >
+                  <MessageCircle size={20} className="group-hover:scale-110 transition-transform duration-300" />
+                  {unreadChatCount > 0 && (
+                    <span className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1 border-2 border-white animate-pulse">
+                      {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                    </span>
+                  )}
+                </Link>
+              )}
+
               {isAuthenticated ? (
                 /* User Profile Dropdown */
                 <div className="relative" ref={userDropdownRef}>
@@ -261,22 +299,19 @@ const Header: React.FC = () => {
                         </div>
                       </div>
 
+
                       <button
                         onClick={() => {
                           setIsSettingsOpen(true);
                           setIsUserDropdownOpen(false);
                         }}
-                        className="flex items-center space-x-3 w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                        className="flex items-center space-x-3 w-full px-4 py-3 text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
                       >
                         <Settings size={18} />
-                        <span>{t('settings.title')}</span>
+                        <span>Settings</span>
                       </button>
-
                       <button
-                        onClick={() => {
-                          handleLogout();
-                          setIsUserDropdownOpen(false);
-                        }}
+                        onClick={handleLogout}
                         className="flex items-center space-x-3 w-full px-4 py-3 text-left text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors duration-200"
                       >
                         <LogOut size={18} />
@@ -287,13 +322,25 @@ const Header: React.FC = () => {
                 </div>
               ) : (
                 /* Login Button */
-                <Link
-                  to="/login"
-                  className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  <User size={18} />
-                  <span>Login</span>
-                </Link>
+                <div className="flex items-center space-x-2">
+                  <Link
+                    to="/login"
+                    className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors duration-200 font-medium shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    <User size={18} />
+                    <span>Login</span>
+                  </Link>
+                  {isCj() && (
+                    <Link
+                      to="/cj-chat"
+                      className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 rounded-xl hover:bg-gray-100 transition-colors duration-200"
+                      title="CJ Chat"
+                    >
+                      <MessageCircle size={20} />
+                      <span className="hidden sm:inline">Chat</span>
+                    </Link>
+                  )}
+                </div>
               )}
 
               {/* Mobile Menu Button */}
@@ -366,6 +413,15 @@ const Header: React.FC = () => {
                       </div>
                     </div>
 
+                      <Link
+                        to="/cj-chat"
+                        className="flex items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors py-2 w-full text-left"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <MessageCircle size={20} />
+                        <span className="text-lg font-medium">CJ Chat</span>
+                      </Link>
+
                     <button
                       onClick={() => {
                         setIsSettingsOpen(true);
@@ -392,7 +448,7 @@ const Header: React.FC = () => {
                   <div className="space-y-4">
                     <Link
                       to="/login"
-                      className="flex items-center justify-center space-x-3 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-2xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 font-bold shadow-lg hover:shadow-xl transform hover:scale-105"
+                      className="flex items-center justify-center space-x-3 w-full bg-blue-600 text-white px-8 py-4 rounded-2xl hover:bg-blue-700 transition-colors duration-200 font-bold shadow-lg hover:shadow-xl transform hover:scale-105"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <User size={20} />
@@ -400,7 +456,7 @@ const Header: React.FC = () => {
                     </Link>
                     <Link
                       to="/donate"
-                      className="flex items-center justify-center space-x-3 w-full bg-gradient-to-r from-red-600 via-red-600 to-red-700 text-white px-8 py-4 rounded-2xl hover:from-red-700 hover:via-red-700 hover:to-red-800 transition-all duration-300 font-bold shadow-lg hover:shadow-xl transform hover:scale-105 relative overflow-hidden"
+                      className="flex items-center justify-center space-x-3 w-full bg-red-600 text-white px-8 py-4 rounded-2xl hover:bg-red-700 transition-colors duration-200 font-bold shadow-lg hover:shadow-xl transform hover:scale-105 relative overflow-hidden"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <Heart size={20} className="animate-pulse" />
@@ -419,7 +475,6 @@ const Header: React.FC = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
       />
-      <audio ref={notificationSoundRef} src="/sounds/notification.mp3" preload="auto"></audio>
     </>
   );
 };

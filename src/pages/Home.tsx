@@ -1,27 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import {
-  AlertTriangle,
-  CheckCircle,
-  ArrowRight,
-  ArrowUp,
-  Shield,
-  Play,
-  ChevronLeft,
-  ChevronRight,
-  Globe,
-  TrendingUp,
-  Heart,
-  Users,
-  Clock,
-  Zap,
+import { 
+  AlertTriangle, 
+  MapPin, 
+  Clock, 
+  Users, 
+  TrendingUp, 
+  Shield, 
+  ChevronRight, 
+  Heart, 
   Activity,
-  MapPin,
   RefreshCw,
   Target,
   Calendar,
-  MapIcon
+  MapIcon,
+  CheckCircle,
+  Globe,
+  Zap,
+  Play,
+  ArrowRight,
+  ArrowUp,
+  ChevronLeft
 } from 'lucide-react';
 
 // Components

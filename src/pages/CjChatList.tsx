@@ -7,6 +7,7 @@ import "./CjChatList.css";
 import ChatModalWrapper from '../components/Chat/ChatModalWrapper';
 import ImageViewer from '../components/Common/ImageViewer';
 
+
 const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { user } = useAuth();
   const location = useLocation();
@@ -19,6 +20,8 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [newMessages, setNewMessages] = useState<Set<string>>(new Set());
+  const [newMessageCounts, setNewMessageCounts] = useState<Map<string, number>>(new Map());
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Get route information
@@ -50,6 +53,38 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const routeInfo = getRouteInfo();
 
+  // Helper function to check if a message is NEW (not just unread)
+  const isMessageNew = useCallback((message: any, userId: string): boolean => {
+    if (!message || message.senderId === currentUserId) return false;
+    
+    const lastSeenTimestamp = localStorage.getItem(`cj_chat_last_seen_${userId}`);
+    if (!lastSeenTimestamp) return true;
+    
+    const messageTime = new Date(message.sentAt).getTime();
+    const lastSeenTime = parseInt(lastSeenTimestamp);
+    
+    return messageTime > lastSeenTime;
+  }, [currentUserId]);
+
+  // Function to mark messages as seen (clear new message indicators)
+  const markMessagesAsSeen = useCallback((userId: string) => {
+    const now = Date.now();
+    localStorage.setItem(`cj_chat_last_seen_${userId}`, now.toString());
+    
+    // Clear new message indicators for this user
+    setNewMessages(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(userId);
+      return newSet;
+    });
+    
+    setNewMessageCounts(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(userId);
+      return newMap;
+    });
+  }, []);
+
   useEffect(() => {
     if (currentUserId) {
       const loadInitialSenderList = async () => {
@@ -69,9 +104,16 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 const latestMessage = conversation.length > 0 ? conversation[conversation.length - 1] : null;
                 const lastMessageTime = latestMessage?.sentAt ? new Date(latestMessage.sentAt).getTime() : 0;
                 
+                // Count NEW messages for this sender
+                const newMessagesList = conversation.filter((msg: any) => 
+                  isMessageNew(msg, sender.userId)
+                );
+                
                 return {
                   ...sender,
                   lastMessageTime,
+                  unreadCount: newMessagesList.length,
+                  hasUnread: newMessagesList.length > 0
                 };
               } catch (error) {
                 console.error(`Error fetching conversation for ${sender.userId}:`, error);
@@ -86,6 +128,20 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           // Sort senders by most recent message (descending)
           const sortedSenders = sendersWithTimestamps.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
           setSenderList(sortedSenders);
+          
+          // Update notification states
+          const newUnreadMessages = new Set<string>();
+          const newUnreadCounts = new Map<string, number>();
+          
+          sortedSenders.forEach(sender => {
+            if (sender.hasUnread) {
+              newUnreadMessages.add(sender.userId);
+              newUnreadCounts.set(sender.userId, sender.unreadCount);
+            }
+          });
+          
+          setNewMessages(newUnreadMessages);
+          setNewMessageCounts(newUnreadCounts);
           
         } catch (error) {
           console.error('Error loading initial sender list:', error);
@@ -117,9 +173,16 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               const latestMessage = conversation.length > 0 ? conversation[conversation.length - 1] : null;
               const lastMessageTime = latestMessage?.sentAt ? new Date(latestMessage.sentAt).getTime() : 0;
               
+              // Count NEW messages for this sender
+              const newMessagesList = conversation.filter((msg: any) => 
+                isMessageNew(msg, sender.userId)
+              );
+              
               return {
                 ...sender,
                 lastMessageTime,
+                unreadCount: newMessagesList.length,
+                hasUnread: newMessagesList.length > 0
               };
             } catch (error) {
               console.error(`Error fetching conversation for ${sender.userId}:`, error);
@@ -143,6 +206,20 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           const orderChanged = JSON.stringify(prevSenderIds) !== JSON.stringify(newSenderIds);
           
           if (hasNewSenders || orderChanged || sortedSenders.length !== prevSenderList.length) {
+            // Update notification states when sender list changes
+            const newUnreadMessages = new Set<string>();
+            const newUnreadCounts = new Map<string, number>();
+            
+            sortedSenders.forEach(sender => {
+              if (sender.hasUnread) {
+                newUnreadMessages.add(sender.userId);
+                newUnreadCounts.set(sender.userId, sender.unreadCount);
+              }
+            });
+            
+            setNewMessages(newUnreadMessages);
+            setNewMessageCounts(newUnreadCounts);
+            
             return sortedSenders;
           }
           return prevSenderList;
@@ -190,6 +267,9 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         message: message.trim(),
       });
       setMessage('');
+      
+      // Clear notifications when CJ sends a message (like Telegram)
+      markMessagesAsSeen(selectedUser.userId);
       
       // Move the selected user to the top of the list
       const updatedSenderList = [
@@ -249,10 +329,13 @@ const CjChatList: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               className={`messenger-user${selectedUser && selectedUser.userId === u.userId ? ' selected' : ''}`}
               onClick={() => {
                 setSelectedUser(u);
+                // Clear notifications when user is clicked (like Telegram)
+                markMessagesAsSeen(u.userId);
               }}
             >
               <div className="messenger-avatar-container">
                 <img src={u.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'U')}`} className="messenger-avatar" alt={u.name} />
+
               </div>
               <div className="messenger-user-info">
                 <div className="messenger-user-name">{u.name}</div>
