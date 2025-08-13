@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import './i18n'; // Initialize i18n
+import './i18n/index'; // Initialize i18n
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -13,8 +13,9 @@ import Dashboard from './pages/Dashboard';
 import Home from './pages/Home';
 import Reports from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
-import ReportImpact from './pages/ReportImpact';
+import ReportImpact from './pages/SupportRequest';
 import SupportRequest from './pages/SupportRequest';
+import SupportRequestPage from './pages/SupportRequestPage';
 import AdminPanel from './pages/ReportImpact';
 import About from './pages/About';
 import WhatWeDo from './pages/WhatWeDo';
@@ -22,6 +23,7 @@ import GetInvolved from './pages/GetInvolved';
 import Contact from './pages/Contact';
 import Donate from './pages/Donate';
 import Partnership from './pages/Partnership';
+
 import CJDashboard from './pages/CJDashboard';
 
 import AvatarDebug from './components/Debug/AvatarDebug';
@@ -46,110 +48,106 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <TokenExpirationMonitor>
-          <Router
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
+          <Router>
             <div className="min-h-screen bg-gray-50">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/email-otp" element={<EmailOTPPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              <Route path="/terms" element={<TermsPage />} />
-              <Route path="/privacy" element={<PrivacyPage />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              {/* Public routes */}
-              <Route path="/about" element={<About />} />
-              <Route path="/what-we-do" element={<WhatWeDo />} />
-              <Route path="/get-involved" element={<GetInvolved />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/donate" element={<Donate />} />
-              <Route path="/partnership" element={<Partnership />} />
-              <Route path="/support-request" element={<SupportRequest />} />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/email-otp" element={<EmailOTPPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Public routes */}
+                <Route path="/about" element={<About />} />
+                <Route path="/what-we-do" element={<WhatWeDo />} />
+                <Route path="/get-involved" element={<GetInvolved />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/donate" element={<Donate />} />
+                <Route path="/partnership" element={<Partnership />} />
 
-              <Route path="/debug/avatar" element={<AvatarDebug />} />
-              <Route path="/debug/token" element={<TokenDebugPage />} />
-              {/* Reports routes - accessible to all authenticated users */}
-              <Route
-                path="/reports"
-                element={
-                  <ProtectedRoute>
-                    <Reports />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/reports/:id"
-                element={
-                  <ProtectedRoute>
-                    <ReportDetail />
-                  </ProtectedRoute>
-                }
-              />
-              {/* Report creation - hide from regular users */}
-              <Route
-                path="/report/new"
-                element={
-                  <ProtectedRoute excludeRoles={['user']}>
-                    <ReportImpact />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/report/edit/:id"
-                element={
-                  <ProtectedRoute excludeRoles={['user']}>
-                    <ReportImpact />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/assistance/:id" element={<ReportDetail />} />
-              <Route path="/assistance/received/:id" element={<ReportDetail />} />
+                <Route path="/support-request" element={<SupportRequestPage />} />
+
+                <Route path="/debug/avatar" element={<AvatarDebug />} />
+                <Route path="/debug/token" element={<TokenDebugPage />} />
+                {/* Reports routes - accessible to all authenticated users */}
+                <Route
+                  path="/reports"
+                  element={
+                    <ProtectedRoute>
+                      <Reports />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/reports/:id"
+                  element={
+                    <ProtectedRoute>
+                      <ReportDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                {/* Report creation - hide from regular users */}
+                <Route
+                  path="/report/new"
+                  element={
+                    <ProtectedRoute excludeRoles={['user']}>
+                      <ReportImpact />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/report/edit/:id"
+                  element={
+                    <ProtectedRoute excludeRoles={['user']}>
+                      <ReportImpact />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/assistance/:id" element={<ReportDetail />} />
+                <Route path="/assistance/received/:id" element={<ReportDetail />} />
 
 
-              {/* Admin routes */}
-              <Route
-                path="/admin/*"
-                element={
-                  <ProtectedRoute requiredRoles={['admin']}>
-                    <AdminPanel />
-                  </ProtectedRoute>
-                }
-              />
-              
-              {/* CJ and Admin routes */}
-              <Route
-                path="/verify-reports"
-                element={
-                  <ProtectedRoute requiredRoles={['admin', 'cj']}>
-                    <div className="p-8 text-center">Verify Reports page coming soon...</div>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/analytics"
-                element={
-                  <ProtectedRoute requiredRoles={['admin', 'cj']}>
-                    <div className="p-8 text-center">Analytics page coming soon...</div>
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-        </Router>
+                {/* Admin routes */}
+                <Route
+                  path="/admin/*"
+                  element={
+                    <ProtectedRoute requiredRoles={['admin']}>
+                      <AdminPanel />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* CJ and Admin routes */}
+                <Route
+                  path="/verify-reports"
+                  element={
+                    <ProtectedRoute requiredRoles={['admin', 'cj']}>
+                      <div className="p-8 text-center">Verify Reports page coming soon...</div>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/analytics"
+                  element={
+                    <ProtectedRoute requiredRoles={['admin', 'cj']}>
+                      <div className="p-8 text-center">Analytics page coming soon...</div>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </div>
+          </Router>
         </TokenExpirationMonitor>
         <Toaster
           position="top-right"

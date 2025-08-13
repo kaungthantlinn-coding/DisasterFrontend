@@ -83,8 +83,7 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
   // Query for available roles
   const {
     data: availableRoles,
-    isLoading: isLoadingRoles,
-    error: rolesError
+    isLoading: isLoadingRoles
   } = useQuery({
     queryKey: ['availableRoles'],
     queryFn: userManagementApi.getAvailableRoles,
@@ -139,7 +138,10 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
   });
 
   const blacklistUserMutation = useMutation({
-    mutationFn: (userId: string) => userManagementApi.blacklistUser(userId),
+    mutationFn: ({ userId, reason }: { userId: string; reason: string }) => {
+      console.log('🔍 Blacklist mutation called with:', { userId, reason });
+      return userManagementApi.blacklistUser(userId, { reason });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['userManagementStats'] });
@@ -148,6 +150,8 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
     onError: (error: any) => {
       // Note: Error notifications are handled in the component for better control
       console.error('Failed to blacklist user:', error);
+      console.error('Error details:', error.response?.data);
+      console.error('Error status:', error.response?.status);
     },
   });
 
@@ -211,8 +215,8 @@ export const useUserManagement = (options: UseUserManagementOptions = {}) => {
     return deleteUserMutation.mutateAsync(userId);
   }, [deleteUserMutation]);
 
-  const handleBlacklistUser = useCallback((userId: string) => {
-    return blacklistUserMutation.mutateAsync(userId);
+  const handleBlacklistUser = useCallback((params: { userId: string; reason: string }) => {
+    return blacklistUserMutation.mutateAsync(params);
   }, [blacklistUserMutation]);
 
   const handleUnblacklistUser = useCallback((userId: string) => {

@@ -9,11 +9,12 @@ interface ConfirmationOptions {
   details?: string[];
   userName?: string;
   actionType?: 'blacklist' | 'unblacklist' | 'delete' | 'general';
+  requiresReason?: boolean;
 }
 
 interface ConfirmationState extends ConfirmationOptions {
   isOpen: boolean;
-  resolve?: (value: { isConfirmed: boolean }) => void;
+  resolve?: (value: { isConfirmed: boolean; reason?: string }) => void;
 }
 
 export const useConfirmationModal = () => {
@@ -28,7 +29,7 @@ export const useConfirmationModal = () => {
     actionType: 'general'
   });
 
-  const showConfirmation = useCallback((options: ConfirmationOptions): Promise<{ isConfirmed: boolean }> => {
+  const showConfirmation = useCallback((options: ConfirmationOptions): Promise<{ isConfirmed: boolean; reason?: string }> => {
     return new Promise((resolve) => {
       setState({
         ...options,
@@ -38,9 +39,9 @@ export const useConfirmationModal = () => {
     });
   }, []);
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback((reason?: string) => {
     if (state.resolve) {
-      state.resolve({ isConfirmed: true });
+      state.resolve({ isConfirmed: true, reason });
     }
     setState(prev => ({ ...prev, isOpen: false, resolve: undefined }));
   }, [state.resolve]);
@@ -87,7 +88,8 @@ export const useConfirmationModal = () => {
         'Require admin intervention to restore access'
       ],
       userName,
-      actionType: 'blacklist'
+      actionType: 'blacklist',
+      requiresReason: true
     });
   }, [showConfirmation]);
 
@@ -121,7 +123,8 @@ export const useConfirmationModal = () => {
       cancelText: state.cancelText,
       details: state.details,
       userName: state.userName,
-      actionType: state.actionType
+      actionType: state.actionType,
+      requiresReason: state.requiresReason
     },
     
     // Confirmation functions

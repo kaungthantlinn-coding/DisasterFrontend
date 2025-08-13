@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search,
-  Filter,
   Eye,
   CheckCircle,
   Clock,
@@ -10,7 +9,6 @@ import {
   MessageSquare,
   MapPin,
   Calendar,
-  User,
   Phone,
   Mail,
   FileText,
@@ -19,36 +17,18 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronRight,
-  Edit3,
   Save,
   X,
-  AlertCircle,
   CheckCircle2,
   Loader2,
-  MoreHorizontal,
   ArrowUpRight,
   ArrowDownRight,
   Minus
 } from 'lucide-react';
+import { SupportRequestsAPI, SupportRequest } from '../../apis/supportRequests';
+import { showErrorToast, showSuccessToast } from '../../utils/notifications';
 
 // Types
-interface SupportRequest {
-  id: string;
-  requesterName: string;
-  contactPhone: string;
-  contactEmail: string;
-  disasterType: string;
-  location: string;
-  urgencyLevel: 'immediate' | 'within_24h' | 'within_week' | 'non_urgent';
-  assistanceTypes: string[];
-  customAssistanceType?: string;
-  assistanceDescription: string;
-  status: 'pending' | 'verified' | 'in_progress' | 'resolved' | 'rejected';
-  createdAt: string;
-  updatedAt: string;
-  adminRemarks?: string;
-  assignedTo?: string;
-}
 
 interface SupportRequestMetrics {
   totalRequests: number;
@@ -74,6 +54,8 @@ interface SupportRequestCardProps {
   onStatusChange: (id: string, status: SupportRequest['status']) => void;
   onAddRemarks: (id: string, remarks: string) => void;
   onViewDetails: (request: SupportRequest) => void;
+  isUpdating: boolean;
+  updatingIds: Set<string>;
 }
 
 interface SupportRequestModalProps {
@@ -84,62 +66,16 @@ interface SupportRequestModalProps {
   onAddRemarks: (id: string, remarks: string) => void;
 }
 
-// Mock data - replace with actual API calls
-const mockSupportRequests: SupportRequest[] = [
-  {
-    id: '1',
-    requesterName: 'Aung Kyaw',
-    contactPhone: '+95-9-123456789',
-    contactEmail: 'aungkyaw@email.com',
-    disasterType: 'Flood',
-    location: 'Yangon, Myanmar',
-    urgencyLevel: 'immediate',
-    assistanceTypes: ['Emergency Rescue', 'Medical Assistance', 'Food & Water'],
-    assistanceDescription: 'Urgent help needed for flood victims in downtown area. Multiple families trapped.',
-    status: 'pending',
-    createdAt: '2024-01-15T08:30:00Z',
-    updatedAt: '2024-01-15T08:30:00Z'
-  },
-  {
-    id: '2',
-    requesterName: 'Thida Oo',
-    contactPhone: '+95-9-987654321',
-    contactEmail: 'thidaoo@email.com',
-    disasterType: 'Earthquake',
-    location: 'Mandalay, Myanmar',
-    urgencyLevel: 'within_24h',
-    assistanceTypes: ['Temporary Shelter', 'Psychological Support'],
-    assistanceDescription: 'Need temporary shelter for earthquake victims. About 50 families affected.',
-    status: 'verified',
-    createdAt: '2024-01-14T14:20:00Z',
-    updatedAt: '2024-01-15T09:15:00Z',
-    adminRemarks: 'Verified with local authorities. Shelter arrangements in progress.'
-  },
-  {
-    id: '3',
-    requesterName: 'Zaw Min',
-    contactPhone: '+95-9-555666777',
-    contactEmail: 'zawmin@email.com',
-    disasterType: 'Fire',
-    location: 'Bagan, Myanmar',
-    urgencyLevel: 'within_week',
-    assistanceTypes: ['Cleanup & Restoration', 'Financial Aid'],
-    assistanceDescription: 'Fire damaged several houses. Need cleanup assistance and financial support.',
-    status: 'in_progress',
-    createdAt: '2024-01-13T16:45:00Z',
-    updatedAt: '2024-01-15T10:30:00Z',
-    adminRemarks: 'Cleanup team dispatched. Financial aid assessment ongoing.',
-    assignedTo: 'Admin Team A'
-  }
-];
-
-const mockMetrics: SupportRequestMetrics = {
-  totalRequests: 156,
-  pendingRequests: 23,
-  verifiedRequests: 45,
-  inProgressRequests: 32,
-  resolvedRequests: 48,
-  rejectedRequests: 8
+// Helper function to calculate metrics from requests
+const calculateMetrics = (requests: SupportRequest[]): SupportRequestMetrics => {
+  return {
+    totalRequests: requests.length,
+    pendingRequests: requests.filter(r => r.status === 'pending').length,
+    verifiedRequests: requests.filter(r => r.status === 'verified').length,
+    inProgressRequests: requests.filter(r => r.status === 'in_progress').length,
+    resolvedRequests: requests.filter(r => r.status === 'resolved').length,
+    rejectedRequests: requests.filter(r => r.status === 'rejected').length
+  };
 };
 
 // Components
@@ -193,12 +129,13 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
   request, 
   onStatusChange, 
   onAddRemarks, 
-  onViewDetails 
+  onViewDetails,
+  isUpdating,
+  updatingIds
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRemarks, setShowRemarks] = useState(false);
   const [remarks, setRemarks] = useState(request.adminRemarks || '');
-  const [isUpdating, setIsUpdating] = useState(false);
 
   const getStatusColor = (status: SupportRequest['status']) => {
     switch (status) {
@@ -221,32 +158,13 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
     }
   };
 
-  const handleStatusChange = async (newStatus: SupportRequest['status']) => {
-    setIsUpdating(true);
-    try {
-      await onStatusChange(request.id, newStatus);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleSaveRemarks = async () => {
-    setIsUpdating(true);
-    try {
-      await onAddRemarks(request.id, remarks);
-      setShowRemarks(false);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-md transition-all duration-200">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-lg font-semibold text-slate-900">{request.requesterName}</h3>
+            <h3 className="text-lg font-semibold text-slate-900">{request.fullName}</h3>
             <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
               {request.status.charAt(0).toUpperCase() + request.status.slice(1).replace('_', ' ')}
             </span>
@@ -292,11 +210,11 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <Phone className="w-4 h-4" />
-              <span>{request.contactPhone}</span>
+              <span>{request.phone}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <Mail className="w-4 h-4" />
-              <span>{request.contactEmail}</span>
+              <span>{request.email}</span>
             </div>
           </div>
 
@@ -309,18 +227,14 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
                   {type}
                 </span>
               ))}
-              {request.customAssistanceType && (
-                <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs font-medium">
-                  {request.customAssistanceType}
-                </span>
-              )}
+
             </div>
           </div>
 
           {/* Description */}
           <div>
             <p className="text-sm font-medium text-slate-700 mb-2">Description:</p>
-            <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">{request.assistanceDescription}</p>
+            <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">{request.description}</p>
           </div>
 
           {/* Admin Remarks */}
@@ -338,40 +252,40 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
               {request.status === 'pending' && (
                 <>
                   <button
-                    onClick={() => handleStatusChange('verified')}
-                    disabled={isUpdating}
+                    onClick={() => onStatusChange(request.id, 'verified')}
+                    disabled={isUpdating || updatingIds.has(request.id)}
                     className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
                   >
-                    {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                    {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
                     Verify
                   </button>
                   <button
-                    onClick={() => handleStatusChange('rejected')}
-                    disabled={isUpdating}
+                    onClick={() => onStatusChange(request.id, 'rejected')}
+                    disabled={isUpdating || updatingIds.has(request.id)}
                     className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-all disabled:opacity-50"
                   >
-                    {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                    {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
                     Reject
                   </button>
                 </>
               )}
               {request.status === 'verified' && (
                 <button
-                  onClick={() => handleStatusChange('in_progress')}
-                  disabled={isUpdating}
+                  onClick={() => onStatusChange(request.id, 'in_progress')}
+                  disabled={isUpdating || updatingIds.has(request.id)}
                   className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-all disabled:opacity-50"
                 >
-                  {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Clock className="w-3 h-3" />}
+                  {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <Clock className="w-3 h-3" />}
                   Mark In Progress
                 </button>
               )}
               {request.status === 'in_progress' && (
                 <button
-                  onClick={() => handleStatusChange('resolved')}
-                  disabled={isUpdating}
+                  onClick={() => onStatusChange(request.id, 'resolved')}
+                  disabled={isUpdating || updatingIds.has(request.id)}
                   className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
                 >
-                  {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                  {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
                   Mark Resolved
                 </button>
               )}
@@ -399,13 +313,17 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
               />
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handleSaveRemarks}
-                  disabled={isUpdating || !remarks.trim()}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50"
-                >
-                  {isUpdating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                  Save
-                </button>
+                    onClick={() => {
+                      onAddRemarks(request.id, remarks);
+                      setShowRemarks(false);
+                      setRemarks('');
+                    }}
+                    disabled={isUpdating || updatingIds.has(request.id) || !remarks.trim()}
+                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50"
+                  >
+                    {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                    Save
+                  </button>
                 <button
                   onClick={() => {
                     setShowRemarks(false);
@@ -454,6 +372,8 @@ const SupportRequestModal: React.FC<SupportRequestModalProps> = ({
             onStatusChange={onStatusChange}
             onAddRemarks={onAddRemarks}
             onViewDetails={() => {}}
+            isUpdating={false}
+            updatingIds={new Set()}
           />
         </div>
       </div>
@@ -462,19 +382,47 @@ const SupportRequestModal: React.FC<SupportRequestModalProps> = ({
 };
 
 const AdminSupportRequestManagement: React.FC = () => {
-  const [requests, setRequests] = useState<SupportRequest[]>(mockSupportRequests);
-  const [metrics, setMetrics] = useState<SupportRequestMetrics>(mockMetrics);
+  const [requests, setRequests] = useState<SupportRequest[]>([]);
+  const [metrics, setMetrics] = useState<SupportRequestMetrics>({
+    totalRequests: 0,
+    pendingRequests: 0,
+    verifiedRequests: 0,
+    inProgressRequests: 0,
+    resolvedRequests: 0,
+    rejectedRequests: 0
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [urgencyFilter, setUrgencyFilter] = useState<string>('all');
   const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
+
+  // Load support requests on component mount
+  useEffect(() => {
+    loadSupportRequests();
+  }, []);
+
+  // Load support requests from API
+  const loadSupportRequests = async () => {
+    try {
+      setIsLoading(true);
+      const data = await SupportRequestsAPI.getAllRequests();
+      setRequests(data);
+      setMetrics(calculateMetrics(data));
+    } catch (error: any) {
+      showErrorToast(error.message || 'Failed to load support requests');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter requests based on search and filters
   const filteredRequests = requests.filter(request => {
     const matchesSearch = 
-      request.requesterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.disasterType.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.location.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -485,32 +433,73 @@ const AdminSupportRequestManagement: React.FC = () => {
   });
 
   // Handle status change
-  const handleStatusChange = async (id: string, newStatus: SupportRequest['status']) => {
-    setRequests(prev => 
-      prev.map(req => 
-        req.id === id 
-          ? { ...req, status: newStatus, updatedAt: new Date().toISOString() }
-          : req
-      )
-    );
-    
-    // Update metrics
-    setMetrics(prev => {
-      const updatedMetrics = { ...prev };
-      // This would typically be calculated from the backend
-      return updatedMetrics;
-    });
+  const handleStatusChange = async (id: string, newStatus: SupportRequest['status'], adminRemarks?: string) => {
+    try {
+      setIsUpdating(true);
+      setUpdatingIds(prev => new Set(prev).add(id));
+      const updatedRequest = await SupportRequestsAPI.updateRequestStatus(id, newStatus, adminRemarks);
+      
+      // Update local state
+      setRequests(prev => 
+        prev.map(req => 
+          req.id === id ? updatedRequest : req
+        )
+      );
+      
+      // Recalculate metrics
+      const updatedRequests = requests.map(req => req.id === id ? updatedRequest : req);
+      setMetrics(calculateMetrics(updatedRequests));
+      
+      showSuccessToast('Support request status updated successfully');
+    } catch (error: any) {
+      showErrorToast(error.message || 'Failed to update support request status');
+    } finally {
+      setIsUpdating(false);
+      setUpdatingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }
   };
 
   // Handle add remarks
   const handleAddRemarks = async (id: string, remarks: string) => {
-    setRequests(prev => 
-      prev.map(req => 
-        req.id === id 
-          ? { ...req, adminRemarks: remarks, updatedAt: new Date().toISOString() }
-          : req
-      )
-    );
+    try {
+      setIsUpdating(true);
+      setUpdatingIds(prev => new Set(prev).add(id));
+      const currentRequest = requests.find(req => req.id === id);
+      if (!currentRequest) return;
+      
+      const updatedRequest = await SupportRequestsAPI.updateRequestStatus(
+        id, 
+        currentRequest.status, 
+        remarks
+      );
+      
+      // Update local state
+      setRequests(prev => 
+        prev.map(req => 
+          req.id === id ? updatedRequest : req
+        )
+      );
+      
+      showSuccessToast('Admin remarks updated successfully');
+    } catch (error: any) {
+      showErrorToast(error.message || 'Failed to update admin remarks');
+    } finally {
+      setIsUpdating(false);
+      setUpdatingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    loadSupportRequests();
   };
 
   // Handle view details
@@ -537,8 +526,12 @@ const AdminSupportRequestManagement: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="p-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200">
-                <RefreshCw className="w-5 h-5" />
+              <button 
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="p-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
               <button className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 font-medium shadow-sm">
                 <Download className="w-4 h-4" />
@@ -693,6 +686,8 @@ const AdminSupportRequestManagement: React.FC = () => {
                   onStatusChange={handleStatusChange}
                   onAddRemarks={handleAddRemarks}
                   onViewDetails={handleViewDetails}
+                  isUpdating={isUpdating}
+                  updatingIds={updatingIds}
                 />
               ))}
             </div>

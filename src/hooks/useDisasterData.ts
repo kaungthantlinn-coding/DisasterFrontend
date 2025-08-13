@@ -47,19 +47,19 @@ export const useDisasterData = (options: UseDisasterDataOptions = {}): UseDisast
       setLoading(true);
       setError(null);
 
-      const [disasterData, stats] = await Promise.all([
-        disasterDataService.fetchAllRecentDisasters(),
-        disasterDataService.getDisasterStatistics(),
-      ]);
+      const disasterData = await disasterDataService.fetchAllRecentDisasters();
+
+      const stats = disasterData.reduce(
+        (acc, disaster) => {
+          acc.totalActive++;
+          acc[disaster.severity]++;
+          return acc;
+        },
+        { totalActive: 0, critical: 0, high: 0, medium: 0, low: 0 }
+      );
 
       setDisasters(disasterData);
-      setStatistics({
-        totalActive: stats.totalActive,
-        critical: stats.critical,
-        high: stats.high,
-        medium: stats.medium,
-        low: stats.low,
-      });
+      setStatistics(stats);
       setLastUpdated(new Date());
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch disaster data';

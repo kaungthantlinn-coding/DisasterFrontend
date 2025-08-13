@@ -59,23 +59,47 @@ apiClient.interceptors.response.use(
     // Handle 401 Unauthorized responses (token expired/invalid)
     if (error.response?.status === 401) {
       const authState = useAuthStore.getState();
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || '';
+      const requestUrl = error.config?.url || '';
 
-      console.warn('🔒 Received 401 Unauthorized - token expired or invalid');
+      console.warn('🔒 Received 401 Unauthorized:', {
+        url: requestUrl,
+        message: errorMessage,
+        data: error.response?.data
+      });
 
-      // Log out user immediately (no refresh attempt)
-      authState.logout();
+      // Check if this is actually an authentication issue vs authorization issue
+      // Don't auto-logout for authorization issues (insufficient permissions)
+      const isAuthenticationIssue = 
+        errorMessage.toLowerCase().includes('token') ||
+        errorMessage.toLowerCase().includes('expired') ||
+        errorMessage.toLowerCase().includes('invalid') ||
+        errorMessage.toLowerCase().includes('unauthorized') ||
+        requestUrl.includes('/Auth/') || // Auth endpoints
+        !errorMessage; // No specific message usually means token issue
 
-      // Show error message
-      showErrorToast(
-        'Your session has expired. Please log in again.',
-        'Session Expired'
-      );
+      if (isAuthenticationIssue) {
+        console.warn('🔒 Authentication issue detected - logging out user');
+        
+        // Log out user immediately (no refresh attempt)
+        authState.logout();
 
-      // Redirect to login page
-      window.location.href = '/login';
+        // Show error message
+        showErrorToast(
+          'Your session has expired. Please log in again.',
+          'Session Expired'
+        );
 
-      // Return a more descriptive error
-      return Promise.reject(new Error('Authentication failed - session expired'));
+        // Redirect to login page
+        window.location.href = '/login';
+
+        // Return a more descriptive error
+        return Promise.reject(new Error('Authentication failed - session expired'));
+      } else {
+        console.warn('🔒 Authorization issue detected - not logging out user');
+        // This is likely a permission/authorization issue, not authentication
+        // Let the component handle the error without logging out
+      }
     }
 
     // Handle other errors normally

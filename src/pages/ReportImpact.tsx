@@ -33,7 +33,8 @@ import {
   Calendar,
   Wifi,
   WifiOff,
-  History
+  History,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { userManagementApi } from '../apis/userManagement';
@@ -47,6 +48,7 @@ import ReportManagement from './admin/ReportManagement';
 import AuditLogsPage from './admin/AuditLogsPage';
 import AdminDashboard from '../components/AdminDashboard';
 import AdminSupportRequestManagement from './admin/AdminSupportRequestManagement';
+import OrganizationManagement from './admin/OrganizationManagement';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -359,6 +361,12 @@ const AdminPanel: React.FC = () => {
       href: '/admin/users',
       icon: <Users className="w-5 h-5" />,
       active: location.pathname.includes('/admin/users')
+    },
+    {
+      title: 'Organization Management',
+      href: '/admin/organizations',
+      icon: <Building2 className="w-5 h-5" />,
+      active: location.pathname.includes('/admin/organizations')
     },
     {
       title: 'Report Management',
@@ -1157,6 +1165,7 @@ const AdminPanel: React.FC = () => {
             <Routes>
               <Route path="/" element={<AdminDashboard />} />
               <Route path="/users" element={<UserManagement />} />
+              <Route path="/organizations" element={<OrganizationManagement />} />
               <Route path="/reports" element={<ReportManagement />} />
               <Route path="/support-requests" element={<AdminSupportRequestManagement />} />
               <Route path="/audit-logs" element={<AuditLogsPage />} />

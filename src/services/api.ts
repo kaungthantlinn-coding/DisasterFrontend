@@ -197,4 +197,42 @@ export const apiService = {
       return response.data;
     },
   },
+
+  // Organization management endpoints
+  organizations: {
+    getAll: async () => {
+      const response = await api.get('/Organizations');
+      return response.data;
+    },
+    
+    getById: async (id: string) => {
+      const response = await api.get(`/Organizations/${id}`);
+      return response.data;
+    },
+    
+    create: async (data: any) => {
+      const response = await api.post('/Organizations', data);
+      return response.data;
+    },
+    
+    update: async (id: string, data: any) => {
+      const response = await api.put(`/Organizations/${id}`, data);
+      return response.data;
+    },
+    
+    delete: async (id: string) => {
+      const response = await api.delete(`/Organizations/${id}`);
+      return response.data;
+    },
+    
+    updateStatus: async (id: string, status: string) => {
+      const response = await api.patch(`/Organizations/${id}/status`, { status });
+      return response.data;
+    },
+    
+    updateVerification: async (id: string, verified: boolean) => {
+      const response = await api.patch(`/Organizations/${id}/verification`, { verified });
+      return response.data;
+    },
+  },
 };

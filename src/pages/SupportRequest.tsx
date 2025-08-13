@@ -4,16 +4,12 @@ import {
   ChevronRight,
   ChevronLeft,
   MapPin,
-
   AlertTriangle,
   Target,
   Camera,
   X,
   CheckCircle,
   Clock,
-  Users,
-  Phone,
-  Mail,
   FileText,
   Zap
 } from 'lucide-react';
@@ -101,6 +97,8 @@ const impactTypes = [
 
 
 
+
+
 interface ReportImpactProps {
   testMode?: boolean;
 }
@@ -161,6 +159,8 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
           newErrors.impactDescription = 'Impact description must be at least 20 characters';
         }
         break;
+        
+
     }
 
     setErrors(newErrors);
@@ -209,7 +209,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
     const isValid = validateStep(currentStep);
 
     if (isValid) {
-      setCurrentStep(prev => Math.min(prev + 1, 3));
+      setCurrentStep(prev => Math.min(prev + 1, 2));
       setErrors({});
     }
     // If validation fails, errors will be set by validateStep
@@ -263,6 +263,8 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
         : [...prev.impactType, type]
     }));
   }, []);
+
+
 
 
 
@@ -366,20 +368,26 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
 
   if (submitSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-4 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={32} className="text-green-600" />
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <main className="navbar-spacing">
+          <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+            <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-4 text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle size={32} className="text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Report Submitted Successfully!</h2>
+              <p className="text-gray-600 mb-6">
+                Thank you for reporting this disaster. Our team will review your submission and take appropriate action.
+              </p>
+              <div className="flex items-center justify-center text-sm text-gray-500">
+                <Clock size={16} className="mr-2" />
+                Redirecting to reports page...
+              </div>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Report Submitted Successfully!</h2>
-          <p className="text-gray-600 mb-6">
-            Thank you for reporting this disaster. Our team will review your submission and take appropriate action.
-          </p>
-          <div className="flex items-center justify-center text-sm text-gray-500">
-            <Clock size={16} className="mr-2" />
-            Redirecting to reports page...
-          </div>
-        </div>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -877,6 +885,7 @@ const ReportImpact: React.FC<ReportImpactProps> = ({ testMode = false }) => {
                       </div>
                     )}
                   </div>
+
 
 
                 </div>

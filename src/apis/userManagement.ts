@@ -58,6 +58,29 @@ export interface BulkUserOperationDto {
   operation: 'blacklist' | 'unblacklist' | 'delete';
 }
 
+export interface BlacklistUserDto {
+  reason: string;
+}
+
+export interface BlacklistHistoryDto {
+  id: string;
+  reason: string;
+  blacklistedBy: {
+    userId: string;
+    name: string;
+    email: string;
+    photoUrl?: string;
+  };
+  blacklistedAt: string;
+  unblacklistedBy?: {
+    userId: string;
+    name: string;
+    email: string;
+  };
+  unblacklistedAt?: string;
+  isActive: boolean;
+}
+
 export interface UpdateUserRolesDto {
   roleNames: string[];
   reason?: string;
@@ -168,8 +191,8 @@ export const userManagementApi = {
   },
 
   // Blacklist (suspend) user
-  async blacklistUser(userId: string): Promise<{ message: string }> {
-    const response = await apiClient.post(`/UserManagement/${userId}/blacklist`);
+  async blacklistUser(userId: string, blacklistData?: BlacklistUserDto): Promise<{ message: string }> {
+    const response = await apiClient.post(`/UserManagement/${userId}/blacklist`, blacklistData);
     return response.data;
   },
 
@@ -239,6 +262,12 @@ export const userManagementApi = {
   // Get available roles for dropdown
   async getAvailableRoles(): Promise<string[]> {
     const response = await apiClient.get('/UserManagement/roles');
+    return response.data;
+  },
+
+  // Get blacklist history for a user
+  async getBlacklistHistory(userId: string): Promise<{ data: BlacklistHistoryDto[] }> {
+    const response = await apiClient.get(`/UserManagement/${userId}/blacklist-history`);
     return response.data;
   }
 };
