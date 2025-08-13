@@ -1,1189 +1,436 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useEffect, useState } from "react";
 import {
-  Users,
-  FileText,
-  BarChart3,
-  Settings,
-  Shield,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  TrendingUp,
-  Activity,
-  Globe,
-  UserCheck,
-  Database,
-  Bell,
-  Loader2,
-  Home,
-  Search,
-  Menu,
-  X,
-  LogOut,
-  ChevronRight,
-  Sparkles,
-  Zap,
-  Star,
-  RefreshCw,
-  Download,
-  Maximize2,
-  Minimize2,
-  Calendar,
-  Wifi,
-  WifiOff,
-  History,
-  Building2
-} from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { userManagementApi } from '../apis/userManagement';
-import { ReportsAPI } from '../apis/reports';
+  DisasterReportCreateDto,
+  SeverityLevel,
+} from "../types/DisasterReport";
+import { DisasterReportService } from "../services/disasterReportService";
+import { DisasterCategory, DisasterTypeDto } from "../types/DisasterType";
+import { DisasterTypeService } from "../services/disasterTypeService";
+import { ImpactTypeDto } from "../types/ImpactType";
+import { ImpactTypeService } from "../services/ImpactTypeService";
 
-// Import admin pages
-import UserManagement from './admin/UserManagement';
-import Analytics from './admin/Analytics';
-import SystemSettings from './admin/systemsettings';
-import ReportManagement from './admin/ReportManagement';
-import AuditLogsPage from './admin/AuditLogsPage';
-import AdminDashboard from '../components/AdminDashboard';
-import AdminSupportRequestManagement from './admin/AdminSupportRequestManagement';
-import OrganizationManagement from './admin/OrganizationManagement';
+interface Props {
+  authToken: string;
+  onSuccess?: () => void;
+}
 
-// Error Boundary Component
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
+const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
+  const [step, setStep] = useState(1);
+  const [disasterTypes, setDisasterTypes] = useState<DisasterTypeDto[]>([]);
 
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
+  const [formData, setFormData] = useState<DisasterReportCreateDto>({
+    title: "",
+    description: "",
+    timestamp: "",
+    severity: SeverityLevel.Low,
+    disasterCategory: undefined,
+    disasterTypeId: 0,
+    disasterEventName: "",
+    impactDetails: [],
+  });
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Admin Panel Error:', error, errorInfo);
-  }
+  const [impactDescription, setImpactDescription] = useState("");
+  const [selectedImpacts, setSelectedImpacts] = useState<ImpactTypeDto[]>([]);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
+  const [selectedDisasterTypeName, setSelectedDisasterTypeName] = useState("");
 
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-            <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
-            <p className="text-gray-600 mb-4">
-              The admin panel encountered an unexpected error. Please refresh the page or contact support.
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+  // New states for "Other"
+  const [showOtherInput, setShowOtherInput] = useState(false);
+  const [newDisasterTypeName, setNewDisasterTypeName] = useState("");
+  const [impactTypes, setImpactTypes] = useState<ImpactTypeDto[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleImpactSelect = (impact: ImpactTypeDto) => {
+    setSelectedImpacts((prev) =>
+      prev.some((i) => i.id === impact.id)
+        ? prev.filter((i) => i.id !== impact.id)
+        : [...prev, impact]
+    );
+  };
+
+  const fetchDisasterTypes = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const data = await DisasterTypeService.getAll(token || undefined);
+      setDisasterTypes(data);
+    } catch (err) {
+      console.error("Failed to load disaster types:", err);
+    }
+  };
+
+  const fetchImpactTypes = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      console.log("Auth token:", token);
+      const data = await ImpactTypeService.getAll(token || undefined);
+      // Make sure data is always an array
+      if (Array.isArray(data)) {
+        setImpactTypes(data);
+      } else {
+        console.error("Impact types response is not an array:", data);
+        setImpactTypes([]); // fallback
+      }
+    } catch (err) {
+      console.error("Failed to load impact types:", err);
+      setImpactTypes([]); // fallback to empty array
+    }
+  };
+
+  useEffect(() => {
+    fetchDisasterTypes();
+    fetchImpactTypes();
+  }, []);
+
+  const handleCategorySelect = (category: DisasterCategory) => {
+    const defaultType = disasterTypes.find((dt) => dt.category === category);
+    setFormData((f) => ({
+      ...f,
+      disasterCategory: category,
+      disasterTypeId: defaultType ? defaultType.id : 0,
+    }));
+    setShowOtherInput(false);
+  };
+
+  const handleTypeSelect = (typeId: number) => {
+    const type = disasterTypes.find((t) => t.id === typeId);
+    setFormData((prev) => ({
+      ...prev,
+      disasterTypeId: typeId,
+    }));
+    setSelectedDisasterTypeName(type ? type.name : "");
+    setShowOtherInput(false);
+  };
+
+  const createNewDisasterType = async () => {
+    if (!newDisasterTypeName.trim() || formData.disasterCategory == null)
+      return;
+
+    try {
+      const token = localStorage.getItem("token") || undefined;
+      const dto = {
+        name: newDisasterTypeName,
+        category: formData.disasterCategory,
+      };
+      await DisasterTypeService.create(dto, token);
+
+      await fetchDisasterTypes();
+
+      // auto-select new type
+      const created = disasterTypes.find(
+        (t) =>
+          t.name.toLowerCase() === newDisasterTypeName.toLowerCase() &&
+          t.category === formData.disasterCategory
+      );
+      if (created) handleTypeSelect(created.id);
+
+      setNewDisasterTypeName("");
+      setShowOtherInput(false);
+    } catch (err) {
+      console.error("Failed to create new type:", err);
+      alert("Failed to create new disaster type");
+    }
+  };
+
+  const handleNext = () => setStep((s) => Math.min(3, s + 1));
+  const handleBack = () => setStep((s) => Math.max(1, s - 1));
+
+  const handleSubmit = async () => {
+    try {
+      const dto: DisasterReportCreateDto = {
+        ...formData,
+        impactDetails: selectedImpacts.map((impact) => ({
+          impactTypeName: impact.name,
+          description: impactDescription,
+          severity: formData.severity,
+        })),
+      };
+
+      await DisasterReportService.create(dto);
+      alert("Disaster report submitted successfully!");
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit report");
+    }
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-white rounded-2xl shadow-lg">
+      <h2 className="text-2xl font-bold mb-6 text-center">
+        Report a Disaster Impact
+      </h2>
+
+      {step === 1 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Disaster Information</h3>
+
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Disaster Type
+          </label>
+          <div className="flex gap-4 mb-4">
+            {[
+              { label: "Natural Disasters", value: DisasterCategory.Natural },
+              {
+                label: "Non-Natural Disasters",
+                value: DisasterCategory.NonNatural,
+              },
+            ].map((cat) => (
+              <button
+                key={cat.value}
+                type="button"
+                onClick={() => handleCategorySelect(cat.value)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all
+                  ${
+                    formData.disasterCategory === cat.value
+                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      : "border-gray-300 bg-white hover:border-gray-400"
+                  }`}
+              >
+                <span
+                  className={`w-4 h-4 rounded-full border ${
+                    formData.disasterCategory === cat.value
+                      ? "bg-blue-500 border-blue-500"
+                      : "border-gray-400"
+                  }`}
+                />
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {formData.disasterCategory !== undefined && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-4">
+                Specific Type *
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {disasterTypes
+                  .filter((dt) => dt.category === formData.disasterCategory)
+                  .map((dt) => (
+                    <button
+                      key={dt.id}
+                      type="button"
+                      onClick={() => handleTypeSelect(dt.id)}
+                      className={`p-3 border rounded-xl text-sm transition-all duration-200
+                        ${
+                          formData.disasterTypeId === dt.id
+                            ? "border-blue-500 bg-blue-50 text-blue-700"
+                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        }`}
+                    >
+                      {dt.name}
+                    </button>
+                  ))}
+                
+                <button
+                  type="button"
+                  onClick={() => setShowOtherInput(true)}
+                  className="p-3 border border-dashed border-gray-300 rounded-xl text-sm text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200"
+                >
+                  + Other
+                </button>
+              </div>
+            </div>
+          )}
+
+          {showOtherInput && (
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                New Disaster Type Name
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newDisasterTypeName}
+                  onChange={(e) => setNewDisasterTypeName(e.target.value)}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter disaster type name"
+                />
+                <button
+                  type="button"
+                  onClick={createNewDisasterType}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Add
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOtherInput(false);
+                    setNewDisasterTypeName("");
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Title *
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, title: e.target.value }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Brief title for the disaster report"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description *
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, description: e.target.value }))
+              }
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Detailed description of the disaster"
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Timestamp *
+            </label>
+            <input
+              type="datetime-local"
+              value={formData.timestamp}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, timestamp: e.target.value }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Severity Level *
+            </label>
+            <select
+              value={formData.severity}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  severity: e.target.value as SeverityLevel,
+                }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              Refresh Page
+              <option value={SeverityLevel.Low}>Low</option>
+              <option value={SeverityLevel.Medium}>Medium</option>
+              <option value={SeverityLevel.High}>High</option>
+              <option value={SeverityLevel.Critical}>Critical</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleNext}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Next
             </button>
           </div>
         </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-
-
-interface AdminStatCardProps {
-  icon: React.ReactNode;
-  title: string;
-  value: string | number;
-  change?: string;
-  changeType?: 'increase' | 'decrease' | 'neutral';
-  bgGradient: string;
-  iconBg: string;
-  onClick?: () => void;
-  isLoading?: boolean;
-}
-
-interface QuickActionProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  link: string;
-  color: string;
-}
-
-const AdminStatCard: React.FC<AdminStatCardProps> = ({
-  icon,
-  title,
-  value,
-  change,
-  changeType = 'neutral',
-  bgGradient,
-  onClick,
-  isLoading = false
-}) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const getChangeColor = () => {
-    switch (changeType) {
-      case 'increase': return 'text-emerald-400';
-      case 'decrease': return 'text-red-400';
-      default: return 'text-gray-400';
-    }
-  };
-
-  const getChangeIcon = () => {
-    switch (changeType) {
-      case 'increase': return <TrendingUp className="w-3 h-3" />;
-      case 'decrease': return <TrendingUp className="w-3 h-3 rotate-180" />;
-      default: return <Activity className="w-3 h-3" />;
-    }
-  };
-
-  return (
-    <div 
-      className={`group relative overflow-hidden rounded-3xl ${bgGradient} p-6 text-white shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 hover:scale-105 ${onClick ? 'cursor-pointer' : ''} border border-white/20`}
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Animated background elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-      <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-20 translate-x-20 group-hover:scale-150 transition-transform duration-700"></div>
-      <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-16 -translate-x-16 group-hover:scale-125 transition-transform duration-700"></div>
-      
-      {/* Sparkle effects */}
-      <div className={`absolute top-4 right-4 transition-all duration-500 ${isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
-        <Sparkles className="w-4 h-4 text-white/60" />
-      </div>
-      
-      <div className="relative z-10">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <p className="text-white/70 text-sm font-medium mb-3 tracking-wide uppercase">{title}</p>
-            {isLoading ? (
-              <div className="flex items-center space-x-2 mb-2">
-                <Loader2 className="w-6 h-6 animate-spin text-white/60" />
-                <span className="text-2xl font-black text-white/60">Loading...</span>
-              </div>
-            ) : (
-              <p className="text-4xl font-black mb-2 tracking-tight">{value}</p>
-            )}
-            {change && !isLoading && (
-              <div className={`flex items-center space-x-1 text-sm ${getChangeColor()}`}>
-                {getChangeIcon()}
-                <span className="font-medium">{change}</span>
-              </div>
-            )}
-          </div>
-          <div className={`p-4 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300`}>
-            <div className="group-hover:rotate-12 transition-transform duration-300">
-              {icon}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const QuickActionCard: React.FC<QuickActionProps> = ({ icon, title, description, link, color }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <Link 
-      to={link}
-      className="group relative bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-6 hover:shadow-2xl transition-all duration-500 hover:border-blue-300/50 hover:-translate-y-1 hover:bg-white overflow-hidden"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-purple-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-      
-      {/* Floating particles effect */}
-      <div className={`absolute top-2 right-2 transition-all duration-700 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
-        <Star className="w-3 h-3 text-yellow-400" />
-      </div>
-      <div className={`absolute bottom-2 left-2 transition-all duration-700 delay-100 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <Zap className="w-3 h-3 text-blue-400" />
-      </div>
-      
-      <div className="relative z-10">
-        <div className="flex items-start space-x-4">
-          <div className={`p-4 rounded-2xl ${color} group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg group-hover:shadow-xl`}>
-            <div className="group-hover:scale-110 transition-transform duration-300">
-              {icon}
-            </div>
-          </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-300 text-lg">{title}</h3>
-            <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300 leading-relaxed">{description}</p>
-            
-            {/* Animated arrow */}
-            <div className="mt-3 flex items-center text-blue-600 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-0 group-hover:translate-x-1">
-              <span className="text-sm font-medium mr-1">Explore</span>
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-};
-
-const AdminPanel: React.FC = () => {
-  const { user, logout } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  
-  // Enhanced state management
-  const [timeRange, setTimeRange] = useState('7d');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [notifications, setNotifications] = useState<Array<{
-    id: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-    message: string;
-    timestamp: Date;
-  }>>([]);
-
-  // Update time every minute - optimized
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Network status monitoring
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
-  // Notification system - optimized to prevent memory leaks
-  const addNotification = useCallback((type: 'success' | 'error' | 'warning' | 'info', message: string) => {
-    const id = Date.now().toString();
-    setNotifications(prev => {
-      // Limit notifications to prevent memory issues
-      const newNotifications = [...prev, { id, type, message, timestamp: new Date() }];
-      return newNotifications.slice(-5); // Keep only last 5 notifications
-    });
-    
-    // Auto-remove after 5 seconds with cleanup
-    const timeoutId = setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 5000);
-    
-    // Store timeout ID for cleanup
-    return () => clearTimeout(timeoutId);
-  }, []);
-
-  // Manual refresh functionality
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await queryClient.invalidateQueries();
-      addNotification('success', 'Data refreshed successfully');
-    } catch (error) {
-      addNotification('error', 'Failed to refresh data');
-    } finally {
-      setTimeout(() => setRefreshing(false), 1000);
-    }
-  }, [queryClient, addNotification]);
-
-  // Fullscreen toggle
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  }, []);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 'r':
-            e.preventDefault();
-            handleRefresh();
-            break;
-          case 'k':
-            e.preventDefault();
-            document.querySelector<HTMLInputElement>('input[placeholder="Search..."]')?.focus();
-            break;
-          case 'b':
-            e.preventDefault();
-            setSidebarOpen(prev => !prev);
-            break;
-        }
-      }
-      if (e.key === 'Escape') {
-        setSidebarOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRefresh]);
-
-  // Check if we're on the main admin panel page
-  const isMainPanel = location.pathname === '/admin' || location.pathname === '/admin/';
-
-  // Navigation items with CMS functionality
-  const navItems = [
-    {
-      title: 'Dashboard',
-      href: '/admin',
-      icon: <Home className="w-5 h-5" />,
-      active: isMainPanel
-    },
-    {
-      title: 'User Management',
-      href: '/admin/users',
-      icon: <Users className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/users')
-    },
-    {
-      title: 'Organization Management',
-      href: '/admin/organizations',
-      icon: <Building2 className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/organizations')
-    },
-    {
-      title: 'Report Management',
-      href: '/admin/reports',
-      icon: <FileText className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/reports')
-    },
-    {
-      title: 'Support Request Management',
-      href: '/admin/support-requests',
-      icon: <Shield className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/support-requests')
-    },
-    {
-      title: 'Audit Logs',
-      href: '/admin/audit-logs',
-      icon: <History className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/audit-logs')
-    },
-    {
-      title: 'Analytics',
-      href: '/admin/analytics',
-      icon: <BarChart3 className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/analytics')
-    },
-    {
-      title: 'Settings',
-      href: '/admin/settings',
-      icon: <Settings className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/settings')
-    }
-  ];
-
-  // Debug logging
-  console.log('Total navItems:', navItems.length);
-  console.log('System items (slice 4):', navItems.slice(4));
-  console.log('System items length:', navItems.slice(4).length);
-
-  const handleLogout = () => {
-    logout();
-    window.location.href = '/login';
-  };
-
-  // Enhanced data fetching with better error handling
-  const {
-    data: userStats,
-    isLoading: isLoadingUserStats,
-    error: userStatsError,
-    isRefetching: isRefetchingUserStats
-  } = useQuery({
-    queryKey: ['adminDashboardStats', timeRange],
-    queryFn: () => userManagementApi.getDashboardStats(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: (failureCount, error: any) => {
-      if (error?.response?.status === 401) return false;
-      return failureCount < 3;
-    },
-    refetchInterval: isOnline ? 10 * 60 * 1000 : false, // Reduced frequency - 10 minutes
-    enabled: isOnline
-  });
-
-  const {
-    data: reportsStats,
-    isLoading: isLoadingReportsStats,
-    error: reportsStatsError,
-    isRefetching: isRefetchingReportsStats
-  } = useQuery({
-    queryKey: ['adminReportsStats', timeRange],
-    queryFn: () => ReportsAPI.getReportsStatistics(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: (failureCount, error: any) => {
-      if (error?.response?.status === 401) return false;
-      return failureCount < 3;
-    },
-    refetchInterval: isOnline ? 10 * 60 * 1000 : false, // Reduced frequency - 10 minutes
-    enabled: isOnline
-  });
-
-
-
-  // Enhanced loading and error states
-  const isLoadingAnyStats = isLoadingUserStats || isLoadingReportsStats;
-  const isRefreshingAnyStats = isRefetchingUserStats || isRefetchingReportsStats || refreshing;
-  const hasAnyError = userStatsError || reportsStatsError;
-
-  // Memoized calculations for better performance
-  const enhancedStats = useMemo(() => {
-    const baseStats = {
-      totalUsers: (userStats as any)?.totalUsers || 0,
-      totalReports: (reportsStats as any)?.totalReports || 0,
-      pendingVerification: (reportsStats as any)?.pendingReports || 0,
-      systemHealth: 98.5, // TODO: Add system health API
-      activeUsers: (userStats as any)?.activeUsers || 0,
-      verifiedReports: (reportsStats as any)?.verifiedReports || 0,
-      blacklistedUsers: (userStats as any)?.suspendedUsers || 0,
-      serverUptime: '99.9%' // TODO: Add system health API
-    };
-
-    // Calculate growth percentages
-    const userGrowth = (userStats as any)?.previousPeriodUsers 
-      ? ((baseStats.totalUsers - (userStats as any).previousPeriodUsers) / (userStats as any).previousPeriodUsers * 100).toFixed(1)
-      : '0';
-    
-    const reportGrowth = (reportsStats as any)?.previousPeriodReports
-      ? ((baseStats.totalReports - (reportsStats as any).previousPeriodReports) / (reportsStats as any).previousPeriodReports * 100).toFixed(1)
-      : '0';
-
-    const userGrowthNum = parseFloat(userGrowth);
-    const reportGrowthNum = parseFloat(reportGrowth);
-
-    return {
-      ...baseStats,
-      userGrowth: `${userGrowthNum >= 0 ? '+' : ''}${userGrowth}%`,
-      reportGrowth: `${reportGrowthNum >= 0 ? '+' : ''}${reportGrowth}%`,
-      userGrowthType: userGrowthNum >= 0 ? 'increase' as const : 'decrease' as const,
-      reportGrowthType: reportGrowthNum >= 0 ? 'increase' as const : 'decrease' as const
-    };
-  }, [userStats, reportsStats]);
-
-  const quickActions = [
-    {
-      icon: <Users className="w-6 h-6 text-white" />,
-      title: 'User Management',
-      description: 'Manage users, roles, and permissions',
-      link: '/admin/users',
-      color: 'bg-blue-500'
-    },
-    {
-      icon: <FileText className="w-6 h-6 text-white" />,
-      title: 'Report Management',
-      description: 'Review and verify disaster reports',
-      link: '/admin/reports',
-      color: 'bg-green-500'
-    },
-    {
-      icon: <BarChart3 className="w-6 h-6 text-white" />,
-      title: 'Analytics Dashboard',
-      description: 'View detailed analytics and insights',
-      link: '/admin/analytics',
-      color: 'bg-purple-500'
-    },
-    {
-      icon: <Settings className="w-6 h-6 text-white" />,
-      title: 'System Settings',
-      description: 'Configure system parameters and settings',
-      link: '/admin/settings',
-      color: 'bg-gray-600'
-    },
-    {
-      icon: <Database className="w-6 h-6 text-white" />,
-      title: 'Database Management',
-      description: 'Monitor and manage database operations',
-      link: '/admin/database',
-      color: 'bg-indigo-500'
-    },
-    {
-      icon: <Bell className="w-6 h-6 text-white" />,
-      title: 'Notifications',
-      description: 'Manage system notifications and alerts',
-      link: '/admin/notifications',
-      color: 'bg-yellow-500'
-    }
-  ];
-
-  // Enhanced recent activities with real-time data
-  const recentActivities = useMemo(() => {
-    const activities = [
-      {
-        id: 1,
-        action: 'New user registration',
-        user: 'Sarah Johnson',
-        time: '2 minutes ago',
-        type: 'user',
-        icon: <UserCheck className="w-4 h-4" />,
-        priority: 'low'
-      },
-      {
-        id: 2,
-        action: 'Report verified',
-        user: 'Admin',
-        time: '15 minutes ago',
-        type: 'report',
-        icon: <CheckCircle className="w-4 h-4" />,
-        priority: 'medium'
-      },
-      {
-        id: 3,
-        action: 'System backup completed',
-        user: 'System',
-        time: '1 hour ago',
-        type: 'system',
-        icon: <Database className="w-4 h-4" />,
-        priority: 'low'
-      },
-      {
-        id: 4,
-        action: 'Critical alert resolved',
-        user: 'Admin Team',
-        time: '2 hours ago',
-        type: 'alert',
-        icon: <AlertTriangle className="w-4 h-4" />,
-        priority: 'high'
-      }
-    ];
-
-    // Filter activities based on search query
-    if (searchQuery) {
-      return activities.filter(activity => 
-        activity.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        activity.user.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    return activities;
-  }, [searchQuery]);
-
-
-
-  const AdminDashboard = () => (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="relative">
-        <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl p-8 text-white overflow-hidden relative">
-          {/* Animated background elements */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent"></div>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-48 translate-x-48 animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-32 -translate-x-32 animate-pulse delay-1000"></div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-green-300 text-sm font-medium">System Online</span>
-                  <span className="text-white/60 text-sm">{currentTime.toLocaleTimeString()}</span>
-                </div>
-                <h2 className="text-4xl font-black mb-3 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-                  Welcome back, {user?.name || 'Admin'}! ✨
-                </h2>
-                <p className="text-blue-100 text-lg leading-relaxed mb-4">
-                  Here's what's happening with your disaster response platform today.
-                </p>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                    <TrendingUp className="w-4 h-4 text-green-300" />
-                    <span className="text-sm font-medium">All systems operational</span>
-                  </div>
-                  <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                    <Users className="w-4 h-4 text-blue-300" />
-                    <span className="text-sm font-medium">{enhancedStats.activeUsers} active users</span>
-                  </div>
-                </div>
-              </div>
-              <div className="hidden md:block">
-                <div className="relative">
-                  <div className="w-32 h-32 bg-gradient-to-br from-white/20 to-white/10 rounded-3xl flex items-center justify-center backdrop-blur-md border border-white/30 shadow-2xl">
-                    <Activity className="w-16 h-16 text-white animate-pulse" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl opacity-50"></div>
-        <div className="relative p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
-              <Sparkles className="w-6 h-6 text-purple-600" />
-              <span>Platform Analytics</span>
-            </h3>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <div className={`w-2 h-2 rounded-full ${isLoadingAnyStats ? 'bg-yellow-500 animate-pulse' : 'bg-green-500 animate-pulse'}`}></div>
-              <span>{isLoadingAnyStats ? 'Loading Data...' : 'Live Data'}</span>
-              {(userStatsError || reportsStatsError) && (
-                <span className="text-red-500 text-xs">
-                  • {userStatsError ? 'User stats error' : ''} {reportsStatsError ? 'Reports stats error' : ''}
-                </span>
-              )}
-            </div>
-          </div>
-          {/* Error State */}
-          {hasAnyError && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-                <div>
-                  <h4 className="text-red-800 font-medium">Data Loading Issues</h4>
-                  <p className="text-red-600 text-sm">
-                    Some statistics may be outdated. 
-                    {!isOnline && ' You are currently offline.'}
-                    <button 
-                      onClick={handleRefresh}
-                      className="ml-2 text-red-700 underline hover:no-underline"
-                    >
-                      Try refreshing
-                    </button>
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '0ms'}}>
-              <AdminStatCard
-                icon={<Users className="w-6 h-6" />}
-                title="Total Users"
-                value={isLoadingUserStats ? 0 : enhancedStats.totalUsers.toLocaleString()}
-                change={enhancedStats.userGrowth !== '+0%' ? `${enhancedStats.userGrowth} from last period` : undefined}
-                changeType={enhancedStats.userGrowthType}
-                bgGradient="bg-gradient-to-br from-blue-500 to-blue-600"
-                iconBg="bg-blue-400"
-                onClick={() => navigate('/admin/users')}
-                isLoading={isLoadingUserStats}
-              />
-            </div>
-            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '100ms'}}>
-              <AdminStatCard
-                icon={<FileText className="w-6 h-6" />}
-                title="Total Reports"
-                value={isLoadingReportsStats ? 0 : enhancedStats.totalReports.toLocaleString()}
-                change={enhancedStats.reportGrowth !== '+0%' ? `${enhancedStats.reportGrowth} from last period` : undefined}
-                changeType={enhancedStats.reportGrowthType}
-                bgGradient="bg-gradient-to-br from-green-500 to-emerald-600"
-                iconBg="bg-green-400"
-                onClick={() => navigate('/admin/reports')}
-                isLoading={isLoadingReportsStats}
-              />
-            </div>
-            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '200ms'}}>
-              <AdminStatCard
-                icon={<Clock className="w-6 h-6" />}
-                title="Pending Verification"
-                value={isLoadingReportsStats ? 0 : enhancedStats.pendingVerification}
-                change={(reportsStats as any)?.averageResponseTime ? `${(reportsStats as any).averageResponseTime} avg response` : undefined}
-                changeType={enhancedStats.pendingVerification > 10 ? "decrease" as const : "neutral" as const}
-                bgGradient="bg-gradient-to-br from-yellow-500 to-orange-500"
-                iconBg="bg-yellow-400"
-                onClick={() => navigate('/admin/reports?filter=pending')}
-                isLoading={isLoadingReportsStats}
-              />
-            </div>
-            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '300ms'}}>
-              <AdminStatCard
-                icon={<TrendingUp className="w-6 h-6" />}
-                title="System Health"
-                value={`${enhancedStats.systemHealth}%`}
-                change={enhancedStats.systemHealth >= 95 ? "Excellent performance" : enhancedStats.systemHealth >= 85 ? "Good performance" : "Needs attention"}
-                changeType={enhancedStats.systemHealth >= 95 ? "increase" as const : enhancedStats.systemHealth >= 85 ? "neutral" as const : "decrease" as const}
-                bgGradient="bg-gradient-to-br from-purple-500 to-purple-600"
-                iconBg="bg-purple-400"
-                onClick={() => navigate('/admin/settings?tab=system')}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 rounded-3xl opacity-60"></div>
-        <div className="relative p-6">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
-                <Zap className="w-6 h-6 text-indigo-600" />
-                <span>Quick Actions</span>
-              </h3>
-              <p className="text-gray-600 mt-1">Streamline your workflow with these powerful tools</p>
-            </div>
-            <div className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium">
-              <Star className="w-4 h-4" />
-              <span>Pro Tools</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {quickActions.map((action, index) => (
-              <div key={index} className="transform transition-all duration-700 hover:scale-105" style={{animationDelay: `${index * 150}ms`}}>
-                <QuickActionCard {...action} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Activity */}
-        <div className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                <Activity className="w-5 h-5 text-blue-600" />
-                <span>Recent Activity</span>
-              </h3>
-              <Link 
-                to="/admin/activity" 
-                className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1 bg-blue-50 px-3 py-1 rounded-full hover:bg-blue-100 transition-all"
-              >
-                <span>View All</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-4 p-4 rounded-xl hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-blue-200 group/item">
-                  <div className={`p-2 rounded-lg group-hover/item:scale-110 transition-transform ${
-                    activity.type === 'user' ? 'bg-blue-100 text-blue-600' :
-                    activity.type === 'report' ? 'bg-green-100 text-green-600' :
-                    activity.type === 'system' ? 'bg-purple-100 text-purple-600' :
-                    'bg-yellow-100 text-yellow-600'
-                  }`}>
-                    {activity.icon}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 group-hover/item:text-blue-900 transition-colors">{activity.action}</p>
-                    <p className="text-xs text-gray-500 flex items-center space-x-1">
-                      <span>by {activity.user}</span>
-                      <span>•</span>
-                      <Clock className="w-3 h-3" />
-                      <span>{activity.time}</span>
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* System Status */}
-        <div className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                <Shield className="w-5 h-5 text-green-600" />
-                <span>System Status</span>
-              </h3>
-              <div className="flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-full">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs font-medium text-green-700">All Systems Operational</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 hover:shadow-md transition-all group/status">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full animate-pulse"></div>
-                  <Globe className="w-5 h-5 text-green-600 group-hover/status:scale-110 transition-transform" />
-                  <span className="font-semibold text-gray-900">Server Uptime</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-green-700 font-bold">{enhancedStats.serverUptime}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200 hover:shadow-md transition-all group/status">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-pulse"></div>
-                  <Activity className="w-5 h-5 text-blue-600 group-hover/status:scale-110 transition-transform" />
-                  <span className="font-semibold text-gray-900">Active Users</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
-                  <span className="text-blue-700 font-bold">{enhancedStats.activeUsers}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 hover:shadow-md transition-all group/status">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full animate-pulse"></div>
-                  <CheckCircle className="w-5 h-5 text-purple-600 group-hover/status:scale-110 transition-transform" />
-                  <span className="font-semibold text-gray-900">Verified Reports</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Star className="w-4 h-4 text-purple-600" />
-                  <span className="text-purple-700 font-bold">{enhancedStats.verifiedReports}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-200 hover:shadow-md transition-all group/status">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></div>
-                  <AlertTriangle className="w-5 h-5 text-red-600 group-hover/status:scale-110 transition-transform" />
-                  <span className="font-semibold text-gray-900">Blacklisted Users</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <X className="w-4 h-4 text-red-600" />
-                  <span className="text-red-700 font-bold">{enhancedStats.blacklistedUsers}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Toast Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {notifications.map((notification) => (
-          <div
-            key={notification.id}
-            className={`p-4 rounded-lg shadow-lg border-l-4 bg-white max-w-sm transform transition-all duration-300 ${
-              notification.type === 'success' ? 'border-green-500' :
-              notification.type === 'error' ? 'border-red-500' :
-              notification.type === 'warning' ? 'border-yellow-500' :
-              'border-blue-500'
-            }`}
-          >
-            <div className="flex items-start space-x-3">
-              <div className={`flex-shrink-0 ${
-                notification.type === 'success' ? 'text-green-500' :
-                notification.type === 'error' ? 'text-red-500' :
-                notification.type === 'warning' ? 'text-yellow-500' :
-                'text-blue-500'
-              }`}>
-                {notification.type === 'success' && <CheckCircle className="w-5 h-5" />}
-                {notification.type === 'error' && <AlertTriangle className="w-5 h-5" />}
-                {notification.type === 'warning' && <AlertTriangle className="w-5 h-5" />}
-                {notification.type === 'info' && <Bell className="w-5 h-5" />}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{notification.message}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {notification.timestamp.toLocaleTimeString()}
-                </p>
-              </div>
-              <button
-                onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-              <Shield className="w-8 h-8 text-blue-600" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">DisasterResponse</h1>
-                <p className="text-xs text-gray-500">Admin Panel</p>
-              </div>
-            </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* User Profile */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">
-                {user?.name?.charAt(0) || 'A'}
-              </span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin User'}</p>
-              <p className="text-xs text-gray-500">Super Admin</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {/* Main Navigation */}
-          <div className="mb-6">
-            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Main</h3>
-            {navItems.slice(0, 4).map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                  item.active
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`${item.active ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
-                    {item.icon}
-                  </div>
-                  <span>{item.title}</span>
-                </div>
-                {item.active && (
-                  <ChevronRight className="w-4 h-4 text-blue-600" />
-                )}
-              </Link>
-            ))}
-          </div>
-
-          {/* System Section */}
-          {navItems.slice(4).length > 0 && (
-            <div>
-              <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">System</h3>
-              {navItems.slice(4).map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                    item.active
-                      ? 'bg-purple-50 text-purple-700 border-r-2 border-purple-600'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className={`${item.active ? 'text-purple-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
-                      {item.icon}
-                    </div>
-                    <span>{item.title}</span>
-                  </div>
-                  {item.active && (
-                    <ChevronRight className="w-4 h-4 text-purple-600" />
-                  )}
-                </Link>
-              ))}
-            </div>
-          )}
-        </nav>
-
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-3 w-full px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Enhanced Top Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
-                title="Open sidebar (Ctrl+B)"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              <div className="flex items-center space-x-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
-                    <span>{navItems.find(item => item.active)?.title || 'Dashboard'}</span>
-                    {hasAnyError && (
-                      <AlertTriangle className="w-4 h-4 text-red-500" />
-                    )}
-                    {!isOnline && (
-                      <WifiOff className="w-4 h-4 text-orange-500" />
-                    )}
-                  </h2>
-                  <p className="text-sm text-gray-500 flex items-center space-x-2">
-                    <span>Manage your disaster response platform</span>
-                    <span>•</span>
-                    <span className="flex items-center space-x-1">
-                      {isOnline ? (
-                        <Wifi className="w-3 h-3 text-green-500" />
-                      ) : (
-                        <WifiOff className="w-3 h-3 text-orange-500" />
-                      )}
-                      <span className={isOnline ? 'text-green-600' : 'text-orange-600'}>
-                        {isOnline ? 'Online' : 'Offline'}
-                      </span>
-                    </span>
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              {/* Enhanced Search */}
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search... (Ctrl+K)"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
+      {step === 2 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Impact Assessment</h3>
 
-              {/* Time Range Selector */}
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <select 
-                  value={timeRange} 
-                  onChange={(e) => setTimeRange(e.target.value)}
-                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none cursor-pointer"
-                  title="Select time range"
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-4">
+              Impact Types *
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {impactTypes.map((impact) => (
+                <label
+                  key={impact.id}
+                  className="flex items-center p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all duration-200"
                 >
-                  <option value="1h">Last Hour</option>
-                  <option value="24h">Last 24 Hours</option>
-                  <option value="7d">Last 7 Days</option>
-                  <option value="30d">Last 30 Days</option>
-                  <option value="90d">Last 90 Days</option>
-                  <option value="1y">Last Year</option>
-                </select>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center space-x-1">
-                {/* Refresh Button */}
-                <button 
-                  onClick={handleRefresh}
-                  disabled={isRefreshingAnyStats}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Refresh data (Ctrl+R)"
-                >
-                  <RefreshCw className={`w-5 h-5 ${isRefreshingAnyStats ? 'animate-spin' : ''}`} />
-                </button>
-
-                {/* Fullscreen Toggle */}
-                <button 
-                  onClick={toggleFullscreen}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden lg:block"
-                  title="Toggle fullscreen"
-                >
-                  {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                </button>
-
-                {/* Export Button */}
-                <button 
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Export data"
-                  onClick={() => {
-                    // TODO: Implement export functionality
-                    console.log('Export data');
-                  }}
-                >
-                  <Download className="w-5 h-5" />
-                </button>
-
-                {/* Notifications */}
-                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                </button>
-              </div>
+                  <input
+                    type="checkbox"
+                    checked={selectedImpacts.some((i) => i.id === impact.id)}
+                    onChange={() => handleImpactSelect(impact)}
+                    className="mr-3 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">{impact.name}</span>
+                </label>
+              ))}
             </div>
           </div>
 
-          {/* Loading Bar */}
-          {isRefreshingAnyStats && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-200">
-              <div className="h-full bg-blue-600 animate-pulse"></div>
-            </div>
-          )}
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-          <div className="p-6">
-            <Routes>
-              <Route path="/" element={<AdminDashboard />} />
-              <Route path="/users" element={<UserManagement />} />
-              <Route path="/organizations" element={<OrganizationManagement />} />
-              <Route path="/reports" element={<ReportManagement />} />
-              <Route path="/support-requests" element={<AdminSupportRequestManagement />} />
-              <Route path="/audit-logs" element={<AuditLogsPage />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/settings" element={<SystemSettings />} />
-            </Routes>
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Impact Description *
+            </label>
+            <textarea
+              value={impactDescription}
+              onChange={(e) => setImpactDescription(e.target.value)}
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Describe the impact in detail"
+            />
           </div>
-        </main>
-      </div>
+
+          <div className="flex justify-between">
+            <button
+              onClick={handleBack}
+              className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleNext}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Review & Submit</h3>
+
+          <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <h4 className="font-medium mb-2">Summary</h4>
+            <p><strong>Title:</strong> {formData.title}</p>
+            <p><strong>Type:</strong> {selectedDisasterTypeName}</p>
+            <p><strong>Severity:</strong> {formData.severity}</p>
+            <p><strong>Selected Impacts:</strong> {selectedImpacts.map(i => i.name).join(", ")}</p>
+          </div>
+
+          <div className="flex justify-between">
+            <button
+              onClick={handleBack}
+              className="px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleSubmit}
+              className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              Submit Report
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-// Wrapped component with error boundary
-const AdminPanelWithErrorBoundary: React.FC = () => (
-  <ErrorBoundary>
-    <AdminPanel />
-  </ErrorBoundary>
-);
-
-export default AdminPanelWithErrorBoundary;
+export default ReportImpact;

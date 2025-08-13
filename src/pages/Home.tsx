@@ -1,32 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import {
-  AlertTriangle,
-  CheckCircle,
-  ArrowRight,
-  Shield,
-  Play,
-  ChevronLeft,
-  ChevronRight,
-  Globe,
-  TrendingUp,
-  Heart,
-  Users,
-  Clock,
-  Zap,
+import { 
+  AlertTriangle, 
+  MapPin, 
+  Clock, 
+  Users, 
+  TrendingUp, 
+  Shield, 
+  ChevronRight, 
+  Heart, 
   Activity,
-  MapPin,
   RefreshCw,
   Target,
   Calendar,
-  MapIcon
+  MapIcon,
+  CheckCircle,
+  Globe,
+  Zap,
+  Play,
+  ArrowRight,
+  ArrowUp,
+  ChevronLeft
 } from 'lucide-react';
 
 // Components
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
-import ChatWidget from '../components/Chat/ChatWidget';
 import SimpleLeafletMap from '../components/Map/SimpleLeafletMap';
 
 import { useDisasterData } from '../hooks/useDisasterData';
@@ -39,8 +38,8 @@ const Home: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Auth and roles
-  const { isAuthenticated } = useAuth();
-  const { isAdmin, isCj, isOnlyUser } = useRoles();
+  const { user, isAuthenticated } = useAuth();
+  const { isOnlyUser } = useRoles();
 
   // Real-world disaster data
   const { disasters, loading: disastersLoading, error: disastersError, statistics, refresh } = useDisasterData({
@@ -50,7 +49,6 @@ const Home: React.FC = () => {
   });
 
   // Check permissions
-  const canViewReports = isAuthenticated && (isAdmin() || isCj());
   const canCreateReports = !isAuthenticated || !isOnlyUser();
 
   // Hero content with refined professional disaster response images
@@ -833,7 +831,6 @@ const Home: React.FC = () => {
       </main>
 
       <Footer />
-      <ChatWidget />
 
       {/* Scroll to Top Button */}
       {showScrollTop && (
@@ -841,7 +838,7 @@ const Home: React.FC = () => {
           onClick={scrollToTop}
           className="fixed bottom-8 right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-300 z-50"
         >
-          <ArrowRight size={20} className="transform -rotate-90" />
+          <ArrowUp size={24} className="group-hover:scale-110 transition-transform duration-300" />
         </button>
       )}
     </div>
