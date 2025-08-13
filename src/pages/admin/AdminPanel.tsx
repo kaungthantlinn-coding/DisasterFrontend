@@ -582,7 +582,7 @@ const AdminPanel: React.FC = () => {
                 {!sidebarCollapsed && (
                   <div className="ml-3 flex-1">
                     <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                    <p className="text-xs text-gray-500">{user?.role}</p>
+                    <p className="text-xs text-gray-500">{user?.roles?.join(', ')}</p>
                   </div>
                 )}
                 <button
