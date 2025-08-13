@@ -8,7 +8,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import Dashboard from './pages/Dashboard';
-import Reports from './pages/Reports';
+import { Reports } from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
 import ReportImpact from './pages/ReportImpact';
 import AdminPanel from './pages/admin/AdminPanel';
@@ -67,8 +67,8 @@ export const router = createBrowserRouter([
       { path: 'cj-chat-list', element: <CjChatList onClose={() => window.history.back()} /> },
       { path: 'reports', element: <Reports />, loader: () => authLoader() },
       { path: 'reports/:id', element: <ReportDetail />, loader: () => authLoader() },
-      { path: 'report/new', element: <ReportImpact />, loader: () => authLoader({ excludeRoles: ['user'] }) },
-      { path: 'report/edit/:id', element: <ReportImpact />, loader: () => authLoader({ excludeRoles: ['user'] }) },
+      { path: 'report/new', element: <ReportImpact authToken={localStorage.getItem("authToken") ?? ""} />, loader: () => authLoader({ excludeRoles: ['user'] }) },
+      { path: 'report/edit/:id', element: <ReportImpact authToken={localStorage.getItem("authToken") ?? ""} />, loader: () => authLoader({ excludeRoles: ['user'] }) },
       { path: 'admin/*', element: <AdminPanel />, loader: () => authLoader({ requiredRoles: ['admin'] }) },
       { path: 'verify-reports', element: <div>Verify Reports page coming soon...</div>, loader: () => authLoader({ requiredRoles: ['admin', 'cj'] }) },
       { path: 'analytics', element: <div>Analytics page coming soon...</div>, loader: () => authLoader({ requiredRoles: ['admin', 'cj'] }) },
