@@ -27,6 +27,7 @@ import {
 import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 import SimpleLeafletMap from '../components/Map/SimpleLeafletMap';
+import ChatWidget from '../components/Chat/ChatWidget';
 
 import { useDisasterData } from '../hooks/useDisasterData';
 import { useAuth } from '../hooks/useAuth';
@@ -832,11 +833,19 @@ const Home: React.FC = () => {
 
       <Footer />
 
-      {/* Scroll to Top Button */}
+      {/* Chat Components */}
+      {isAuthenticated && user?.userId && (
+        <ChatWidget 
+          currentUserId={user.userId}
+          position="bottom-right"
+        />
+      )}
+
+      {/* Scroll to top button */}
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-300 z-50"
+          className="fixed bottom-8 left-8 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors duration-300 z-40"
         >
           <ArrowUp size={24} className="group-hover:scale-110 transition-transform duration-300" />
         </button>

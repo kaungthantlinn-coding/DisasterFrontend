@@ -24,13 +24,15 @@ export const useLogin = () => {
     },
     onSuccess: (data) => {
       // Check if user is blacklisted before proceeding
+      console.log('🔍 Login Success - User data:', data.user);
+      console.log('🔍 Login Success - isBlacklisted:', data.user.isBlacklisted);
+      
       if (data.user.isBlacklisted) {
+        console.log('🚫 User is blacklisted - showing suspension toast');
         // Show toast immediately and prevent login
-        setTimeout(() => {
-          toast.error('Your account has been suspended. Please contact support for assistance.', {
-            duration: 3000,
-          });
-        }, 0);
+        toast.error('Your account has been suspended. Please contact support for assistance.', {
+          duration: 5000,
+        });
         throw new Error('Account suspended');
       }
 
@@ -59,6 +61,30 @@ export const useLogin = () => {
       }
     },
     onError: (error) => {
+      console.error('🔥 Login error:', error);
+      console.log('🔥 Login error message:', error.message);
+      
+      // Handle specific error cases
+      if (error.message === 'Account suspended') {
+        console.log('🚫 Account suspended error caught - not showing additional toast');
+        // Don't show additional error toast, suspension message already shown
+        return;
+      }
+      
+      // Check if the error indicates a blacklisted/suspended account
+      const errorMessage = error.message?.toLowerCase() || '';
+      if (errorMessage.includes('blacklisted') || 
+          errorMessage.includes('suspended') || 
+          errorMessage.includes('banned') ||
+          errorMessage.includes('account has been suspended')) {
+        console.log('🚫 Blacklisted user detected from API error - showing suspension toast');
+        toast.error('Your account has been suspended. Please contact support for assistance.', {
+          duration: 5000,
+        });
+        return;
+      }
+      
+      console.log('🔥 Showing generic login error toast');
       handleError(error as Error, {
         component: 'useLogin',
         action: 'login_mutation',

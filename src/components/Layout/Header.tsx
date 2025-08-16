@@ -146,11 +146,11 @@ const Header: React.FC = () => {
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                 </div>
                 <div className="hidden sm:block">
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                    DisasterGuard
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                    GDRC
                   </h1>
                   <p className="text-xs text-gray-500 font-medium">
-                    Emergency Response System
+                    Global Disaster Response Center
                   </p>
                 </div>
               </Link>

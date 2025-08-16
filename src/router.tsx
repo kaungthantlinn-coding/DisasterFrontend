@@ -3,6 +3,7 @@ import App from './App';
 import Home from './pages/Home';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import EmailOTPPage from './pages/EmailOTPPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import TermsPage from './pages/TermsPage';
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'signup', element: <SignupPage /> },
+      { path: 'email-otp', element: <EmailOTPPage /> },
       { path: 'forgot-password', element: <ForgotPasswordPage /> },
       { path: 'reset-password', element: <ResetPasswordPage /> },
       { path: 'terms', element: <TermsPage /> },

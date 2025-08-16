@@ -22,7 +22,9 @@ apiClient.interceptors.request.use(
 
     if (accessToken) {
       // Check if token is expired before making the request
-      if (isTokenExpired(accessToken)) {
+      // Skip token expiration check for auth endpoints to allow login/signup
+      const isAuthEndpoint = config.url?.includes('/Auth/');
+      if (isTokenExpired(accessToken) && !isAuthEndpoint) {
         console.warn('🔒 Token expired - rejecting request and logging out');
 
         // Log out user immediately
@@ -41,8 +43,10 @@ apiClient.interceptors.request.use(
         return Promise.reject(new Error('Token expired'));
       }
 
-      // Add valid token to request
-      config.headers.Authorization = `Bearer ${accessToken}`;
+      // Add valid token to request (only for non-auth endpoints or valid tokens)
+      if (!isAuthEndpoint) {
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      }
     }
 
     return config;
@@ -70,15 +74,16 @@ apiClient.interceptors.response.use(
 
       // Check if this is actually an authentication issue vs authorization issue
       // Don't auto-logout for authorization issues (insufficient permissions)
+      // Also skip auto-logout for auth endpoints to let auth hooks handle blacklist errors
+      const isAuthEndpoint = requestUrl.includes('/Auth/');
       const isAuthenticationIssue = 
         errorMessage.toLowerCase().includes('token') ||
         errorMessage.toLowerCase().includes('expired') ||
         errorMessage.toLowerCase().includes('invalid') ||
         errorMessage.toLowerCase().includes('unauthorized') ||
-        requestUrl.includes('/Auth/') || // Auth endpoints
         !errorMessage; // No specific message usually means token issue
 
-      if (isAuthenticationIssue) {
+      if (isAuthenticationIssue && !isAuthEndpoint) {
         console.warn('🔒 Authentication issue detected - logging out user');
         
         // Log out user immediately (no refresh attempt)
