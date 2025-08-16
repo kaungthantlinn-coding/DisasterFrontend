@@ -86,6 +86,15 @@ export interface UpdateUserRolesDto {
   reason?: string;
 }
 
+export interface ExportUsersParams {
+  format: 'pdf' | 'excel' | 'csv';
+  fields: string[];
+  filters?: {
+    role?: string;
+    status?: string;
+  };
+}
+
 export interface RoleUpdateValidationDto {
   canUpdate: boolean;
   warnings: string[];
@@ -269,6 +278,17 @@ export const userManagementApi = {
   async getBlacklistHistory(userId: string): Promise<{ data: BlacklistHistoryDto[] }> {
     const response = await apiClient.get(`/UserManagement/${userId}/blacklist-history`);
     return response.data;
+  },
+
+  // Export users data
+  async exportUsers(params: ExportUsersParams): Promise<{ data: Blob }> {
+    const response = await apiClient.post('/UserManagement/export', params, {
+      responseType: 'blob',
+      headers: {
+        'Accept': 'application/octet-stream'
+      }
+    });
+    return { data: response.data };
   }
 };
 

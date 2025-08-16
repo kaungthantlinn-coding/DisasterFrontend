@@ -11,7 +11,7 @@ import Dashboard from './pages/Dashboard';
 import { Reports } from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
 import ReportImpact from './pages/ReportImpact';
-import AdminPanel from './pages/admin/AdminPanel';
+import NewAdminPanel from './admin/pages/NewAdminPanel';
 import About from './pages/About';
 import WhatWeDo from './pages/WhatWeDo';
 import GetInvolved from './pages/GetInvolved';
@@ -91,7 +91,7 @@ export const router = createBrowserRouter([
       { path: 'reports/:id', element: <ReportDetail />, loader: () => authLoader() },
       { path: 'report/new', element: <ReportImpact authToken={localStorage.getItem("authToken") ?? ""} />, loader: () => authLoader({ excludeRoles: ['user'] }) },
       { path: 'report/edit/:id', element: <ReportImpact authToken={localStorage.getItem("authToken") ?? ""} />, loader: () => authLoader({ excludeRoles: ['user'] }) },
-      { path: 'admin/*', element: <AdminPanel />, loader: () => authLoader({ requiredRoles: ['admin'] }) },
+      { path: 'admin/*', element: <NewAdminPanel />, loader: () => authLoader({ requiredRoles: ['admin'] }) },
       { path: 'verify-reports', element: <div>Verify Reports page coming soon...</div>, loader: () => authLoader({ requiredRoles: ['admin', 'cj'] }) },
       { path: 'analytics', element: <div>Analytics page coming soon...</div>, loader: () => authLoader({ requiredRoles: ['admin', 'cj'] }) },
       { path: '*', element: <Navigate to="/" replace /> },

@@ -6,6 +6,8 @@ import { useAuth } from './hooks/useAuth';
 import ChatWidget from './components/Chat/ChatWidget';
 import ErrorBoundary from './components/ErrorBoundary';
 import TokenExpirationMonitor from './components/TokenExpirationMonitor';
+import { useLocation } from 'react-router-dom';
+import { useRoles } from './hooks/useRoles';
 
 // Create query client
 const queryClient = new QueryClient({
@@ -19,6 +21,9 @@ const queryClient = new QueryClient({
 
 function App() {
   const { user } = useAuth();
+  const location = useLocation();
+  const { isOnlyUser } = useRoles();
+  const isHome = location.pathname === '/';
   
   return (
     <ErrorBoundary>
@@ -26,7 +31,9 @@ function App() {
         <TokenExpirationMonitor>
           <div className="min-h-screen bg-gray-50">
             <Outlet />
-            {user && <ChatWidget currentUserId={user.userId} position="bottom-right" />}
+            {user && isOnlyUser() && isHome && (
+              <ChatWidget currentUserId={user.userId} position="bottom-right" />
+            )}
           </div>
         </TokenExpirationMonitor>
         

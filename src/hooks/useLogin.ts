@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { authService } from '../services/authService';
 import { useAuthStore } from '../stores/authStore';
 import { useErrorHandler, ErrorTracker } from '../utils/errorHandler';
@@ -22,6 +23,17 @@ export const useLogin = () => {
       return result.data;
     },
     onSuccess: (data) => {
+      // Check if user is blacklisted before proceeding
+      if (data.user.isBlacklisted) {
+        // Show toast immediately and prevent login
+        setTimeout(() => {
+          toast.error('Your account has been suspended. Please contact support for assistance.', {
+            duration: 3000,
+          });
+        }, 0);
+        throw new Error('Account suspended');
+      }
+
       // Extract token expiration date
       const expiresAt = getTokenExpirationDate(data.token)?.toISOString();
 

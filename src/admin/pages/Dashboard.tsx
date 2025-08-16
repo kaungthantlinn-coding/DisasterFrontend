@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { useRoles } from '../hooks/useRoles';
-import Header from '../components/Layout/Header';
+import { useAuth } from '../../hooks/useAuth';
+import { useRoles } from '../../hooks/useRoles';
+import Header from '../../components/Layout/Header';
 import AdminDashboard from '../components/AdminDashboard';
-import CjChatList from './CjChatList';
-
 import { 
   AlertTriangle,
   Eye,
@@ -16,8 +14,9 @@ import {
   Plus,
   Heart
 } from 'lucide-react';
-import { showInfoToast } from '../utils/notifications';
-import { useReports, useReportsStatistics } from '../hooks/useReports';
+import { showInfoToast } from '../../utils/notifications';
+import { useReports, useReportsStatistics } from '../../hooks/useReports';
+import SignalRDebug from '../../components/Debug/SignalRDebug';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -163,7 +162,7 @@ const Dashboard: React.FC = () => {
   const { isAdmin } = useRoles();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'reports' | 'assistance'>('reports');
-  const [showChatModal, setShowChatModal] = useState(false);
+
 
   // Render admin dashboard for admin users
   if (isAdmin()) {
@@ -428,10 +427,9 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </main>
-
-      {showChatModal && (
-        <CjChatList onClose={() => setShowChatModal(false)} />
-      )}
+      
+      {/* SignalR Debug Component */}
+      <SignalRDebug />
     </div>
   );
 };

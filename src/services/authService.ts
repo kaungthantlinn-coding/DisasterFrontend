@@ -22,6 +22,7 @@ export interface ApiUser {
   profile_picture?: string; // Alternative profile picture field
   createdAt?: string;
   updatedAt?: string;
+  isBlacklisted?: boolean;  // Blacklist status
 }
 
 export interface LoginResponse {
@@ -84,6 +85,7 @@ const mapApiUserToUser = (apiUser: ApiUser): User => {
     email: apiUser.email,
     photoUrl,
     roles,
+    isBlacklisted: apiUser.isBlacklisted || false,
   };
   
   console.log('🔍 AuthService - Final mapped user:', mappedUser);
