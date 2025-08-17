@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { X, User, Shield, Bell, MapPin, Globe, Palette, Key, LogOut, Save, Camera } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
 import Avatar from '../Common/Avatar';
@@ -12,7 +11,6 @@ interface SettingsModalProps {
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
-  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { formatRoleName } = useRoles();
   const [activeTab, setActiveTab] = useState('profile');
@@ -26,13 +24,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   };
 
   const tabs = [
-    { id: 'profile', name: t('settings.profile'), icon: User },
-    { id: 'disaster', name: t('settings.disaster'), icon: Shield },
-    { id: 'notifications', name: t('settings.notifications'), icon: Bell },
-    { id: 'location', name: t('settings.location'), icon: MapPin },
-    { id: 'language', name: t('settings.language'), icon: Globe },
-    { id: 'appearance', name: t('settings.appearance'), icon: Palette },
-    { id: 'security', name: t('settings.security'), icon: Key },
+    { id: 'profile', name: 'Profile', icon: User },
+    { id: 'security', name: 'Security', icon: Shield },
+    { id: 'notifications', name: 'Notifications', icon: Bell },
+    { id: 'location', name: 'Location', icon: MapPin },
+    { id: 'language', name: 'Language', icon: Globe },
+    { id: 'appearance', name: 'Appearance', icon: Palette },
+    { id: 'privacy', name: 'Privacy', icon: Key },
   ];
 
   const renderProfileTab = () => (
@@ -67,9 +65,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('settings.fullName')}
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
           <input
             type="text"
             defaultValue={user?.name}
@@ -77,9 +73,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t('settings.email')}
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input
             type="email"
             defaultValue={user?.email}
@@ -90,22 +84,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {t('settings.role')}
-        </label>
-        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-sm text-gray-600 mb-2">{t('settings.roleDesc')}</p>
-          <div className="flex flex-wrap gap-2">
-            {user?.roles?.map((role, index) => (
-              <span
-                key={index}
-                className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium"
-              >
-                {formatRoleName(role)}
-              </span>
-            ))}
-          </div>
-        </div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+        <input
+          type="tel"
+          placeholder="Enter your phone number"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
       </div>
 
       <div className="flex justify-end space-x-3">
@@ -113,7 +97,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           onClick={onClose}
           className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
         >
-          {t('common.cancel')}
+          Cancel
         </button>
         <button
           onClick={() => setIsLoading(true)}
@@ -121,63 +105,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
         >
           <Save size={16} />
-          <span>{isLoading ? t('common.saving') : t('common.save')}</span>
+          <span>{isLoading ? 'Saving' : 'Save'}</span>
         </button>
       </div>
     </div>
   );
 
-  const renderDisasterTab = () => (
-    <div className="space-y-6">
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h4 className="font-semibold text-blue-900 mb-2">{t('settings.disasterPreferences')}</h4>
-        <p className="text-blue-700 text-sm">{t('settings.disasterPreferencesDesc')}</p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="font-medium text-gray-900">{t('settings.emergencyAlerts')}</h4>
-            <p className="text-sm text-gray-600">{t('settings.emergencyAlertsDesc')}</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" defaultChecked className="sr-only peer" />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="font-medium text-gray-900">{t('settings.disasterReports')}</h4>
-            <p className="text-sm text-gray-600">{t('settings.disasterReportsDesc')}</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" defaultChecked className="sr-only peer" />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="font-medium text-gray-900">{t('settings.volunteerNotifications')}</h4>
-            <p className="text-sm text-gray-600">{t('settings.volunteerNotificationsDesc')}</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" className="sr-only peer" />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-          </label>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderNotificationsTab = () => (
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-gray-900">{t('settings.emailNotifications')}</h4>
-            <p className="text-sm text-gray-600">{t('settings.emailNotificationsDesc')}</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email Notifications</label>
+            <p className="text-sm text-gray-500">Receive email notifications for important updates</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -187,8 +128,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-gray-900">{t('settings.pushNotifications')}</h4>
-            <p className="text-sm text-gray-600">{t('settings.pushNotificationsDesc')}</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Push Notifications</label>
+            <p className="text-sm text-gray-500">Receive push notifications on your device</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -198,8 +139,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-gray-900">{t('settings.smsNotifications')}</h4>
-            <p className="text-sm text-gray-600">{t('settings.smsNotificationsDesc')}</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">SMS Notifications</label>
+            <p className="text-sm text-gray-500">Receive SMS notifications for urgent alerts</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" className="sr-only peer" />
@@ -213,15 +154,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const renderLocationTab = () => (
     <div className="space-y-6">
       <div className="bg-green-50 p-4 rounded-lg">
-        <h4 className="font-semibold text-green-900 mb-2">{t('settings.locationServices')}</h4>
-        <p className="text-green-700 text-sm">{t('settings.locationServicesDesc')}</p>
+        <h4 className="font-semibold text-green-900 mb-2">Location Services</h4>
+        <p className="text-green-700 text-sm">Allow the app to access your location for better emergency response</p>
       </div>
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-gray-900">{t('settings.locationSharing')}</h4>
-            <p className="text-sm text-gray-600">{t('settings.locationSharingDesc')}</p>
+            <h4 className="font-medium text-gray-900">Location Sharing</h4>
+            <p className="text-sm text-gray-500">Allow the app to access your location for better emergency response</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -231,8 +172,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-gray-900">{t('settings.nearbyAlerts')}</h4>
-            <p className="text-sm text-gray-600">{t('settings.nearbyAlertsDesc')}</p>
+            <h4 className="font-medium text-gray-900">Nearby Alerts</h4>
+            <p className="text-sm text-gray-500">Receive alerts for disasters in your area</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" defaultChecked className="sr-only peer" />
@@ -246,7 +187,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const renderLanguageTab = () => (
     <div className="space-y-6">
       <div>
-        <h4 className="font-medium text-gray-900 mb-4">{t('settings.selectLanguage')}</h4>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Language</h3>
         <LanguageSwitcher />
       </div>
     </div>
@@ -256,19 +197,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     <div className="space-y-6">
       <div className="space-y-4">
         <div>
-          <h4 className="font-medium text-gray-900 mb-3">{t('settings.theme')}</h4>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Theme</h3>
           <div className="space-y-2">
             <label className="flex items-center space-x-3">
               <input type="radio" name="theme" value="light" defaultChecked className="text-blue-600" />
-              <span className="text-gray-700">{t('settings.lightTheme')}</span>
+              <span className="text-gray-700">Light</span>
             </label>
             <label className="flex items-center space-x-3">
               <input type="radio" name="theme" value="dark" className="text-blue-600" />
-              <span className="text-gray-700">{t('settings.darkTheme')}</span>
+              <span className="text-gray-700">Dark</span>
             </label>
             <label className="flex items-center space-x-3">
-              <input type="radio" name="theme" value="auto" className="text-blue-600" />
-              <span className="text-gray-700">{t('settings.autoTheme')}</span>
+              <input type="radio" name="theme" value="system" className="text-blue-600" />
+              <span className="text-gray-700">System</span>
             </label>
           </div>
         </div>
@@ -280,23 +221,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     <div className="space-y-6">
       <div className="space-y-4">
         <button className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <h4 className="font-medium text-gray-900">{t('settings.changePassword')}</h4>
-          <p className="text-sm text-gray-600">{t('settings.changePasswordDesc')}</p>
+          <h4 className="font-medium text-gray-900">Change Password</h4>
+          <p className="text-sm text-gray-600">Change your password</p>
         </button>
 
         <button className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <h4 className="font-medium text-gray-900">{t('settings.twoFactorAuth')}</h4>
-          <p className="text-sm text-gray-600">{t('settings.twoFactorAuthDesc')}</p>
+          <h4 className="font-medium text-gray-900">Two-Factor Auth</h4>
+          <p className="text-sm text-gray-600">Enable two-factor authentication</p>
         </button>
 
         <button className="w-full text-left p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-          <h4 className="font-medium text-gray-900">{t('settings.loginHistory')}</h4>
-          <p className="text-sm text-gray-600">{t('settings.loginHistoryDesc')}</p>
+          <h4 className="font-medium text-gray-900">Login History</h4>
+          <p className="text-sm text-gray-600">View your login history</p>
         </button>
 
         <button className="w-full text-left p-4 border border-red-200 rounded-lg hover:bg-red-50 transition-colors text-red-600">
-          <h4 className="font-medium">{t('settings.deleteAccount')}</h4>
-          <p className="text-sm">{t('settings.deleteAccountDesc')}</p>
+          <h4 className="font-medium">Danger Zone</h4>
+          <p className="text-sm">Delete Account</p>
         </button>
       </div>
     </div>
@@ -306,8 +247,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     switch (activeTab) {
       case 'profile':
         return renderProfileTab();
-      case 'disaster':
-        return renderDisasterTab();
+      case 'security':
+        return renderSecurityTab();
       case 'notifications':
         return renderNotificationsTab();
       case 'location':
@@ -316,8 +257,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         return renderLanguageTab();
       case 'appearance':
         return renderAppearanceTab();
-      case 'security':
-        return renderSecurityTab();
       default:
         return renderProfileTab();
     }
@@ -333,7 +272,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900">Settings</h2>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -377,13 +316,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
             >
               <LogOut size={16} className="mr-2" />
-              {t('common.logout')}
+              Logout
             </button>
             <button
               onClick={onClose}
               className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
             >
-              {t('common.close')}
+              Close
             </button>
           </div>
         </div>

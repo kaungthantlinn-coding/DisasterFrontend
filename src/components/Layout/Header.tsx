@@ -4,7 +4,6 @@ import {
   ShieldCheck, Menu, ChevronDown, User, LogOut, Settings,
   Heart, MessageCircle
 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
 import { getUnreadChatCount, clearUnreadChatCount } from '../Chat/ChatWidget';
@@ -33,8 +32,7 @@ const Header: React.FC = () => {
   const [unreadChatCount, setUnreadChatCount] = useState(0);
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
-  const { isAdmin, isCj, isOnlyUser } = useRoles();
-  const { t } = useTranslation();
+  const { isAdmin, isCj } = useRoles();
   const navigate = useNavigate();
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -83,13 +81,13 @@ const Header: React.FC = () => {
 
   const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
-      { name: t('navigation.home'), path: '/' },
-      { name: t('navigation.about'), path: '/about' }
+      { name: 'Home', path: '/' },
+      { name: 'About', path: '/about' }
     ];
 
     // Add "Contact" only if user is not CJ role
     if (!isCj()) {
-      baseItems.push({ name: t('navigation.contact'), path: '/contact' });
+      baseItems.push({ name: 'Contact', path: '/contact' });
     }
 
     // Add "View Reports" for all authenticated users (including regular users)
@@ -219,7 +217,7 @@ const Header: React.FC = () => {
             {/* Right side items */}
             <div className="flex items-center space-x-4">
               {/* Language Switcher */}
-              <div className="hidden lg:block">
+              <div className="hidden md:block">
                 <LanguageSwitcher />
               </div>
 
@@ -229,7 +227,7 @@ const Header: React.FC = () => {
                 className="donate-button space-x-2 group"
               >
                 <Heart size={16} className="relative z-10 group-hover:scale-110 transition-transform duration-300" />
-                <span className="relative z-10">{t('navigation.donate')}</span>
+                <span className="relative z-10">Donate</span>
               </Link>
 
               {/* CJ Chat Button - Only show for CJ users */}
@@ -426,7 +424,7 @@ const Header: React.FC = () => {
                       className="flex items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors py-2 w-full text-left"
                     >
                       <Settings size={20} />
-                      <span className="text-lg font-medium">{t('settings.title')}</span>
+                      <span className="text-lg font-medium">Settings</span>
                     </button>
 
                     <button
@@ -456,7 +454,7 @@ const Header: React.FC = () => {
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <Heart size={20} className="animate-pulse" />
-                      <span>{t('header.topBar.donateNow')}</span>
+                      <span>Donate Now</span>
                     </Link>
                   </div>
                 )}
