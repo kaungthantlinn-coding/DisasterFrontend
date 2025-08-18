@@ -40,7 +40,7 @@ export const useLogin = () => {
       const expiresAt = getTokenExpirationDate(data.token)?.toISOString();
 
       // Set auth state with token expiration info
-      useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken, expiresAt);
+      useAuthStore.getState().setAuth(data.user, data.token, expiresAt);
 
       // Track successful login
       ErrorTracker.getInstance().trackUserAction('login_success', { userId: data.user.userId });

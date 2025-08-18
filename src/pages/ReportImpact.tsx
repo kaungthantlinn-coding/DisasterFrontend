@@ -14,7 +14,7 @@ interface Props {
   onSuccess?: () => void;
 }
 
-const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
+const ReportImpact: React.FC<Props> = ({ onSuccess }) => {
   const [step, setStep] = useState(1);
   const [disasterTypes, setDisasterTypes] = useState<DisasterTypeDto[]>([]);
 
@@ -31,16 +31,14 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
 
   const [impactDescription, setImpactDescription] = useState("");
   const [selectedImpacts, setSelectedImpacts] = useState<ImpactTypeDto[]>([]);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
+
   const [selectedDisasterTypeName, setSelectedDisasterTypeName] = useState("");
 
   // New states for "Other"
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [newDisasterTypeName, setNewDisasterTypeName] = useState("");
   const [impactTypes, setImpactTypes] = useState<ImpactTypeDto[]>([]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+
 
   const handleImpactSelect = (impact: ImpactTypeDto) => {
     setSelectedImpacts((prev) =>
@@ -52,8 +50,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
 
   const fetchDisasterTypes = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const data = await DisasterTypeService.getAll(token || undefined);
+      const data = await DisasterTypeService.getAll();
       setDisasterTypes(data);
     } catch (err) {
       console.error("Failed to load disaster types:", err);
@@ -62,9 +59,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
 
   const fetchImpactTypes = async () => {
     try {
-      const token = localStorage.getItem("token");
-      console.log("Auth token:", token);
-      const data = await ImpactTypeService.getAll(token || undefined);
+      const data = await ImpactTypeService.getAll();
       // Make sure data is always an array
       if (Array.isArray(data)) {
         setImpactTypes(data);
@@ -322,7 +317,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
               onChange={(e) =>
                 setFormData((prev) => ({
                   ...prev,
-                  severity: e.target.value as SeverityLevel,
+                  severity: parseInt(e.target.value) as SeverityLevel,
                 }))
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

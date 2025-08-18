@@ -33,8 +33,6 @@ class SignalRService {
   public isConnected = false;
   private connectionPromise: Promise<void> | null = null;
   private reconnectAttempts = 0;
-  private reconnectInterval: NodeJS.Timeout | null = null;
-  private heartbeatInterval: NodeJS.Timeout | null = null;
   
   // Event listeners
   private chartDataListeners: Array<(data: ChartDataUpdate) => void> = [];
@@ -99,7 +97,6 @@ class SignalRService {
       console.log('SignalR Connected successfully');
       
       await this.joinUserManagementGroup();
-      this.startHeartbeat();
       
       // Request initial data after connection
       setTimeout(() => {
@@ -119,7 +116,6 @@ class SignalRService {
 
     this.connection.onclose((error) => {
       this.isConnected = false;
-      this.stopHeartbeat();
       console.log('SignalR connection closed:', error);
     });
 
@@ -134,7 +130,6 @@ class SignalRService {
       console.log('SignalR reconnected with ID:', connectionId);
       this.joinUserManagementGroup();
       this.requestDataRefresh();
-      this.startHeartbeat();
     });
   }
 
@@ -154,23 +149,6 @@ class SignalRService {
     });
   }
 
-  private startHeartbeat(): void {
-    this.stopHeartbeat();
-    this.heartbeatInterval = setInterval(() => {
-      if (this.connection?.state === 'Connected') {
-        this.connection.invoke('Ping').catch((error) => {
-          console.warn('Heartbeat ping failed:', error);
-        });
-      }
-    }, 30000); // Ping every 30 seconds
-  }
-
-  private stopHeartbeat(): void {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
-    }
-  }
 
   async joinUserManagementGroup(): Promise<void> {
     if (this.connection?.state === 'Connected') {
@@ -208,7 +186,6 @@ class SignalRService {
       try {
         // Request fresh data from server
         await this.connection.invoke('RequestDataRefresh');
-        await this.connection.invoke('RequestUserStatsRefresh');
         console.log('Force refresh completed');
       } catch (error) {
         console.error('Failed to force data refresh:', error);
@@ -251,13 +228,6 @@ class SignalRService {
   }
 
   async stopConnection(): Promise<void> {
-    if (this.reconnectInterval) {
-      clearTimeout(this.reconnectInterval);
-      this.reconnectInterval = null;
-    }
-    
-    this.stopHeartbeat();
-    
     if (this.connection) {
       try {
         await this.connection.stop();

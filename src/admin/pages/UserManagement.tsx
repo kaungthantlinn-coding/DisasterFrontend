@@ -538,6 +538,11 @@ const UserManagement: React.FC = () => {
 
     // Debug: Log current authentication state
     const authState = useAuthStore.getState();
+    // Prevent self-blacklist
+    if (authState.user?.userId && authState.user.userId === userId) {
+      showErrorToast('Cannot blacklist yourself.', 'Action Not Allowed');
+      return;
+    }
     console.log('🔍 Blacklist Debug - Auth State:', {
       isAuthenticated: authState.isAuthenticated,
       hasUser: !!authState.user,

@@ -7,7 +7,10 @@ import ChatWidget from './components/Chat/ChatWidget';
 import ErrorBoundary from './components/ErrorBoundary';
 import TokenExpirationMonitor from './components/TokenExpirationMonitor';
 import { useLocation } from 'react-router-dom';
+import GlobalLoader from './components/Common/GlobalLoader';
 import { useRoles } from './hooks/useRoles';
+import { useEffect } from 'react';
+import { useAuthStore } from './stores/authStore';
 
 // Create query client
 const queryClient = new QueryClient({
@@ -20,11 +23,20 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const location = useLocation();
   const { isOnlyUser } = useRoles();
   const isHome = location.pathname === '/';
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
   
+  if (isLoading) {
+    return <GlobalLoader />;
+  }
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

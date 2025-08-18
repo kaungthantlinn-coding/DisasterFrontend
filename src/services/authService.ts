@@ -28,13 +28,11 @@ export interface ApiUser {
 export interface LoginResponse {
   user: User;
   token: string;
-  refreshToken: string;
 }
 
 export interface GoogleLoginResponse {
   user: User;
   token: string;
-  refreshToken: string;
 }
 
 // Helper function to convert API user to app user
@@ -122,7 +120,6 @@ const mapApiResponse = (apiResponse: any) => {
   const mappedResponse = {
     user: mapApiUserToUser(user),
     token: apiResponse.token || apiResponse.accessToken || '',
-    refreshToken: apiResponse.refreshToken || '',
   };
   
   console.log('🔍 AuthService - Final mapped response:', mappedResponse);
@@ -265,7 +262,7 @@ export const authService = {
     }
   },
 
-  async refreshToken(): Promise<Result<{ token: string; refreshToken: string }>> {
+  async refreshToken(): Promise<Result<{ token: string }>> {
     try {
       const data = await apiService.auth.refreshToken();
       return { success: true, data };

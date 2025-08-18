@@ -1,36 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import useSignalRCharts from '../../hooks/useSignalRCharts';
+import { useAuthStore } from '../../stores/authStore';
 
 const SignalRDebug: React.FC = () => {
   const [tokenInfo, setTokenInfo] = useState<any>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
 
   const getToken = () => {
-    try {
-      const authStorage = localStorage.getItem('auth-storage');
-      if (authStorage) {
-        const parsed = JSON.parse(authStorage);
-        const token = parsed.state?.accessToken || null;
-        setTokenInfo({
-          source: 'auth-storage',
-          hasToken: !!token,
-          tokenLength: token?.length || 0,
-          tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token'
-        });
-        return token;
-      }
-    } catch (error) {
-      console.warn('Failed to parse auth storage:', error);
-    }
-    
-    const fallbackToken = localStorage.getItem('token') || localStorage.getItem('authToken') || null;
+    const { accessToken } = useAuthStore.getState();
     setTokenInfo({
-      source: 'fallback',
-      hasToken: !!fallbackToken,
-      tokenLength: fallbackToken?.length || 0,
-      tokenPreview: fallbackToken ? `${fallbackToken.substring(0, 20)}...` : 'No token'
+      source: 'authStore',
+      hasToken: !!accessToken,
+      tokenLength: accessToken?.length || 0,
+      tokenPreview: accessToken ? `${accessToken.substring(0, 20)}...` : 'No token'
     });
-    return fallbackToken;
+    return accessToken;
   };
 
   const { chartData, isConnected, lastUpdated } = useSignalRCharts(getToken);

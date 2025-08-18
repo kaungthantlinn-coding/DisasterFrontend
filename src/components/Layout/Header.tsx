@@ -90,9 +90,14 @@ const Header: React.FC = () => {
       baseItems.push({ name: 'Contact', path: '/contact' });
     }
 
+    // Add "Report" (create new report) for CJ and Admin users
+    if (isAuthenticated && (isCj() || isAdmin())) {
+      baseItems.push({ name: 'Report', path: '/report/new' });
+    }
+
     // Add "View Reports" for all authenticated users (including regular users)
     if (isAuthenticated) {
-      baseItems.splice(-1, 0, { name: 'Reports', path: '/reports' });
+      baseItems.push({ name: 'Reports', path: '/reports' });
     }
 
     // Add admin panel for admins

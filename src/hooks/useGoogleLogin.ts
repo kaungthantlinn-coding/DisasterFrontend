@@ -8,6 +8,7 @@ import {
   getRoleBasedRedirectPath,
   logRoleBasedRedirection,
 } from "../utils/roleRedirection";
+import { getTokenExpirationDate } from '../utils/jwtUtils';
 
 export const useGoogleLogin = () => {
   const { handleError, getErrorMessage } = useErrorHandler();
@@ -38,10 +39,10 @@ export const useGoogleLogin = () => {
         throw new Error('Account suspended');
       }
 
-      // Clear any old token first
-      localStorage.removeItem("token");
+      // Extract token expiration date
+      const expiresAt = getTokenExpirationDate(data.token)?.toISOString();
 
-      useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken);
+      useAuthStore.getState().setAuth(data.user, data.token, expiresAt);
       // Track successful login
       ErrorTracker.getInstance().trackUserAction('google_login_success', { userId: data.user.userId });
 

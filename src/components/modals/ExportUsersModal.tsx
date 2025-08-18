@@ -51,12 +51,18 @@ const ExportUsersModal: React.FC<ExportUsersModalProps> = ({
         return;
       }
 
+      // Normalize filters to match backend expectations
+      const normalizedRole = roleFilter !== 'all' ? roleFilter.toLowerCase() : undefined;
+      const normalizedStatus = statusFilter !== 'all'
+        ? (statusFilter === 'blacklisted' ? 'suspended' : statusFilter.toLowerCase())
+        : undefined;
+
       const exportParams: ExportUsersParams = {
         format: exportFormat,
         fields: selectedFieldsList,
         filters: {
-          role: roleFilter !== 'all' ? roleFilter : undefined,
-          status: statusFilter !== 'all' ? statusFilter : undefined,
+          role: normalizedRole,
+          status: normalizedStatus,
         },
       };
 

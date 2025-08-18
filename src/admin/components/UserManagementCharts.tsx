@@ -13,6 +13,7 @@ import {
 } from 'chart.js';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import useSignalRCharts from '../../hooks/useSignalRCharts';
+import { useAuthStore } from '../../stores/authStore';
 import { RefreshCw, Wifi, WifiOff } from 'lucide-react';
 
 // Register Chart.js components
@@ -33,16 +34,8 @@ const UserManagementCharts: React.FC = () => {
   
   // Get token function for SignalR authentication
   const getToken = () => {
-    try {
-      const authStorage = localStorage.getItem('auth-storage');
-      if (authStorage) {
-        const parsed = JSON.parse(authStorage);
-        return parsed.state?.accessToken || null;
-      }
-    } catch (error) {
-      console.warn('Failed to parse auth storage:', error);
-    }
-    return localStorage.getItem('token') || localStorage.getItem('authToken') || null;
+    const { accessToken } = useAuthStore.getState();
+    return accessToken;
   };
 
   // SignalR real-time data hook with enhanced functionality

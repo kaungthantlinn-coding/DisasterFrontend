@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { useUserManagement } from '../../hooks/useUserManagement';
 import { useConfirmationModal } from '../../hooks/useConfirmationModal';
+import { useAuthStore } from '../../stores/authStore';
+import { showErrorToast } from '../../utils/notifications';
 import Avatar from '../../components/Common/Avatar';
 import { extractPhotoUrl } from '../../utils/avatarUtils';
 import ViewProfileModal from '../../components/modals/ViewProfileModal';
@@ -179,6 +181,14 @@ const ProfessionalUserManagement: React.FC = () => {
   const handleBlacklistUser = async (userId: string) => {
     const user = users.find(u => u.id === userId);
     const userName = user?.name || 'this user';
+
+    // Prevent self-blacklist
+    const authState = useAuthStore.getState();
+    if (authState.user?.userId && authState.user.userId === userId) {
+      showErrorToast('Cannot blacklist yourself.', 'Action Not Allowed');
+      setActiveDropdown(null);
+      return;
+    }
 
     const result = await showBlacklistConfirmation(userName);
     if (result.isConfirmed) {
