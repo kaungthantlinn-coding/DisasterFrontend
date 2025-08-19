@@ -31,7 +31,6 @@ import {
   ArrowUp,
   ArrowDown,
   X,
-  Info,
   History,
   Calendar,
   Mail,
@@ -39,6 +38,7 @@ import {
 } from 'lucide-react';
 import { useUserManagement } from '../../hooks/useUserManagement';
 import { useConfirmationModal } from '../../hooks/useConfirmationModal';
+import { useAuthStore } from '../../stores/authStore';
 import Avatar from '../../components/Common/Avatar';
 import { extractPhotoUrl } from '../../utils/avatarUtils';
 import {
@@ -48,6 +48,7 @@ import {
   closeAlert
 } from '../../utils/notifications';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
+import BlacklistHistory from '../../components/ui/BlacklistHistory';
 
 // Map API user to local user interface
 interface User {
@@ -74,12 +75,7 @@ interface SortConfig {
   direction: SortDirection;
 }
 
-interface FilterConfig {
-  search: string;
-  role: string;
-  status: string;
-  dateRange: string;
-}
+
 
 // Helper function to map API user to local user
 const mapApiUserToLocal = (apiUser: any): User => {
@@ -125,9 +121,10 @@ interface UserRowProps {
   onUnblacklist: (userId: string) => void;
   onDelete: (userId: string) => void;
   onViewHistory: (user: User) => void;
+  onViewBlacklistHistory: (user: User) => void;
 }
 
-const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlacklist, onUnblacklist, onDelete, onViewHistory }) => {
+const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlacklist, onUnblacklist, onDelete, onViewHistory, onViewBlacklistHistory }) => {
   const [showActions, setShowActions] = useState(false);
 
   const getRoleColor = (role: string) => {
@@ -273,6 +270,13 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
                   <History className="w-4 h-4 text-purple-500" />
                   <span className="font-medium">View History</span>
                 </button>
+                <button
+                  onClick={() => { onViewBlacklistHistory(user); setShowActions(false); }}
+                  className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-orange-100 hover:text-orange-700 flex items-center space-x-3 transition-all duration-200"
+                >
+                  <Ban className="w-4 h-4 text-orange-500" />
+                  <span className="font-medium">Blacklist History</span>
+                </button>
                 <div className="border-t border-gray-100 my-1"></div>
 
                 {/* Enhanced Conditional Blacklist/Unblacklist Button */}
@@ -337,6 +341,12 @@ const UserManagement: React.FC = () => {
     isOpen: false,
     user: null
   });
+
+  const [blacklistHistoryModal, setBlacklistHistoryModal] = useState<{
+    isOpen: boolean;
+    userId: string;
+    userName: string;
+  }>({ isOpen: false, userId: '', userName: '' });
 
   // Use the custom hook for API integration
   const {
@@ -454,6 +464,18 @@ const UserManagement: React.FC = () => {
     });
   };
 
+  const handleViewBlacklistHistory = (user: User) => {
+    setBlacklistHistoryModal({
+      isOpen: true,
+      userId: user.id,
+      userName: user.name
+    });
+  };
+
+  const handleCloseBlacklistHistory = () => {
+    setBlacklistHistoryModal({ isOpen: false, userId: '', userName: '' });
+  };
+
   const handleCloseUserHistory = () => {
     setUserHistoryModal({
       isOpen: false,
@@ -500,19 +522,37 @@ const UserManagement: React.FC = () => {
     const user = users.find(u => u.id === userId);
     const userName = user?.name || 'this user';
 
+    // Debug: Log current authentication state
+    const authState = useAuthStore.getState();
+    console.log('🔍 Blacklist Debug - Auth State:', {
+      isAuthenticated: authState.isAuthenticated,
+      hasUser: !!authState.user,
+      hasToken: !!authState.accessToken,
+      userRoles: authState.user?.roles,
+      userId: authState.user?.userId,
+      targetUserId: userId
+    });
+
     const result = await showBlacklistConfirmation(userName);
 
-    if (result.isConfirmed) {
+    if (result.isConfirmed && result.reason) {
       showLoading('Blacklisting user...');
 
       try {
-        await blacklistUser(userId);
+        console.log('🔍 Attempting blacklist with params:', { userId, reason: result.reason });
+        await blacklistUser({ userId, reason: result.reason });
         closeAlert();
         showSuccessToast(`${userName} has been blacklisted successfully`, 'User Blacklisted');
-        console.log('✅ User blacklisted successfully:', userName);
+        console.log('✅ User blacklisted successfully:', userName, 'Reason:', result.reason);
       } catch (error) {
         closeAlert();
         console.error('❌ Failed to blacklist user:', error);
+        console.error('❌ Error details:', {
+          message: (error as any)?.message,
+          status: (error as any)?.response?.status,
+          statusText: (error as any)?.response?.statusText,
+          data: (error as any)?.response?.data
+        });
         showErrorToast('Failed to blacklist user. Please try again.', 'Blacklist Failed');
       }
     }
@@ -961,7 +1001,7 @@ const UserManagement: React.FC = () => {
                   </tr>
                 ) : (
                   // Data state with sorted users
-                  sortedUsers.map((user, index) => (
+                  sortedUsers.map((user) => (
                     <UserRow
                       key={user.id}
                       user={user}
@@ -971,6 +1011,7 @@ const UserManagement: React.FC = () => {
                       onUnblacklist={handleUnblacklistUser}
                       onDelete={handleDeleteUser}
                       onViewHistory={handleViewHistory}
+                      onViewBlacklistHistory={handleViewBlacklistHistory}
                     />
                   ))
                 )}
@@ -1102,6 +1143,13 @@ const UserManagement: React.FC = () => {
         user={userHistoryModal.user}
         isOpen={userHistoryModal.isOpen}
         onClose={handleCloseUserHistory}
+      />
+
+      <BlacklistHistory
+        userId={blacklistHistoryModal.userId}
+        userName={blacklistHistoryModal.userName}
+        isOpen={blacklistHistoryModal.isOpen}
+        onClose={handleCloseBlacklistHistory}
       />
 
       {/* Beautiful Confirmation Modal */}

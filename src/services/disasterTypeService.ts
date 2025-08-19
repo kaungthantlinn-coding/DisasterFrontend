@@ -4,11 +4,12 @@ import {
   CreateDisasterTypeDto,
   UpdateDisasterTypeDto,
 } from "../types/DisasterType";
+import { useAuthStore } from "../stores/authStore";
 
 const API_BASE = "http://localhost:5057/api/DisasterType";
 
 const getAuthHeaders = (token?: string) => {
-  const authToken = token || localStorage.getItem("token");
+  const authToken = token || useAuthStore.getState().accessToken;
   if (!authToken) throw new Error("❌ Auth token is required");
   return {
     headers: {

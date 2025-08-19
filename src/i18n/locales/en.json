@@ -49,6 +49,10 @@
     "print": "Print",
     "email": "Email",
     "phone": "Phone",
+    "learnMore": "Learn More",
+    "tryAgain": "Try Again",
+    "refreshData": "Refresh Data",
+    "connectionError": "Connection Error",
     "address": "Address",
     "name": "Name",
     "description": "Description",
@@ -79,7 +83,7 @@
     "hero": {
       "title": "Disaster Response",
       "subtitle": "When Every Second Counts",
-      "description": "Real-time disaster reporting and coordination platform connecting communities, responders, and resources when it matters most.",
+      "description": "Real-time disaster reporting platform connecting communities, responders, and resources.",
       "reportEmergency": "Report Emergency",
       "learnMore": "Learn More",
       "watchDemo": "Watch Demo",
@@ -87,38 +91,35 @@
       "becomeVolunteer": "Become a Volunteer",
       "watchEmergencyDemo": "Watch Emergency Demo",
       "watchVolunteerStories": "Watch Volunteer Stories",
-      "monitoring24x7": "24/7 Monitoring",
+      "monitoring24x7": "24/7 Emergency Watch",
       "verifiedData": "Verified Data",
-      "globalNetwork": "Global Network"
+      "globalNetwork": "Global Network",
+      "liveUpdates": "Live Updates"
     },
-    "heroImages": {
+    "heroSlides": {
       "emergencyResponse": {
-        "title": "Emergency Response",
-        "description": "Rapid coordination when every second counts",
-        "category": "Response",
-        "livesSaved": "Lives Saved",
-        "responseTime": "Response Time"
+        "title": "Emergency Response Excellence",
+        "subtitle": "Professional disaster management with real-time global monitoring",
+        "statsLabel": "Global Monitoring",
+        "category": "Emergency Operations"
       },
-      "communityUnity": {
-        "title": "Community Unity",
-        "description": "Bringing people together in times of crisis",
-        "category": "Community",
-        "communities": "Communities",
-        "support": "Support"
+      "floodResponse": {
+        "title": "Flood Response & Recovery",
+        "subtitle": "Rapid response teams with advanced water management systems",
+        "statsLabel": "Response Rate",
+        "category": "Flood Management"
       },
-      "weatherMonitoring": {
-        "title": "Weather Monitoring",
-        "description": "Advanced early warning systems",
-        "category": "Prevention",
-        "accuracy": "Accuracy",
-        "alertTime": "Alert Time"
+      "wildfireManagement": {
+        "title": "Wildfire Management",
+        "subtitle": "Advanced detection with real-time satellite monitoring",
+        "statsLabel": "Acres Protected",
+        "category": "Fire Suppression"
       },
-      "recoveryRebuild": {
-        "title": "Recovery & Rebuild",
-        "description": "Supporting communities through recovery",
-        "category": "Recovery",
-        "peopleHelped": "People Helped",
-        "countries": "Countries"
+      "stormTracking": {
+        "title": "Storm Tracking & Alerts",
+        "subtitle": "Advanced hurricane tracking and community evacuation coordination",
+        "statsLabel": "Lives Protected",
+        "category": "Weather Monitoring"
       }
     },
     "stats": {
@@ -136,7 +137,14 @@
       "liveMonitoring": "Live monitoring",
       "realTimeImpactMetrics": "Real-Time Impact Metrics",
       "makingRealImpact": "Making a Real Impact",
-      "impactDescription": "Our platform transforms disaster response globally, connecting communities and saving lives through advanced technology and seamless coordination."
+      "impactDescription": "Our platform transforms disaster response globally, connecting communities and saving lives through advanced technology and seamless coordination.",
+      "realTimeIntelligence": "Real-Time Disaster Intelligence",
+      "savingLives": "Saving Lives Through",
+      "smartTechnology": "Smart Technology",
+      "platformDescription": "Our advanced platform processes millions of data points daily to deliver predictive insights and real-time monitoring for faster, more effective disaster response.",
+      "realWorldFloodResponse": "Real World Flood Response & Recovery",
+      "floodResponseDescription": "Rapid flood response teams with advanced water management systems, evacuation coordination, and real-time monitoring from National Weather Service and local emergency management agencies",
+      "responseRate": "Response Rate"
     },
     "liveImpact": {
       "title": "Making Real Impact Worldwide",
@@ -149,16 +157,21 @@
       "refreshData": "Refresh data",
       "unableToLoad": "Unable to load disaster data",
       "tryAgain": "Try Again",
-      "critical": "Critical",
-      "high": "High",
-      "medium": "Medium",
-      "low": "Low",
-      "viewDetails": "View Details",
       "verified": "Verified"
+    },
+    "disasters": {
+      "recentVerified": "Recent Verified Disasters",
+      "latest": "Latest",
+      "emergencyUpdates": "Emergency Updates",
+      "description": "Stay informed with real-time updates on verified disasters and emergency situations from our global monitoring network with instant verification and response coordination.",
+      "viewAllDisasters": "View All Disasters"
     },
     "features": {
       "title": "How We Help Communities",
       "subtitle": "Comprehensive disaster management solutions",
+      "comprehensiveTitle": "Comprehensive",
+      "disasterSolutions": "Disaster Solutions",
+      "description": "From predictive analytics to emergency response and recovery, our comprehensive platform delivers the intelligence and tools needed for effective disaster management worldwide.",
       "realTimeReporting": {
         "title": "Real-Time Reporting",
         "description": "Instant disaster reporting with GPS location, photos, and priority classification for immediate response coordination."
@@ -175,6 +188,20 @@
         "title": "Resource Management",
         "description": "Track and coordinate emergency resources, supplies, and personnel for optimal disaster response effectiveness."
       }
+    },
+    "map": {
+      "liveGlobalMonitoring": "Live Global Monitoring",
+      "realTimeTracking": "Real-Time Disaster Tracking",
+      "description": "Monitor active disasters worldwide with our advanced mapping system powered by real-time data from global monitoring networks.",
+      "liveDisasterMap": "Live Disaster Map",
+      "liveUpdates": "Live Updates",
+      "unableToLoad": "Unable to load map",
+      "checkConnection": "Please check your connection and try again"
+    },
+    "cta": {
+      "title": "Ready to Transform Disaster Response?",
+      "description": "Join emergency responders and communities worldwide using our platform to enhance safety, optimize response times, and save lives through intelligent disaster management.",
+      "getStarted": "Get Started Today"
     },
     "safety": {
       "title": "Stay Safe & Be Prepared",
@@ -239,34 +266,6 @@
           "Download emergency alert apps",
           "Store digital copies of IDs"
         ]
-      }
-    },
-    "cta": {
-      "title": "Ready to Make a Difference?",
-      "description": "Join thousands of people using DisasterWatch to build safer, more resilient communities worldwide.",
-      "getStarted": "Get Started",
-      "joinCommunity": "Join Community",
-      "emergencyResponse": {
-        "title": "Ready to Respond to Emergencies?",
-        "subtitle": "Emergency Response",
-        "description": "As an authorized responder, you have the power to coordinate emergency response and save lives. Every second counts in disaster management.",
-        "reportEmergency": "Report Emergency",
-        "viewReports": "View Reports",
-        "emergencyLine": "24/7 Emergency Line",
-        "emergencyCoordination": "Emergency Coordination",
-        "commandCenter": "Command Center",
-        "available24x7": "Available 24/7"
-      },
-      "volunteer": {
-        "title": "Ready to Become a Community Hero?",
-        "subtitle": "Become a Hero",
-        "description": "Join thousands of volunteers worldwide who are making a real difference in their communities. Your skills, time, and compassion can help save lives and rebuild hope.",
-        "becomeVolunteer": "Become a Volunteer",
-        "viewOpportunities": "View Opportunities",
-        "volunteerHotline": "Volunteer Hotline",
-        "volunteerSupport": "Volunteer Support",
-        "trainingSupport": "Training Support",
-        "availableMonFri": "Available Mon-Fri"
       }
     }
   },
@@ -869,5 +868,149 @@
     "noData": "No data available",
     "confirmDelete": "Are you sure you want to delete this item?",
     "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "disaster": "Disaster Preferences",
+    "notifications": "Notifications",
+    "location": "Location",
+    "language": "Language",
+    "appearance": "Appearance",
+    "security": "Security",
+    "fullName": "Full Name",
+    "email": "Email",
+    "saving": "Saving...",
+    "disasterPreferences": "Disaster Response Preferences",
+    "disasterPreferencesDesc": "Customize how you want to receive disaster-related information and alerts",
+    "emergencyAlerts": "Emergency Alerts",
+    "emergencyAlertsDesc": "Receive immediate notifications for emergency situations in your area",
+    "disasterReports": "Disaster Reports",
+    "disasterReportsDesc": "Get notified about new disaster reports and updates",
+    "volunteerNotifications": "Volunteer Opportunities",
+    "volunteerNotificationsDesc": "Receive notifications about volunteer opportunities and community needs",
+    "emailNotifications": "Email Notifications",
+    "emailNotificationsDesc": "Receive important updates and alerts via email",
+    "pushNotifications": "Push Notifications",
+    "pushNotificationsDesc": "Receive real-time notifications on your device",
+    "smsNotifications": "SMS Notifications",
+    "smsNotificationsDesc": "Receive critical alerts via text message",
+    "locationServices": "Location Services",
+    "locationServicesDesc": "Manage how your location is used for disaster response",
+    "locationSharing": "Location Sharing",
+    "locationSharingDesc": "Allow sharing your location for emergency response coordination",
+    "nearbyAlerts": "Nearby Alerts",
+    "nearbyAlertsDesc": "Receive alerts for disasters and emergencies near your location",
+    "selectLanguage": "Select Language",
+    "theme": "Theme",
+    "lightTheme": "Light",
+    "darkTheme": "Dark",
+    "autoTheme": "Auto (System)",
+    "changePassword": "Change Password",
+    "changePasswordDesc": "Update your account password for enhanced security",
+    "twoFactorAuth": "Two-Factor Authentication",
+    "twoFactorAuthDesc": "Add an extra layer of security to your account",
+    "loginHistory": "Login History",
+    "loginHistoryDesc": "View recent login activity and device information",
+                    "deleteAccount": "Delete Account",
+                "deleteAccountDesc": "Permanently delete your account and all associated data",
+                "role": "Role",
+                "roleDesc": "Your current role in the disaster management system"
+  },
+  "about": {
+    "hero": {
+      "badge": "About Our Mission",
+      "title": "Saving Lives Through",
+      "titleHighlight": "Smart Technology",
+      "description": "We're building the world's most advanced disaster response platform, connecting communities with life-saving information and resources when they need it most.",
+      "viewReports": "View Live Reports",
+      "getInvolved": "Get Involved"
+    },
+    "impact": {
+      "badge": "Our Impact",
+      "title": "Making a",
+      "titleHighlight": "Global Difference"
+    },
+    "stats": {
+      "livesProtected": "Lives Protected",
+      "countriesServed": "Countries Served",
+      "monitoring": "Monitoring",
+      "uptime": "Uptime"
+    },
+    "values": {
+      "title": "Our Core Values",
+      "description": "These principles guide everything we do, from product development to community engagement.",
+      "reliability": {
+        "title": "Reliability & Trust",
+        "description": "Providing accurate, verified information when communities need it most."
+      },
+      "community": {
+        "title": "Community First",
+        "description": "Putting community safety and well-being at the center of everything we do."
+      },
+      "rapidResponse": {
+        "title": "Rapid Response",
+        "description": "Delivering critical information and resources with speed and precision."
+      },
+      "globalImpact": {
+        "title": "Global Impact",
+        "description": "Building resilient communities worldwide through technology and collaboration."
+      }
+    },
+    "features": {
+      "monitoring": {
+        "title": "Real-Time Monitoring",
+        "description": "Advanced systems track disasters as they develop, providing instant updates."
+      },
+      "network": {
+        "title": "Community Network",
+        "description": "Connect with local responders, volunteers, and community members for coordinated action."
+      },
+      "alerts": {
+        "title": "Precise Alerts",
+        "description": "Location-based notifications ensure you receive relevant information for your area."
+      }
+    },
+    "whatWeDo": {
+      "title": "How We're Changing Disaster Response",
+      "description": "Our platform combines cutting-edge technology with human expertise to create the most comprehensive disaster management system ever built.",
+      "learnMore": "Learn More About Our Work"
+    },
+    "team": {
+      "title": "Meet Our Leadership Team",
+      "description": "Experienced professionals dedicated to building safer, more resilient communities worldwide.",
+      "members": {
+        "sarahChen": {
+          "name": "Dr. Sarah Chen",
+          "role": "Executive Director",
+          "bio": "Leading disaster management expert with 15+ years in emergency response and community resilience.",
+          "badge": "Leadership"
+        },
+        "michaelRodriguez": {
+          "name": "Captain Michael Rodriguez",
+          "role": "Emergency Response Coordinator",
+          "bio": "Former fire chief with extensive experience in disaster response and emergency management.",
+          "badge": "Response"
+        },
+        "priyaPatel": {
+          "name": "Dr. Priya Patel",
+          "role": "Technology Director",
+          "bio": "Specialist focused on predictive disaster modeling and early warning systems.",
+          "badge": "Innovation"
+        },
+        "mariaSantos": {
+          "name": "Maria Santos",
+          "role": "Community Outreach Manager",
+          "bio": "Community engagement expert building bridges between technology and local communities.",
+          "badge": "Community"
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to Make a Difference?",
+      "description": "Join our mission to build safer, more resilient communities through technology and collaboration.",
+      "getInvolved": "Get Involved Today",
+      "contactUs": "Contact Us"
+    }
   }
 }

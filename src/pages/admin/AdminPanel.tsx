@@ -33,7 +33,8 @@ import {
   Calendar,
   Wifi,
   WifiOff,
-  History
+  History,
+  Building2
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { userManagementApi } from '../../apis/userManagement';
@@ -45,6 +46,8 @@ import Analytics from './Analytics';
 import SystemSettings from './systemsettings';
 import ReportManagement from './ReportManagement';
 import AuditLogsPage from './AuditLogsPage';
+import AdminSupportRequestManagement from './AdminSupportRequestManagement';
+import OrganizationManagement from './OrganizationManagement';
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -88,8 +91,6 @@ class ErrorBoundary extends React.Component<
     return this.props.children;
   }
 }
-
-
 
 interface AdminStatCardProps {
   icon: React.ReactNode;
@@ -187,46 +188,27 @@ const AdminStatCard: React.FC<AdminStatCardProps> = ({
 };
 
 const QuickActionCard: React.FC<QuickActionProps> = ({ icon, title, description, link, color }) => {
-  const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
 
   return (
-    <Link 
-      to={link}
-      className="group relative bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 p-6 hover:shadow-2xl transition-all duration-500 hover:border-blue-300/50 hover:-translate-y-1 hover:bg-white overflow-hidden"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <div
+      onClick={() => navigate(link)}
+      className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${color} p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 hover:scale-105 border border-white/20`}
     >
-      {/* Animated background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 via-transparent to-purple-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-      
-      {/* Floating particles effect */}
-      <div className={`absolute top-2 right-2 transition-all duration-700 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
-        <Star className="w-3 h-3 text-yellow-400" />
-      </div>
-      <div className={`absolute bottom-2 left-2 transition-all duration-700 delay-100 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-        <Zap className="w-3 h-3 text-blue-400" />
-      </div>
-      
+      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       <div className="relative z-10">
-        <div className="flex items-start space-x-4">
-          <div className={`p-4 rounded-2xl ${color} group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-lg group-hover:shadow-xl`}>
-            <div className="group-hover:scale-110 transition-transform duration-300">
+        <div className="flex items-center justify-between mb-4">
+          <div className="p-3 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 group-hover:bg-white/30 group-hover:scale-110 transition-all duration-300">
+            <div className="group-hover:rotate-12 transition-transform duration-300">
               {icon}
             </div>
           </div>
-          <div className="flex-1">
-            <h3 className="font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors duration-300 text-lg">{title}</h3>
-            <p className="text-sm text-gray-600 group-hover:text-gray-700 transition-colors duration-300 leading-relaxed">{description}</p>
-            
-            {/* Animated arrow */}
-            <div className="mt-3 flex items-center text-blue-600 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-0 group-hover:translate-x-1">
-              <span className="text-sm font-medium mr-1">Explore</span>
-              <ChevronRight className="w-4 h-4" />
-            </div>
-          </div>
+          <ChevronRight className="w-5 h-5 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
         </div>
+        <h3 className="text-lg font-bold mb-2">{title}</h3>
+        <p className="text-white/80 text-sm leading-relaxed">{description}</p>
       </div>
-    </Link>
+    </div>
   );
 };
 
@@ -236,922 +218,436 @@ const AdminPanel: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
-  // Enhanced state management
-  const [timeRange, setTimeRange] = useState('7d');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [notifications, setNotifications] = useState<Array<{
-    id: string;
-    type: 'success' | 'error' | 'warning' | 'info';
-    message: string;
-    timestamp: Date;
-  }>>([]);
+  const [lastRefresh, setLastRefresh] = useState(new Date());
 
-  // Update time every minute
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // Network status monitoring
+  // Monitor online status
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
-    
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  // Notification system
-  const addNotification = useCallback((type: 'success' | 'error' | 'warning' | 'info', message: string) => {
-    const id = Date.now().toString();
-    setNotifications(prev => [...prev, { id, type, message, timestamp: new Date() }]);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 5000);
-  }, []);
+  // Fetch admin statistics
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      // Mock data - replace with actual API calls
+      return {
+        totalUsers: 1247,
+        activeUsers: 892,
+        totalReports: 156,
+        pendingReports: 23,
+        verifiedReports: 133,
+        totalOrganizations: 45,
+        systemHealth: 98.5,
+        responseTime: 245
+      };
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
 
-  // Manual refresh functionality
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await queryClient.invalidateQueries();
-      addNotification('success', 'Data refreshed successfully');
-    } catch (error) {
-      addNotification('error', 'Failed to refresh data');
-    } finally {
-      setTimeout(() => setRefreshing(false), 1000);
-    }
-  }, [queryClient, addNotification]);
-
-  // Fullscreen toggle
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  }, []);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 'r':
-            e.preventDefault();
-            handleRefresh();
-            break;
-          case 'k':
-            e.preventDefault();
-            document.querySelector<HTMLInputElement>('input[placeholder="Search..."]')?.focus();
-            break;
-          case 'b':
-            e.preventDefault();
-            setSidebarOpen(prev => !prev);
-            break;
-        }
-      }
-      if (e.key === 'Escape') {
-        setSidebarOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRefresh]);
-
-  // Check if we're on the main admin panel page
-  const isMainPanel = location.pathname === '/admin' || location.pathname === '/admin/';
-
-  // Navigation items with CMS functionality
-  const navItems = [
+  // Navigation items
+  const navigationItems = [
     {
-      title: 'Dashboard',
+      name: 'Dashboard',
       href: '/admin',
-      icon: <Home className="w-5 h-5" />,
-      active: isMainPanel
+      icon: Home,
+      current: location.pathname === '/admin',
     },
     {
-      title: 'User Management',
+      name: 'User Management',
       href: '/admin/users',
-      icon: <Users className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/users')
+      icon: Users,
+      current: location.pathname === '/admin/users',
     },
     {
-      title: 'Report Management',
+      name: 'Report Management',
       href: '/admin/reports',
-      icon: <FileText className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/reports')
+      icon: FileText,
+      current: location.pathname === '/admin/reports',
     },
     {
-      title: 'Audit Logs',
-      href: '/admin/audit-logs',
-      icon: <History className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/audit-logs')
-    },
-    {
-      title: 'Analytics',
+      name: 'Analytics',
       href: '/admin/analytics',
-      icon: <BarChart3 className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/analytics')
+      icon: BarChart3,
+      current: location.pathname === '/admin/analytics',
     },
     {
-      title: 'Settings',
+      name: 'Organizations',
+      href: '/admin/organizations',
+      icon: Building2,
+      current: location.pathname === '/admin/organizations',
+    },
+    {
+      name: 'Support Requests',
+      href: '/admin/support-requests',
+      icon: Shield,
+      current: location.pathname === '/admin/support-requests',
+    },
+    {
+      name: 'System Settings',
       href: '/admin/settings',
-      icon: <Settings className="w-5 h-5" />,
-      active: location.pathname.includes('/admin/settings')
-    }
+      icon: Settings,
+      current: location.pathname === '/admin/settings',
+    },
+    {
+      name: 'Audit Logs',
+      href: '/admin/audit-logs',
+      icon: History,
+      current: location.pathname === '/admin/audit-logs',
+    },
   ];
 
-  const handleLogout = () => {
+  const handleRefresh = useCallback(() => {
+    setLastRefresh(new Date());
+    queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+    refetchStats();
+  }, [queryClient, refetchStats]);
+
+  const handleLogout = useCallback(() => {
     logout();
-    window.location.href = '/login';
-  };
+    navigate('/login');
+  }, [logout, navigate]);
 
-  // Enhanced data fetching with better error handling
-  const {
-    data: userStats,
-    isLoading: isLoadingUserStats,
-    error: userStatsError,
-    isRefetching: isRefetchingUserStats
-  } = useQuery({
-    queryKey: ['adminDashboardStats', timeRange],
-    queryFn: () => userManagementApi.getDashboardStats(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: (failureCount, error: any) => {
-      if (error?.response?.status === 401) return false;
-      return failureCount < 3;
-    },
-    refetchInterval: isOnline ? 5 * 60 * 1000 : false, // Only refetch when online
-    enabled: isOnline
-  });
-
-  const {
-    data: reportsStats,
-    isLoading: isLoadingReportsStats,
-    error: reportsStatsError,
-    isRefetching: isRefetchingReportsStats
-  } = useQuery({
-    queryKey: ['adminReportsStats', timeRange],
-    queryFn: () => ReportsAPI.getReportsStatistics(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: (failureCount, error: any) => {
-      if (error?.response?.status === 401) return false;
-      return failureCount < 3;
-    },
-    refetchInterval: isOnline ? 5 * 60 * 1000 : false, // Only refetch when online
-    enabled: isOnline
-  });
-
-
-
-  // Enhanced loading and error states
-  const isLoadingAnyStats = isLoadingUserStats || isLoadingReportsStats;
-  const isRefreshingAnyStats = isRefetchingUserStats || isRefetchingReportsStats || refreshing;
-  const hasAnyError = userStatsError || reportsStatsError;
-
-  // Memoized calculations for better performance
-  const enhancedStats = useMemo(() => {
-    const baseStats = {
-      totalUsers: (userStats as any)?.totalUsers || 0,
-      totalReports: (reportsStats as any)?.totalReports || 0,
-      pendingVerification: (reportsStats as any)?.pendingReports || 0,
-      systemHealth: 98.5, // TODO: Add system health API
-      activeUsers: (userStats as any)?.activeUsers || 0,
-      verifiedReports: (reportsStats as any)?.verifiedReports || 0,
-      blacklistedUsers: (userStats as any)?.suspendedUsers || 0,
-      serverUptime: '99.9%' // TODO: Add system health API
-    };
-
-    // Calculate growth percentages
-    const userGrowth = (userStats as any)?.previousPeriodUsers 
-      ? ((baseStats.totalUsers - (userStats as any).previousPeriodUsers) / (userStats as any).previousPeriodUsers * 100).toFixed(1)
-      : '0';
-    
-    const reportGrowth = (reportsStats as any)?.previousPeriodReports
-      ? ((baseStats.totalReports - (reportsStats as any).previousPeriodReports) / (reportsStats as any).previousPeriodReports * 100).toFixed(1)
-      : '0';
-
-    const userGrowthNum = parseFloat(userGrowth);
-    const reportGrowthNum = parseFloat(reportGrowth);
-
-    return {
-      ...baseStats,
-      userGrowth: `${userGrowthNum >= 0 ? '+' : ''}${userGrowth}%`,
-      reportGrowth: `${reportGrowthNum >= 0 ? '+' : ''}${reportGrowth}%`,
-      userGrowthType: userGrowthNum >= 0 ? 'increase' as const : 'decrease' as const,
-      reportGrowthType: reportGrowthNum >= 0 ? 'increase' as const : 'decrease' as const
-    };
-  }, [userStats, reportsStats]);
-
-  const quickActions = [
-    {
-      icon: <Users className="w-6 h-6 text-white" />,
-      title: 'User Management',
-      description: 'Manage users, roles, and permissions',
-      link: '/admin/users',
-      color: 'bg-blue-500'
-    },
-    {
-      icon: <FileText className="w-6 h-6 text-white" />,
-      title: 'Report Management',
-      description: 'Review and verify disaster reports',
-      link: '/admin/reports',
-      color: 'bg-green-500'
-    },
-    {
-      icon: <BarChart3 className="w-6 h-6 text-white" />,
-      title: 'Analytics Dashboard',
-      description: 'View detailed analytics and insights',
-      link: '/admin/analytics',
-      color: 'bg-purple-500'
-    },
-    {
-      icon: <Settings className="w-6 h-6 text-white" />,
-      title: 'System Settings',
-      description: 'Configure system parameters and settings',
-      link: '/admin/settings',
-      color: 'bg-gray-600'
-    },
-    {
-      icon: <Database className="w-6 h-6 text-white" />,
-      title: 'Database Management',
-      description: 'Monitor and manage database operations',
-      link: '/admin/database',
-      color: 'bg-indigo-500'
-    },
-    {
-      icon: <Bell className="w-6 h-6 text-white" />,
-      title: 'Notifications',
-      description: 'Manage system notifications and alerts',
-      link: '/admin/notifications',
-      color: 'bg-yellow-500'
-    }
-  ];
-
-  // Enhanced recent activities with real-time data
-  const recentActivities = useMemo(() => {
-    const activities = [
-      {
-        id: 1,
-        action: 'New user registration',
-        user: 'Sarah Johnson',
-        time: '2 minutes ago',
-        type: 'user',
-        icon: <UserCheck className="w-4 h-4" />,
-        priority: 'low'
-      },
-      {
-        id: 2,
-        action: 'Report verified',
-        user: 'Admin',
-        time: '15 minutes ago',
-        type: 'report',
-        icon: <CheckCircle className="w-4 h-4" />,
-        priority: 'medium'
-      },
-      {
-        id: 3,
-        action: 'System backup completed',
-        user: 'System',
-        time: '1 hour ago',
-        type: 'system',
-        icon: <Database className="w-4 h-4" />,
-        priority: 'low'
-      },
-      {
-        id: 4,
-        action: 'Critical alert resolved',
-        user: 'Admin Team',
-        time: '2 hours ago',
-        type: 'alert',
-        icon: <AlertTriangle className="w-4 h-4" />,
-        priority: 'high'
-      }
-    ];
-
-    // Filter activities based on search query
-    if (searchQuery) {
-      return activities.filter(activity => 
-        activity.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        activity.user.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    return activities;
-  }, [searchQuery]);
-
-
-
-  const AdminDashboard = () => (
+  // Dashboard content
+  const DashboardContent = () => (
     <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="relative">
-        <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-3xl p-8 text-white overflow-hidden relative">
-          {/* Animated background elements */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent"></div>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-48 translate-x-48 animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-32 -translate-x-32 animate-pulse delay-1000"></div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-green-300 text-sm font-medium">System Online</span>
-                  <span className="text-white/60 text-sm">{currentTime.toLocaleTimeString()}</span>
-                </div>
-                <h2 className="text-4xl font-black mb-3 bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-                  Welcome back, {user?.name || 'Admin'}! ✨
-                </h2>
-                <p className="text-blue-100 text-lg leading-relaxed mb-4">
-                  Here's what's happening with your disaster response platform today.
-                </p>
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                    <TrendingUp className="w-4 h-4 text-green-300" />
-                    <span className="text-sm font-medium">All systems operational</span>
-                  </div>
-                  <div className="flex items-center space-x-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2">
-                    <Users className="w-4 h-4 text-blue-300" />
-                    <span className="text-sm font-medium">{enhancedStats.activeUsers} active users</span>
-                  </div>
-                </div>
-              </div>
-              <div className="hidden md:block">
-                <div className="relative">
-                  <div className="w-32 h-32 bg-gradient-to-br from-white/20 to-white/10 rounded-3xl flex items-center justify-center backdrop-blur-md border border-white/30 shadow-2xl">
-                    <Activity className="w-16 h-16 text-white animate-pulse" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-              </div>
-            </div>
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{user?.name}</span>
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Here's what's happening with your disaster response system today.
+          </p>
+        </div>
+        <div className="mt-6 lg:mt-0 flex items-center space-x-4">
+          <div className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
+            isOnline 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {isOnline ? <Wifi className="w-4 h-4 mr-2" /> : <WifiOff className="w-4 h-4 mr-2" />}
+            {isOnline ? 'Online' : 'Offline'}
           </div>
+          <button
+            onClick={handleRefresh}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-50 to-purple-50 rounded-3xl opacity-50"></div>
-        <div className="relative p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
-              <Sparkles className="w-6 h-6 text-purple-600" />
-              <span>Platform Analytics</span>
-            </h3>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <div className={`w-2 h-2 rounded-full ${isLoadingAnyStats ? 'bg-yellow-500 animate-pulse' : 'bg-green-500 animate-pulse'}`}></div>
-              <span>{isLoadingAnyStats ? 'Loading Data...' : 'Live Data'}</span>
-              {(userStatsError || reportsStatsError) && (
-                <span className="text-red-500 text-xs">
-                  • {userStatsError ? 'User stats error' : ''} {reportsStatsError ? 'Reports stats error' : ''}
-                </span>
-              )}
-            </div>
-          </div>
-          {/* Error State */}
-          {hasAnyError && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
-                <div>
-                  <h4 className="text-red-800 font-medium">Data Loading Issues</h4>
-                  <p className="text-red-600 text-sm">
-                    Some statistics may be outdated. 
-                    {!isOnline && ' You are currently offline.'}
-                    <button 
-                      onClick={handleRefresh}
-                      className="ml-2 text-red-700 underline hover:no-underline"
-                    >
-                      Try refreshing
-                    </button>
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '0ms'}}>
-              <AdminStatCard
-                icon={<Users className="w-6 h-6" />}
-                title="Total Users"
-                value={isLoadingUserStats ? 0 : enhancedStats.totalUsers.toLocaleString()}
-                change={enhancedStats.userGrowth !== '+0%' ? `${enhancedStats.userGrowth} from last period` : undefined}
-                changeType={enhancedStats.userGrowthType}
-                bgGradient="bg-gradient-to-br from-blue-500 to-blue-600"
-                iconBg="bg-blue-400"
-                onClick={() => navigate('/admin/users')}
-                isLoading={isLoadingUserStats}
-              />
-            </div>
-            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '100ms'}}>
-              <AdminStatCard
-                icon={<FileText className="w-6 h-6" />}
-                title="Total Reports"
-                value={isLoadingReportsStats ? 0 : enhancedStats.totalReports.toLocaleString()}
-                change={enhancedStats.reportGrowth !== '+0%' ? `${enhancedStats.reportGrowth} from last period` : undefined}
-                changeType={enhancedStats.reportGrowthType}
-                bgGradient="bg-gradient-to-br from-green-500 to-emerald-600"
-                iconBg="bg-green-400"
-                onClick={() => navigate('/admin/reports')}
-                isLoading={isLoadingReportsStats}
-              />
-            </div>
-            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '200ms'}}>
-              <AdminStatCard
-                icon={<Clock className="w-6 h-6" />}
-                title="Pending Verification"
-                value={isLoadingReportsStats ? 0 : enhancedStats.pendingVerification}
-                change={(reportsStats as any)?.averageResponseTime ? `${(reportsStats as any).averageResponseTime} avg response` : undefined}
-                changeType={enhancedStats.pendingVerification > 10 ? "decrease" as const : "neutral" as const}
-                bgGradient="bg-gradient-to-br from-yellow-500 to-orange-500"
-                iconBg="bg-yellow-400"
-                onClick={() => navigate('/admin/reports?filter=pending')}
-                isLoading={isLoadingReportsStats}
-              />
-            </div>
-            <div className="transform transition-all duration-500 hover:scale-105" style={{animationDelay: '300ms'}}>
-              <AdminStatCard
-                icon={<TrendingUp className="w-6 h-6" />}
-                title="System Health"
-                value={`${enhancedStats.systemHealth}%`}
-                change={enhancedStats.systemHealth >= 95 ? "Excellent performance" : enhancedStats.systemHealth >= 85 ? "Good performance" : "Needs attention"}
-                changeType={enhancedStats.systemHealth >= 95 ? "increase" as const : enhancedStats.systemHealth >= 85 ? "neutral" as const : "decrease" as const}
-                bgGradient="bg-gradient-to-br from-purple-500 to-purple-600"
-                iconBg="bg-purple-400"
-                onClick={() => navigate('/admin/settings?tab=system')}
-              />
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <AdminStatCard
+          icon={<Users className="w-6 h-6" />}
+          title="Total Users"
+          value={stats?.totalUsers || 0}
+          change="+12% from last month"
+          changeType="increase"
+          bgGradient="bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700"
+          iconBg="bg-blue-500"
+          onClick={() => navigate('/admin/users')}
+          isLoading={statsLoading}
+        />
+        <AdminStatCard
+          icon={<UserCheck className="w-6 h-6" />}
+          title="Active Users"
+          value={stats?.activeUsers || 0}
+          change="+8% from last week"
+          changeType="increase"
+          bgGradient="bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700"
+          iconBg="bg-emerald-500"
+          onClick={() => navigate('/admin/users')}
+          isLoading={statsLoading}
+        />
+        <AdminStatCard
+          icon={<FileText className="w-6 h-6" />}
+          title="Total Reports"
+          value={stats?.totalReports || 0}
+          change="+23 new today"
+          changeType="increase"
+          bgGradient="bg-gradient-to-br from-orange-500 via-orange-600 to-red-700"
+          iconBg="bg-orange-500"
+          onClick={() => navigate('/admin/reports')}
+          isLoading={statsLoading}
+        />
+        <AdminStatCard
+          icon={<AlertTriangle className="w-6 h-6" />}
+          title="Pending Reports"
+          value={stats?.pendingReports || 0}
+          change="Needs attention"
+          changeType="neutral"
+          bgGradient="bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-700"
+          iconBg="bg-purple-500"
+          onClick={() => navigate('/admin/reports')}
+          isLoading={statsLoading}
+        />
       </div>
 
       {/* Quick Actions */}
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 rounded-3xl opacity-60"></div>
-        <div className="relative p-6">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
-                <Zap className="w-6 h-6 text-indigo-600" />
-                <span>Quick Actions</span>
-              </h3>
-              <p className="text-gray-600 mt-1">Streamline your workflow with these powerful tools</p>
-            </div>
-            <div className="hidden md:flex items-center space-x-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium">
-              <Star className="w-4 h-4" />
-              <span>Pro Tools</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {quickActions.map((action, index) => (
-              <div key={index} className="transform transition-all duration-700 hover:scale-105" style={{animationDelay: `${index * 150}ms`}}>
-                <QuickActionCard {...action} />
-              </div>
-            ))}
-          </div>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <QuickActionCard
+            icon={<Users className="w-6 h-6" />}
+            title="Manage Users"
+            description="Add, edit, or remove user accounts and permissions"
+            link="/admin/users"
+            color="from-blue-500 to-blue-600"
+          />
+          <QuickActionCard
+            icon={<FileText className="w-6 h-6" />}
+            title="Review Reports"
+            description="Verify and manage disaster reports from the field"
+            link="/admin/reports"
+            color="from-emerald-500 to-emerald-600"
+          />
+          <QuickActionCard
+            icon={<BarChart3 className="w-6 h-6" />}
+            title="View Analytics"
+            description="Monitor system performance and user engagement"
+            link="/admin/analytics"
+            color="from-purple-500 to-purple-600"
+          />
+          <QuickActionCard
+            icon={<Building2 className="w-6 h-6" />}
+            title="Organizations"
+            description="Manage partner organizations and their access"
+            link="/admin/organizations"
+            color="from-orange-500 to-orange-600"
+          />
+          <QuickActionCard
+            icon={<Shield className="w-6 h-6" />}
+            title="Support Requests"
+            description="Handle user support tickets and issues"
+            link="/admin/support-requests"
+            color="from-red-500 to-red-600"
+          />
+          <QuickActionCard
+            icon={<Settings className="w-6 h-6" />}
+            title="System Settings"
+            description="Configure system parameters and preferences"
+            link="/admin/settings"
+            color="from-gray-500 to-gray-600"
+          />
         </div>
       </div>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Activity */}
-        <div className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                <Activity className="w-5 h-5 text-blue-600" />
-                <span>Recent Activity</span>
-              </h3>
-              <Link 
-                to="/admin/activity" 
-                className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center space-x-1 bg-blue-50 px-3 py-1 rounded-full hover:bg-blue-100 transition-all"
-              >
-                <span>View All</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-4 p-4 rounded-xl hover:bg-white/60 transition-all duration-300 border border-transparent hover:border-blue-200 group/item">
-                  <div className={`p-2 rounded-lg group-hover/item:scale-110 transition-transform ${
-                    activity.type === 'user' ? 'bg-blue-100 text-blue-600' :
-                    activity.type === 'report' ? 'bg-green-100 text-green-600' :
-                    activity.type === 'system' ? 'bg-purple-100 text-purple-600' :
-                    'bg-yellow-100 text-yellow-600'
-                  }`}>
-                    {activity.icon}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 group-hover/item:text-blue-900 transition-colors">{activity.action}</p>
-                    <p className="text-xs text-gray-500 flex items-center space-x-1">
-                      <span>by {activity.user}</span>
-                      <span>•</span>
-                      <Clock className="w-3 h-3" />
-                      <span>{activity.time}</span>
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+      {/* Recent Activity */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Recent Activity</h2>
+          <button className="text-blue-600 hover:text-blue-700 font-medium">
+            View All
+          </button>
         </div>
-
-        {/* System Status */}
-        <div className="relative group">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl opacity-50 group-hover:opacity-70 transition-opacity"></div>
-          <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/50 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                <Shield className="w-5 h-5 text-green-600" />
-                <span>System Status</span>
-              </h3>
-              <div className="flex items-center space-x-2 bg-green-100 px-3 py-1 rounded-full">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs font-medium text-green-700">All Systems Operational</span>
+        <div className="space-y-4">
+          {[
+            { action: 'New user registered', user: 'John Doe', time: '2 minutes ago', type: 'user' },
+            { action: 'Report verified', user: 'Admin', time: '5 minutes ago', type: 'report' },
+            { action: 'System backup completed', user: 'System', time: '1 hour ago', type: 'system' },
+            { action: 'New organization added', user: 'Jane Smith', time: '2 hours ago', type: 'org' },
+          ].map((activity, index) => (
+            <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
+              <div className={`p-2 rounded-lg ${
+                activity.type === 'user' ? 'bg-blue-100 text-blue-600' :
+                activity.type === 'report' ? 'bg-green-100 text-green-600' :
+                activity.type === 'system' ? 'bg-purple-100 text-purple-600' :
+                'bg-orange-100 text-orange-600'
+              }`}>
+                {activity.type === 'user' ? <Users className="w-4 h-4" /> :
+                 activity.type === 'report' ? <FileText className="w-4 h-4" /> :
+                 activity.type === 'system' ? <Settings className="w-4 h-4" /> :
+                 <Building2 className="w-4 h-4" />}
               </div>
+              <div className="flex-1">
+                <p className="text-gray-900 font-medium">{activity.action}</p>
+                <p className="text-gray-600 text-sm">by {activity.user}</p>
+              </div>
+              <div className="text-gray-500 text-sm">{activity.time}</div>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200 hover:shadow-md transition-all group/status">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full animate-pulse"></div>
-                  <Globe className="w-5 h-5 text-green-600 group-hover/status:scale-110 transition-transform" />
-                  <span className="font-semibold text-gray-900">Server Uptime</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="text-green-700 font-bold">{enhancedStats.serverUptime}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200 hover:shadow-md transition-all group/status">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-pulse"></div>
-                  <Activity className="w-5 h-5 text-blue-600 group-hover/status:scale-110 transition-transform" />
-                  <span className="font-semibold text-gray-900">Active Users</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
-                  <span className="text-blue-700 font-bold">{enhancedStats.activeUsers}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 hover:shadow-md transition-all group/status">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full animate-pulse"></div>
-                  <CheckCircle className="w-5 h-5 text-purple-600 group-hover/status:scale-110 transition-transform" />
-                  <span className="font-semibold text-gray-900">Verified Reports</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Star className="w-4 h-4 text-purple-600" />
-                  <span className="text-purple-700 font-bold">{enhancedStats.verifiedReports}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-200 hover:shadow-md transition-all group/status">
-                <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></div>
-                  <AlertTriangle className="w-5 h-5 text-red-600 group-hover/status:scale-110 transition-transform" />
-                  <span className="font-semibold text-gray-900">Blacklisted Users</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <X className="w-4 h-4 text-red-600" />
-                  <span className="text-red-700 font-bold">{enhancedStats.blacklistedUsers}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Toast Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {notifications.map((notification) => (
-          <div
-            key={notification.id}
-            className={`p-4 rounded-lg shadow-lg border-l-4 bg-white max-w-sm transform transition-all duration-300 ${
-              notification.type === 'success' ? 'border-green-500' :
-              notification.type === 'error' ? 'border-red-500' :
-              notification.type === 'warning' ? 'border-yellow-500' :
-              'border-blue-500'
-            }`}
-          >
-            <div className="flex items-start space-x-3">
-              <div className={`flex-shrink-0 ${
-                notification.type === 'success' ? 'text-green-500' :
-                notification.type === 'error' ? 'text-red-500' :
-                notification.type === 'warning' ? 'text-yellow-500' :
-                'text-blue-500'
-              }`}>
-                {notification.type === 'success' && <CheckCircle className="w-5 h-5" />}
-                {notification.type === 'error' && <AlertTriangle className="w-5 h-5" />}
-                {notification.type === 'warning' && <AlertTriangle className="w-5 h-5" />}
-                {notification.type === 'info' && <Bell className="w-5 h-5" />}
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50">
+        {/* Mobile menu overlay */}
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)} />
+            <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-xl">
+              {/* Mobile sidebar content */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h2 className="text-xl font-bold text-gray-900">Admin Panel</h2>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{notification.message}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {notification.timestamp.toLocaleTimeString()}
-                </p>
-              </div>
-              <button
-                onClick={() => setNotifications(prev => prev.filter(n => n.id !== notification.id))}
-                className="flex-shrink-0 text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-              <Shield className="w-8 h-8 text-blue-600" />
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">DisasterResponse</h1>
-                <p className="text-xs text-gray-500">Admin Panel</p>
-              </div>
-            </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* User Profile */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">
-                {user?.name?.charAt(0) || 'A'}
-              </span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">{user?.name || 'Admin User'}</p>
-              <p className="text-xs text-gray-500">Super Admin</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {/* Main Navigation */}
-          <div className="mb-6">
-            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Main</h3>
-            {navItems.slice(0, 3).map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                  item.active
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`${item.active ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
-                    {item.icon}
-                  </div>
-                  <span>{item.title}</span>
+              <nav className="p-6">
+                <div className="space-y-2">
+                  {navigationItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-colors duration-200 ${
+                          item.current
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5 mr-3" />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
                 </div>
-                {item.active && (
-                  <ChevronRight className="w-4 h-4 text-blue-600" />
-                )}
-              </Link>
-            ))}
+              </nav>
+            </div>
           </div>
+        )}
 
-          {/* System Section */}
-          <div>
-            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">System</h3>
-            {navItems.slice(3).map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                  item.active
-                    ? 'bg-purple-50 text-purple-700 border-r-2 border-purple-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`${item.active ? 'text-purple-600' : 'text-gray-400 group-hover:text-gray-600'}`}>
-                    {item.icon}
-                  </div>
-                  <span>{item.title}</span>
-                </div>
-                {item.active && (
-                  <ChevronRight className="w-4 h-4 text-purple-600" />
-                )}
-              </Link>
-            ))}
-          </div>
-        </nav>
-
-        {/* Sidebar Footer */}
-        <div className="p-4 border-t border-gray-200">
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-3 w-full px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Enhanced Top Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center space-x-4">
+        {/* Desktop sidebar */}
+        <div className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300 ${
+          sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'
+        }`}>
+          <div className="flex flex-col flex-1 bg-white shadow-lg border-r border-gray-200">
+            {/* Sidebar header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              {!sidebarCollapsed && (
+                <h2 className="text-xl font-bold text-gray-900">Admin Panel</h2>
+              )}
               <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
-                title="Open sidebar (Ctrl+B)"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              <div className="flex items-center space-x-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
-                    <span>{navItems.find(item => item.active)?.title || 'Dashboard'}</span>
-                    {hasAnyError && (
-                      <AlertTriangle className="w-4 h-4 text-red-500" />
-                    )}
-                    {!isOnline && (
-                      <WifiOff className="w-4 h-4 text-orange-500" />
-                    )}
-                  </h2>
-                  <p className="text-sm text-gray-500 flex items-center space-x-2">
-                    <span>Manage your disaster response platform</span>
-                    <span>•</span>
-                    <span className="flex items-center space-x-1">
-                      {isOnline ? (
-                        <Wifi className="w-3 h-3 text-green-500" />
-                      ) : (
-                        <WifiOff className="w-3 h-3 text-orange-500" />
-                      )}
-                      <span className={isOnline ? 'text-green-600' : 'text-orange-600'}>
-                        {isOnline ? 'Online' : 'Offline'}
-                      </span>
-                    </span>
+            </div>
+
+            {/* Navigation */}
+            <nav className="flex-1 p-6">
+              <div className="space-y-2">
+                {navigationItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-colors duration-200 ${
+                        item.current
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                      title={sidebarCollapsed ? item.name : undefined}
+                    >
+                      <Icon className="w-5 h-5 mr-3" />
+                      {!sidebarCollapsed && item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
+
+            {/* User info */}
+            <div className="p-6 border-t border-gray-200">
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
+                  {user?.name?.charAt(0) || 'A'}
+                </div>
+                {!sidebarCollapsed && (
+                  <div className="ml-3 flex-1">
+                    <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                    <p className="text-xs text-gray-500">{user?.roles?.join(', ')}</p>
+                  </div>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className={`lg:pl-64 transition-all duration-300 ${sidebarCollapsed ? 'lg:pl-20' : ''}`}>
+          {/* Top bar */}
+          <div className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200">
+            <div className="flex items-center justify-between px-6 py-4">
+              <div className="flex items-center">
+                <button
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 lg:hidden"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="ml-4 lg:ml-0">
+                  <p className="text-sm text-gray-500">
+                    Last updated: {lastRefresh.toLocaleTimeString()}
                   </p>
                 </div>
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              {/* Enhanced Search */}
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search... (Ctrl+K)"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64 transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Time Range Selector */}
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <select 
-                  value={timeRange} 
-                  onChange={(e) => setTimeRange(e.target.value)}
-                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white appearance-none cursor-pointer"
-                  title="Select time range"
-                >
-                  <option value="1h">Last Hour</option>
-                  <option value="24h">Last 24 Hours</option>
-                  <option value="7d">Last 7 Days</option>
-                  <option value="30d">Last 30 Days</option>
-                  <option value="90d">Last 90 Days</option>
-                  <option value="1y">Last Year</option>
-                </select>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center space-x-1">
-                {/* Refresh Button */}
-                <button 
-                  onClick={handleRefresh}
-                  disabled={isRefreshingAnyStats}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Refresh data (Ctrl+R)"
-                >
-                  <RefreshCw className={`w-5 h-5 ${isRefreshingAnyStats ? 'animate-spin' : ''}`} />
-                </button>
-
-                {/* Fullscreen Toggle */}
-                <button 
-                  onClick={toggleFullscreen}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors hidden lg:block"
-                  title="Toggle fullscreen"
-                >
-                  {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                </button>
-
-                {/* Export Button */}
-                <button 
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Export data"
-                  onClick={() => {
-                    // TODO: Implement export functionality
-                    console.log('Export data');
-                  }}
-                >
-                  <Download className="w-5 h-5" />
-                </button>
-
-                {/* Notifications */}
-                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative">
+              <div className="flex items-center space-x-4">
+                <div className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
+                  isOnline 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {isOnline ? <Wifi className="w-4 h-4 mr-2" /> : <WifiOff className="w-4 h-4 mr-2" />}
+                  {isOnline ? 'Online' : 'Offline'}
+                </div>
+                <button className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Loading Bar */}
-          {isRefreshingAnyStats && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-200">
-              <div className="h-full bg-blue-600 animate-pulse"></div>
-            </div>
-          )}
-        </header>
-
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-          <div className="p-6">
+          {/* Page content */}
+          <main className="p-6">
             <Routes>
-              <Route path="/" element={<AdminDashboard />} />
+              <Route path="/" element={<DashboardContent />} />
               <Route path="/users" element={<UserManagement />} />
               <Route path="/reports" element={<ReportManagement />} />
-              <Route path="/audit-logs" element={<AuditLogsPage />} />
               <Route path="/analytics" element={<Analytics />} />
+              <Route path="/organizations" element={<OrganizationManagement />} />
+              <Route path="/support-requests" element={<AdminSupportRequestManagement />} />
               <Route path="/settings" element={<SystemSettings />} />
+              <Route path="/audit-logs" element={<AuditLogsPage />} />
             </Routes>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 
-// Wrapped component with error boundary
-const AdminPanelWithErrorBoundary: React.FC = () => (
-  <ErrorBoundary>
-    <AdminPanel />
-  </ErrorBoundary>
-);
-
-export default AdminPanelWithErrorBoundary;
+export default AdminPanel;

@@ -9,6 +9,7 @@ const getAuthHeaders = (token?: string) => {
   const authToken =
     token || authState.accessToken || localStorage.getItem("token");
   token || localStorage.getItem("token");
+  const authToken = token || useAuthStore.getState().accessToken;
   if (!authToken) throw new Error("❌ Auth token is required");
   return {
     headers: {

@@ -40,9 +40,9 @@ export const authApi = {
     return response.data;
   },
 
-  // Logout
-  logout: async (refreshToken: string): Promise<boolean> => {
-    const response = await apiClient.post('/Auth/logout', { refreshToken });
+  // Logout - now uses HTTP-only cookies
+  logout: async (): Promise<boolean> => {
+    const response = await apiClient.post('/Auth/logout');
     return response.data;
   },
 

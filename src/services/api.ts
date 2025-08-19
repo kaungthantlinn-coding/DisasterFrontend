@@ -12,6 +12,7 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 second timeout
+  withCredentials: true, // Important for cookies
 });
 
 // Request interceptor to add auth token, check expiration, and track requests
@@ -22,7 +23,9 @@ api.interceptors.request.use(
 
     if (accessToken) {
       // Check if token is expired before making the request
-      if (isTokenExpired(accessToken)) {
+      // Skip token expiration check for auth endpoints to allow login/signup
+      const isAuthEndpoint = config.url?.includes('/Auth/');
+      if (isTokenExpired(accessToken) && !isAuthEndpoint) {
         console.warn('🔒 Token expired in api.ts - rejecting request and logging out');
 
         // Log out user immediately
@@ -41,8 +44,10 @@ api.interceptors.request.use(
         return Promise.reject(new Error('Token expired'));
       }
 
-      // Add valid token to request
-      config.headers.Authorization = `Bearer ${accessToken}`;
+      // Add valid token to request (only for non-auth endpoints or valid tokens)
+      if (!isAuthEndpoint) {
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      }
     }
 
     // Add request ID for tracking
@@ -98,7 +103,9 @@ api.interceptors.response.use(
     }
     
     // Handle authentication errors (401 Unauthorized)
-    if (error.response?.status === 401) {
+    // Skip auto-logout and session expired message for auth endpoints
+    // Let the auth hooks handle blacklist and other auth-specific errors
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       // Log out user immediately
       useAuthStore.getState().logout();
 
@@ -194,6 +201,44 @@ export const apiService = {
     
     delete: async (id: string) => {
       const response = await api.delete(`/users/${id}`);
+      return response.data;
+    },
+  },
+
+  // Organization management endpoints
+  organizations: {
+    getAll: async () => {
+      const response = await api.get('/Organizations');
+      return response.data;
+    },
+    
+    getById: async (id: string) => {
+      const response = await api.get(`/Organizations/${id}`);
+      return response.data;
+    },
+    
+    create: async (data: any) => {
+      const response = await api.post('/Organizations', data);
+      return response.data;
+    },
+    
+    update: async (id: string, data: any) => {
+      const response = await api.put(`/Organizations/${id}`, data);
+      return response.data;
+    },
+    
+    delete: async (id: string) => {
+      const response = await api.delete(`/Organizations/${id}`);
+      return response.data;
+    },
+    
+    updateStatus: async (id: string, status: string) => {
+      const response = await api.patch(`/Organizations/${id}/status`, { status });
+      return response.data;
+    },
+    
+    updateVerification: async (id: string, verified: boolean) => {
+      const response = await api.patch(`/Organizations/${id}/verification`, { verified });
       return response.data;
     },
   },

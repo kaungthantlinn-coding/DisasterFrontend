@@ -5,6 +5,7 @@ export interface User {
   email: string;
   photoUrl?: string;
   roles: string[];
+  isBlacklisted?: boolean;
 }
 
 // Authentication request types

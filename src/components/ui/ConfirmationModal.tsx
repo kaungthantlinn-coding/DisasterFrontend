@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AlertTriangle, CheckCircle, Info, X, UserX, UserCheck, Trash2 } from 'lucide-react';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (reason?: string) => void;
   title: string;
   message: string;
   type?: 'warning' | 'danger' | 'info' | 'success';
@@ -14,6 +14,7 @@ interface ConfirmationModalProps {
   details?: string[];
   userName?: string;
   actionType?: 'blacklist' | 'unblacklist' | 'delete' | 'general';
+  requiresReason?: boolean;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -28,8 +29,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   icon,
   details = [],
   userName,
-  actionType = 'general'
+  actionType = 'general',
+  requiresReason = false
 }) => {
+  const [reason, setReason] = useState('');
   if (!isOpen) return null;
 
   const getTypeStyles = () => {
@@ -102,6 +105,12 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       onClose();
     }
   };
+
+  const handleConfirm = () => {
+    onConfirm(requiresReason ? reason : undefined);
+  };
+
+  const isConfirmDisabled = requiresReason && reason.trim().length === 0;
 
   return (
     <div 
@@ -176,6 +185,28 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 </p>
               </div>
             )}
+
+            {requiresReason && (
+              <div className="mt-4">
+                <label htmlFor="blacklist-reason" className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for blacklisting <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="blacklist-reason"
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="Please provide a reason for blacklisting this user..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  rows={3}
+                  required
+                />
+                {reason.trim().length === 0 && (
+                  <p className="text-sm text-red-600 mt-1">
+                    Please provide a reason before proceeding.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -187,8 +218,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               {cancelText}
             </button>
             <button
-              onClick={onConfirm}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${styles.confirmBtn}`}
+              onClick={handleConfirm}
+              disabled={isConfirmDisabled}
+              className={`px-4 py-2 text-sm font-medium text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${styles.confirmBtn}`}
             >
               {confirmText}
             </button>

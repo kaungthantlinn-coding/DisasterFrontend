@@ -22,18 +22,17 @@ export interface ApiUser {
   profile_picture?: string; // Alternative profile picture field
   createdAt?: string;
   updatedAt?: string;
+  isBlacklisted?: boolean;  // Blacklist status
 }
 
 export interface LoginResponse {
   user: User;
   token: string;
-  refreshToken: string;
 }
 
 export interface GoogleLoginResponse {
   user: User;
   token: string;
-  refreshToken: string;
 }
 
 // Helper function to convert API user to app user
@@ -84,6 +83,7 @@ const mapApiUserToUser = (apiUser: ApiUser): User => {
     email: apiUser.email,
     photoUrl,
     roles,
+    isBlacklisted: apiUser.isBlacklisted || false,
   };
   
   console.log('🔍 AuthService - Final mapped user:', mappedUser);
@@ -120,7 +120,6 @@ const mapApiResponse = (apiResponse: any) => {
   const mappedResponse = {
     user: mapApiUserToUser(user),
     token: apiResponse.token || apiResponse.accessToken || '',
-    refreshToken: apiResponse.refreshToken || '',
   };
   
   console.log('🔍 AuthService - Final mapped response:', mappedResponse);
@@ -263,7 +262,7 @@ export const authService = {
     }
   },
 
-  async refreshToken(): Promise<Result<{ token: string; refreshToken: string }>> {
+  async refreshToken(): Promise<Result<{ token: string }>> {
     try {
       const data = await apiService.auth.refreshToken();
       return { success: true, data };

@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 import { authService } from "../services/authService";
 import { useAuthStore } from "../stores/authStore";
 import { useErrorHandler, ErrorTracker } from "../utils/errorHandler";
@@ -7,6 +8,7 @@ import {
   getRoleBasedRedirectPath,
   logRoleBasedRedirection,
 } from "../utils/roleRedirection";
+import { getTokenExpirationDate } from '../utils/jwtUtils';
 
 export const useGoogleLogin = () => {
   const { handleError, getErrorMessage } = useErrorHandler();
@@ -24,10 +26,23 @@ export const useGoogleLogin = () => {
       return result.data;
     },
     onSuccess: (data) => {
-      // Clear any old token first
-      localStorage.removeItem("token");
+      // Check if user is blacklisted before proceeding
+      console.log('🔍 Google Login Success - User data:', data.user);
+      console.log('🔍 Google Login Success - isBlacklisted:', data.user.isBlacklisted);
+      
+      if (data.user.isBlacklisted) {
+        console.log('🚫 User is blacklisted - showing suspension toast');
+        // Show toast immediately and prevent login
+        toast.error('Your account has been suspended. Please contact support for assistance.', {
+          duration: 5000,
+        });
+        throw new Error('Account suspended');
+      }
 
-      useAuthStore.getState().setAuth(data.user, data.token, data.refreshToken);
+      // Extract token expiration date
+      const expiresAt = getTokenExpirationDate(data.token)?.toISOString();
+
+      useAuthStore.getState().setAuth(data.user, data.token, expiresAt);
       // Track successful login
       ErrorTracker.getInstance().trackUserAction('google_login_success', { userId: data.user.userId });
 
@@ -45,6 +60,34 @@ export const useGoogleLogin = () => {
       }
     },
     onError: (error) => {
+      console.error('🔥 Google login error:', error);
+      console.log('🔥 Google login error message:', error.message);
+      console.log('🔥 Google login error details:', error);
+      
+      // Handle specific error cases
+      if (error.message === 'Account suspended') {
+        console.log('🚫 Account suspended error caught - not showing additional toast');
+        // Don't show additional error toast, suspension message already shown
+        return;
+      }
+      
+      // Check if the error indicates a blacklisted/suspended account
+      const errorMessage = error.message?.toLowerCase() || '';
+      if (errorMessage.includes('blacklisted') || 
+          errorMessage.includes('suspended') || 
+          errorMessage.includes('banned') ||
+          errorMessage.includes('account has been suspended')) {
+        console.log('🚫 Blacklisted user detected from API error - showing suspension toast');
+        toast.error('Your account has been suspended. Please contact support for assistance.', {
+          duration: 5000,
+        });
+        return;
+      }
+      
+      console.log('🔥 Showing generic Google login error toast');
+      // Show generic error for other cases
+      toast.error('Google login failed. Please try again.');
+      
       handleError(error as Error, {
         component: "useGoogleLogin",
         action: "google_login_mutation",

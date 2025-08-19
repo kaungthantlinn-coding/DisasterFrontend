@@ -1,11 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
-  const { t } = useTranslation();
 
   const footerSections = [
     {
@@ -53,7 +51,7 @@ const Footer: React.FC = () => {
               </div>
             </Link>
             <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-              {t('footer.description')}
+              Connecting communities and saving lives through advanced disaster management technology.
             </p>
             
             {/* Contact Information */}

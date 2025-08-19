@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Shield,
   Heart,
@@ -19,33 +20,35 @@ import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 
 const About: React.FC = () => {
+  const { t } = useTranslation();
+
   // Mission values data
   const values = [
     {
       icon: Shield,
-      title: 'Reliability & Trust',
-      description: 'Providing accurate, verified information when communities need it most.',
+      title: t('about.values.reliability.title'),
+      description: t('about.values.reliability.description'),
       color: 'from-blue-600 to-blue-700',
       bgColor: 'from-blue-50 to-blue-100'
     },
     {
       icon: Heart,
-      title: 'Community First',
-      description: 'Putting community safety and well-being at the center of everything we do.',
+      title: t('about.values.community.title'),
+      description: t('about.values.community.description'),
       color: 'from-red-600 to-red-700',
       bgColor: 'from-red-50 to-red-100'
     },
     {
       icon: Zap,
-      title: 'Rapid Response',
-      description: 'Delivering critical information and resources with speed and precision.',
+      title: t('about.values.rapidResponse.title'),
+      description: t('about.values.rapidResponse.description'),
       color: 'from-yellow-600 to-orange-600',
       bgColor: 'from-yellow-50 to-orange-100'
     },
     {
       icon: Globe,
-      title: 'Global Impact',
-      description: 'Building resilient communities worldwide through technology and collaboration.',
+      title: t('about.values.globalImpact.title'),
+      description: t('about.values.globalImpact.description'),
       color: 'from-green-600 to-emerald-600',
       bgColor: 'from-green-50 to-emerald-100'
     }
@@ -55,62 +58,62 @@ const About: React.FC = () => {
   const features = [
     {
       icon: Eye,
-      title: 'Real-Time Monitoring',
-      description: 'Advanced AI-powered systems track disasters as they develop, providing instant updates.'
+      title: t('about.features.monitoring.title'),
+      description: t('about.features.monitoring.description')
     },
     {
       icon: Users,
-      title: 'Community Network',
-      description: 'Connect with local responders, volunteers, and community members for coordinated action.'
+      title: t('about.features.network.title'),
+      description: t('about.features.network.description')
     },
     {
       icon: Target,
-      title: 'Precise Alerts',
-      description: 'Location-based notifications ensure you receive relevant information for your area.'
+      title: t('about.features.alerts.title'),
+      description: t('about.features.alerts.description')
     }
   ];
 
   // Team members
   const team = [
     {
-      name: 'Dr. Sarah Chen',
-      role: 'Executive Director',
-      image: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-      bio: 'Leading disaster management expert with 15+ years in emergency response and community resilience.',
-      badge: 'Leadership',
+      name: t('about.team.members.sarahChen.name'),
+      role: t('about.team.members.sarahChen.role'),
+      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+      bio: t('about.team.members.sarahChen.bio'),
+      badge: t('about.team.members.sarahChen.badge'),
       color: 'from-blue-600 to-indigo-600'
     },
     {
-      name: 'Captain Michael Rodriguez',
-      role: 'Emergency Response Coordinator',
+      name: t('about.team.members.michaelRodriguez.name'),
+      role: t('about.team.members.michaelRodriguez.role'),
       image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-      bio: 'Former fire chief with extensive experience in disaster response and emergency management.',
-      badge: 'Response',
+      bio: t('about.team.members.michaelRodriguez.bio'),
+      badge: t('about.team.members.michaelRodriguez.badge'),
       color: 'from-red-600 to-orange-600'
     },
     {
-      name: 'Dr. Priya Patel',
-      role: 'Technology Director',
+      name: t('about.team.members.priyaPatel.name'),
+      role: t('about.team.members.priyaPatel.role'),
       image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-      bio: 'AI and machine learning specialist focused on predictive disaster modeling and early warning systems.',
-      badge: 'Innovation',
+      bio: t('about.team.members.priyaPatel.bio'),
+      badge: t('about.team.members.priyaPatel.badge'),
       color: 'from-purple-600 to-indigo-600'
     },
     {
-      name: 'Maria Santos',
-      role: 'Community Outreach Manager',
+      name: t('about.team.members.mariaSantos.name'),
+      role: t('about.team.members.mariaSantos.role'),
       image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-      bio: 'Community engagement expert building bridges between technology and local communities.',
-      badge: 'Community',
+      bio: t('about.team.members.mariaSantos.bio'),
+      badge: t('about.team.members.mariaSantos.badge'),
       color: 'from-green-600 to-emerald-600'
     }
   ];
 
   const stats = [
-    { icon: Users, value: '2.4M+', label: 'Lives Protected', color: 'text-blue-600' },
-    { icon: Globe, value: '150+', label: 'Countries Served', color: 'text-green-600' },
-    { icon: Clock, value: '24/7', label: 'Monitoring', color: 'text-purple-600' },
-    { icon: Star, value: '99.9%', label: 'Uptime', color: 'text-orange-600' }
+    { icon: Users, value: '2.4M+', label: t('about.stats.livesProtected'), color: 'text-blue-600' },
+    { icon: Globe, value: '150+', label: t('about.stats.countriesServed'), color: 'text-green-600' },
+    { icon: Clock, value: '24/7', label: t('about.stats.monitoring'), color: 'text-purple-600' },
+    { icon: Star, value: '99.9%', label: t('about.stats.uptime'), color: 'text-orange-600' }
   ];
 
   return (
@@ -131,19 +134,18 @@ const About: React.FC = () => {
             <div className="text-center max-w-4xl mx-auto">
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-sm font-medium mb-8">
                 <Heart size={16} className="mr-2 text-red-300" />
-                <span className="text-white/90">About Our Mission</span>
+                <span className="text-white/90">{t('about.hero.badge')}</span>
               </div>
 
               <h1 className="text-5xl lg:text-7xl font-bold text-white mb-8 leading-tight">
-                <span className="block mb-2">Saving Lives Through</span>
+                <span className="block mb-2">{t('about.hero.title')}</span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-300">
-                  Smart Technology
+                  {t('about.hero.titleHighlight')}
                 </span>
               </h1>
 
               <p className="text-xl lg:text-2xl text-blue-100 mb-12 leading-relaxed max-w-3xl mx-auto">
-                We're building the world's most advanced disaster response platform, 
-                connecting communities with life-saving information and resources when they need it most.
+                {t('about.hero.description')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
@@ -152,7 +154,7 @@ const About: React.FC = () => {
                   className="group bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105"
                 >
                   <Eye size={20} className="mr-2" />
-                  View Live Reports
+                  {t('about.hero.viewReports')}
                   <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
@@ -160,7 +162,7 @@ const About: React.FC = () => {
                   className="group bg-white/10 backdrop-blur-xl border border-white/30 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
                 >
                   <HandHeart size={20} className="mr-2" />
-                  Get Involved
+                  {t('about.hero.getInvolved')}
                 </Link>
               </div>
             </div>
@@ -173,10 +175,10 @@ const About: React.FC = () => {
             <div className="text-center mb-16">
               <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold mb-6">
                 <TrendingUp size={16} className="mr-2" />
-                Our Impact
+                {t('about.impact.badge')}
               </div>
               <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                Making a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Global Difference</span>
+                {t('about.impact.title')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">{t('about.impact.titleHighlight')}</span>
               </h2>
             </div>
 
@@ -202,10 +204,10 @@ const About: React.FC = () => {
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                Our Core Values
+                {t('about.values.title')}
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                These principles guide everything we do, from product development to community engagement.
+                {t('about.values.description')}
               </p>
             </div>
 
@@ -232,11 +234,10 @@ const About: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               <div>
                 <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-8">
-                  How We're Changing Disaster Response
+                  {t('about.whatWeDo.title')}
                 </h2>
                 <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                  Our platform combines cutting-edge technology with human expertise to create 
-                  the most comprehensive disaster management system ever built.
+                  {t('about.whatWeDo.description')}
                 </p>
 
                 <div className="space-y-6">
@@ -258,7 +259,7 @@ const About: React.FC = () => {
                     to="/what-we-do"
                     className="group inline-flex items-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
-                    Learn More About Our Work
+                    {t('about.whatWeDo.learnMore')}
                     <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform duration-300" />
                   </Link>
                 </div>
@@ -318,10 +319,10 @@ const About: React.FC = () => {
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                Meet Our Leadership Team
+                {t('about.team.title')}
               </h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Experienced professionals dedicated to building safer, more resilient communities worldwide.
+                {t('about.team.description')}
               </p>
             </div>
 
@@ -359,10 +360,10 @@ const About: React.FC = () => {
           <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-                Ready to Make a Difference?
+                {t('about.cta.title')}
               </h2>
               <p className="text-xl text-blue-100 mb-10 leading-relaxed">
-                Join our mission to build safer, more resilient communities through technology and collaboration.
+                {t('about.cta.description')}
               </p>
               
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
@@ -370,14 +371,14 @@ const About: React.FC = () => {
                   to="/get-involved"
                   className="group bg-white text-slate-900 px-8 py-4 rounded-xl text-lg font-semibold hover:bg-gray-50 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-105"
                 >
-                  Get Involved Today
+                  {t('about.cta.getInvolved')}
                   <ArrowRight size={20} className="ml-3 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
                   to="/contact"
                   className="bg-white/10 backdrop-blur-xl border border-white/30 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-white/20 transition-all duration-300 flex items-center justify-center"
                 >
-                  Contact Us
+                  {t('about.cta.contactUs')}
                 </Link>
               </div>
             </div>

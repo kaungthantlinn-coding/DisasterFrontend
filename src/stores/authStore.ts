@@ -2,23 +2,27 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '../types';
 import { isTokenExpired } from '../utils/jwtUtils';
+import { apiClient } from '../apis/client';
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  accessToken: string | null; // Stored in memory only
   isAuthenticated: boolean;
   isLoading: boolean;
   tokenExpiresAt: string | null;
+  isRefreshing: boolean;
+  isInitialized: boolean;
 }
 
 interface AuthActions {
   setUser: (user: User) => void;
-  setTokens: (accessToken: string, refreshToken: string, expiresAt?: string) => void;
-  setAuth: (user: User, accessToken: string, refreshToken: string, expiresAt?: string) => void;
+  setTokens: (accessToken: string, expiresAt?: string) => void;
+  setAuth: (user: User, accessToken: string, expiresAt?: string) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
   isTokenExpired: () => boolean;
+  refreshToken: () => Promise<boolean>;
+  initializeAuth: () => Promise<void>;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -28,16 +32,17 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       // State
       user: null,
-      accessToken: null,
-      refreshToken: null,
+      accessToken: null, // Memory only - not persisted
       isAuthenticated: false,
-      isLoading: false,
+      isLoading: true, // Start with loading true to handle initial auth check
       tokenExpiresAt: null,
+      isRefreshing: false,
+      isInitialized: false,
 
       // Actions
       setUser: (user) => {
-        console.log('🔍 AuthStore - Setting user:', user);
-        console.log('🔍 AuthStore - User validation:');
+        console.log(' AuthStore - Setting user:', user);
+        console.log(' AuthStore - User validation:');
         console.log('  - Has userId:', !!user?.userId);
         console.log('  - Has name:', !!user?.name);
         console.log('  - Has email:', !!user?.email);
@@ -45,46 +50,115 @@ export const useAuthStore = create<AuthStore>()(
         set({ user });
       },
 
-      setTokens: (accessToken, refreshToken, expiresAt) =>
+      setTokens: (accessToken, expiresAt) =>
         set({
           accessToken,
-          refreshToken,
           tokenExpiresAt: expiresAt || null,
           isAuthenticated: !!accessToken
         }),
 
-      setAuth: (user, accessToken, refreshToken, expiresAt) =>
+      setAuth: (user, accessToken, expiresAt) =>
         set({
           user,
           accessToken,
-          refreshToken,
           tokenExpiresAt: expiresAt || null,
           isAuthenticated: true
         }),
 
-      logout: () =>
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
+      logout: async () => {
+        try {
+          // Call server logout to clear HTTP-only refresh token cookie
+          const response = await fetch('/api/Auth/logout', {
+            method: 'POST',
+            credentials: 'include' // Important for cookies
+          });
+          if (!response.ok) {
+            console.warn('Server logout failed, clearing local state anyway');
+          }
+        } catch (error) {
+          console.error('API logout failed', error);
+        }
+        
+        // Always clear local state
+        set({ 
+          user: null, 
+          accessToken: null, 
           tokenExpiresAt: null,
-          isAuthenticated: false
-        }),
-
+          isAuthenticated: false,
+          isLoading: false
+        });
+      },
+      
       setLoading: (isLoading) => set({ isLoading }),
 
       isTokenExpired: () => {
         const { accessToken } = get();
         return isTokenExpired(accessToken);
       },
+
+      refreshToken: async () => {
+        if (get().isRefreshing) {
+          console.log('Token refresh already in progress, skipping.');
+          return false;
+        }
+        set({ isRefreshing: true });
+
+        try {
+          const response = await apiClient.post('/Auth/refresh');
+          const { data } = response;
+
+          const accessToken = data.accessToken || data.token;
+          const expiresAt = data.expiresAt || data.expiresIn;
+
+          if (accessToken) {
+            set({
+              user: data.user || get().user,
+              accessToken,
+              tokenExpiresAt: expiresAt || null,
+              isAuthenticated: true,
+              isLoading: false,
+              isInitialized: true,
+            });
+            console.log('Token refresh successful');
+            return true;
+          }
+          return false;
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          // The interceptor in apiClient should handle the logout for 401s.
+          // For other errors, we ensure the state is cleaned up.
+          set({ 
+            isAuthenticated: false, 
+            accessToken: null, 
+            user: null, 
+            isLoading: false, 
+            isInitialized: true 
+          });
+          return false;
+        } finally {
+          set({ isRefreshing: false });
+        }
+      },
+
+      initializeAuth: async () => {
+        if (get().isInitialized) return;
+
+        const { user, accessToken } = get();
+        if (user && !accessToken) {
+          await get().refreshToken();
+        } else {
+          // If no refresh is needed, just turn off the loader.
+          set({ isLoading: false, isInitialized: true });
+        }
+      },
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
+        // accessToken NOT persisted - memory only for security
+        // refreshToken NOT persisted - uses HTTP-only cookies
+        // isAuthenticated will be determined by presence of valid accessToken
       }),
     }
   )
