@@ -12,7 +12,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import Dashboard from './pages/Dashboard';
-import { Reports } from './pages/Reports';
+import Reports from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
 import ReportImpact from './pages/ReportImpact';
 import NewAdminPanel from './admin/pages/NewAdminPanel';

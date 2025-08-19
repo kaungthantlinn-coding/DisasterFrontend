@@ -4,12 +4,10 @@ import { useAuthStore } from "../stores/authStore";
 
 const API_BASE = "http://localhost:5057/api/ImpactType";
 
+const authState = useAuthStore.getState();
 const getAuthHeaders = (token?: string) => {
-  const authState = useAuthStore.getState();
   const authToken =
     token || authState.accessToken || localStorage.getItem("token");
-  token || localStorage.getItem("token");
-  const authToken = token || useAuthStore.getState().accessToken;
   if (!authToken) throw new Error("❌ Auth token is required");
   return {
     headers: {

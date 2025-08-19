@@ -5,7 +5,7 @@ export interface ImpactDetailCreateDto {
   impactTypeIds?: number[];
   impactTypeNames?: string[];
   description: string;
-  severity: SeverityLevel;
+  severity?: SeverityLevel; // Made optional
 
   // Keep these for backward compatibility
   impactTypeName?: string;

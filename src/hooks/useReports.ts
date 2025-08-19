@@ -16,11 +16,11 @@ interface UseReportsOptions {
 }
 
 export const useReports = (options: UseReportsOptions = {}) => {
-  const { page = 1, pageSize = 20, filters, enabled = true } = options;
+  const { enabled = true } = options;
 
   return useQuery<DisasterReportDto[]>({
-    queryKey: ["reports", page, pageSize, filters],
-    queryFn: () => getAll(page, pageSize, filters),
+    queryKey: ["reports"],
+    queryFn: () => getAll(),
     enabled,
     staleTime: 2 * 60 * 1000, // 2 minutes
     retry: 2,

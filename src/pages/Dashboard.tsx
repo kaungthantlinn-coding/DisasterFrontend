@@ -238,14 +238,14 @@ const Dashboard: React.FC = () => {
         : report.description,
     status:
       report.status === "Accepted"
-        ? "Accepted"
+        ? "Verified"
         : ((report.status.charAt(0).toUpperCase() + report.status.slice(1)) as
             | "Verified"
             | "Pending"
             | "Rejected"),
     date: new Date(report.timestamp).toLocaleDateString(),
     image:
-      report.photos?.[0] ||
+      report.photoUrls?.[0] ||
       "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center",
   }));
 

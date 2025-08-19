@@ -6,7 +6,8 @@ import {
 } from "../types/DisasterReport";
 import { useAuthStore } from "../stores/authStore";
 
-const API_BASE = "http://localhost:5057/api/DisasterReport";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
+const API_BASE = `${API_BASE_URL}/DisasterReport`;
 
 const getAuthHeaders = (token?: string) => {
   const authState = useAuthStore.getState();

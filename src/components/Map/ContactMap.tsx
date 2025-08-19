@@ -47,6 +47,11 @@ const ContactMap: React.FC<ContactMapProps> = ({
           mapInstanceRef.current = null;
         }
 
+        // Check if mapRef.current is available
+        if (!mapRef.current) {
+          throw new Error('Map container not available');
+        }
+
         const map = L.map(mapRef.current, {
           center: [headquarters.lat, headquarters.lng],
           zoom: 15,
@@ -58,6 +63,8 @@ const ContactMap: React.FC<ContactMapProps> = ({
           boxZoom: true,
           keyboard: true,
           dragging: true,
+          zoomAnimation: false, // Disable zoom animation to prevent _leaflet_pos errors
+          markerZoomAnimation: false, // Disable marker zoom animation to prevent _leaflet_pos errors
         });
 
         mapInstanceRef.current = map;
