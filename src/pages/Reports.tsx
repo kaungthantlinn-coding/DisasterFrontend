@@ -904,68 +904,47 @@ const Reports: React.FC = () => {
 //                         <ChevronRight size={18} className="ml-1" />
 //                       </button>
 
-//                       <button
-//                         onClick={() => setCurrentPage(totalPages)}
-//                         disabled={currentPage === totalPages}
-//                         className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-//                         title="Last page"
-//                       >
-//                         <ChevronRight size={18} />
-//                         <ChevronRight size={18} className="-ml-2" />
-//                       </button>
-//                     </div>
-//                   </div>
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className="flex items-center px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        title="Last page"
+                      >
+                        <ChevronRight size={18} />
+                        <ChevronRight size={18} className="-ml-2" />
+                      </button>
+                    </div>
 
-//                   {/* Page Jump Input */}
-//                   <div className="flex items-center justify-center mt-6 pt-6 border-t border-gray-200">
-//                     <div className="flex items-center space-x-3">
-//                       <span className="text-sm text-gray-600">Go to page:</span>
-//                       <input
-//                         type="number"
-//                         min="1"
-//                         max={totalPages}
-//                         value={currentPage}
-//                         onChange={(e) => {
-//                           const page = parseInt(e.target.value);
-//                           if (page >= 1 && page <= totalPages) {
-//                             setCurrentPage(page);
-//                           }
-//                         }}
-//                         className="w-20 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
-//                       />
-//                       <span className="text-sm text-gray-600">of {totalPages}</span>
-//                     </div>
-//                   </div>
+                    {/* Page Jump Input */}
+                    <div className="flex items-center justify-center mt-6 pt-6 border-t border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm text-gray-600">Go to page:</span>
+                        <input
+                          type="number"
+                          min="1"
+                          max={totalPages}
+                          value={currentPage}
+                          onChange={(e) => {
+                            const page = parseInt(e.target.value);
+                            if (page >= 1 && page <= totalPages) {
+                              setCurrentPage(page);
+                            }
+                          }}
+                          className="w-20 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-sm"
+                        />
+                        <span className="text-sm text-gray-600">of {totalPages}</span>
+                      </div>
+                    </div>
 
-//                   {/* Mobile-friendly page info */}
-//                   <div className="flex items-center justify-center mt-4 lg:hidden">
-//                     <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
-//                       Page {currentPage} of {totalPages}
-//                     </div>
-//                   </div>
-//                 </div>
-//               </div>
-//             )}
-
-            {/* No Results */}
-            {filteredAndSortedReports.length === 0 && (
-              <div className="text-center py-16">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Search size={32} className="text-gray-400" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">No Reports Found</h3>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                  We couldn't find any reports matching your search criteria. Try adjusting your filters or search terms.
-                </p>
-                <button
-                  onClick={clearAllFilters}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                >
-                  Clear All Filters
-                </button>
+                    {/* Mobile-friendly page info */}
+                    <div className="flex items-center justify-center mt-4 lg:hidden">
+                      <div className="text-sm text-gray-600 bg-gray-50 px-4 py-2 rounded-lg">
+                        Page {currentPage} of {totalPages}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-              </>
             )}
           </div>
         </section>
