@@ -1,10 +1,14 @@
 import axios from "axios";
 import { ImpactTypeDto } from "../types/ImpactType";
+import { useAuthStore } from "../stores/authStore";
 
 const API_BASE = "http://localhost:5057/api/ImpactType";
 
 const getAuthHeaders = (token?: string) => {
-  const authToken = token || localStorage.getItem("token");
+  const authState = useAuthStore.getState();
+  const authToken =
+    token || authState.accessToken || localStorage.getItem("token");
+  token || localStorage.getItem("token");
   if (!authToken) throw new Error("❌ Auth token is required");
   return {
     headers: {
@@ -20,5 +24,8 @@ export const ImpactTypeService = {
       getAuthHeaders(token)
     );
     return response.data;
+  },
+  async create(dto: { name: string }, token?: string): Promise<void> {
+    await axios.post(API_BASE, dto, getAuthHeaders(token));
   },
 };
