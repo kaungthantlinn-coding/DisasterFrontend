@@ -95,12 +95,24 @@ const AdminApp = () => {
             error: {
               duration: 5500,
               style: {
-                background: "linear-gradient(135deg, rgba(220, 38, 38, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%)",
+                background: "linear-gradient(135deg, rgba(220, 38, 38, 0.05) 0%, rgba(255, 255, 38, 0.05) 100%)",
                 borderLeft: "5px solid rgb(220, 38, 38)",
                 color: "#7f1d1d",
               },
               iconTheme: {
                 primary: "rgb(220, 38, 38)",
+                secondary: "#fff",
+              },
+            },
+            loading: {
+              duration: Infinity,
+              style: {
+                background: "linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%)",
+                borderLeft: "5px solid rgb(59, 130, 246)",
+                color: "#1e3a8a",
+              },
+              iconTheme: {
+                primary: "rgb(59, 130, 246)",
                 secondary: "#fff",
               },
             },
@@ -158,12 +170,18 @@ const authLoader = async (options?: { requiredRoles?: string[]; excludeRoles?: s
 };
 
 export const router = createBrowserRouter([
-  // Admin routes - completely separate from main app
+  // Admin routes - for both admin and superadmin roles
+  {
+    path: '/admin',
+    element: <AdminApp />,
+    errorElement: <ErrorFallback />,
+    loader: () => authLoader({ requiredRoles: ['admin', 'superadmin', 'super_admin'] })
+  },
   {
     path: '/admin/*',
     element: <AdminApp />,
     errorElement: <ErrorFallback />,
-    loader: () => authLoader({ requiredRoles: ['admin'] })
+    loader: () => authLoader({ requiredRoles: ['admin', 'superadmin', 'super_admin'] })
   },
   // Main application routes
   {

@@ -77,7 +77,8 @@
     "rejected": "Rejected",
     "draft": "Draft",
     "published": "Published",
-    "archived": "Archived"
+    "archived": "Archived",
+    "verified": "Verified"
   },
   "home": {
     "hero": {
@@ -122,30 +123,6 @@
         "category": "Weather Monitoring"
       }
     },
-    "stats": {
-      "livesHelped": "Lives Helped",
-      "countriesServed": "Countries Served",
-      "responseTime": "Response Time",
-      "volunteers": "Active Volunteers",
-      "activeDisasters": "Active Disasters",
-      "criticalEvents": "Critical Events",
-      "highSeverity": "High Severity",
-      "dataSources": "Data Sources",
-      "realTimeIncidents": "Real-time incidents",
-      "urgentSituations": "Urgent situations",
-      "majorIncidents": "Major incidents",
-      "liveMonitoring": "Live monitoring",
-      "realTimeImpactMetrics": "Real-Time Impact Metrics",
-      "makingRealImpact": "Making a Real Impact",
-      "impactDescription": "Our platform transforms disaster response globally, connecting communities and saving lives through advanced technology and seamless coordination.",
-      "realTimeIntelligence": "Real-Time Disaster Intelligence",
-      "savingLives": "Saving Lives Through",
-      "smartTechnology": "Smart Technology",
-      "platformDescription": "Our advanced platform processes millions of data points daily to deliver predictive insights and real-time monitoring for faster, more effective disaster response.",
-      "realWorldFloodResponse": "Real World Flood Response & Recovery",
-      "floodResponseDescription": "Rapid flood response teams with advanced water management systems, evacuation coordination, and real-time monitoring from National Weather Service and local emergency management agencies",
-      "responseRate": "Response Rate"
-    },
     "liveImpact": {
       "title": "Making Real Impact Worldwide",
       "subtitle": "Live Global Impact",
@@ -164,7 +141,8 @@
       "latest": "Latest",
       "emergencyUpdates": "Emergency Updates",
       "description": "Stay informed with real-time updates on verified disasters and emergency situations from our global monitoring network with instant verification and response coordination.",
-      "viewAllDisasters": "View All Disasters"
+      "viewAllDisasters": "View All Disasters",
+      "viewDetails": "View Details"
     },
     "features": {
       "title": "How We Help Communities",
@@ -267,155 +245,24 @@
           "Store digital copies of IDs"
         ]
       }
-    }
-  },
-  "about": {
-    "title": "About DisasterWatch",
-    "hero": {
-      "title": "About DisasterWatch",
-      "description": "Empowering communities with real-time disaster reporting and coordinated emergency response",
-      "viewReports": "View Reports",
-      "getInvolved": "Get Involved"
     },
-    "mission": {
-      "title": "Our Mission",
-      "description": "To create a safer world by connecting communities, enabling rapid disaster response, and empowering people with the tools they need to protect and support each other during emergencies.",
-      "values": {
-        "reliability": {
-          "title": "Reliability",
-          "description": "Trusted disaster reporting and response coordination when communities need it most."
-        },
-        "communityFirst": {
-          "title": "Community First",
-          "description": "Empowering local communities with tools to protect and support each other."
-        },
-        "rapidResponse": {
-          "title": "Rapid Response",
-          "description": "Real-time alerts and immediate action to minimize disaster impact."
-        },
-        "globalReach": {
-          "title": "Global Reach",
-          "description": "Connecting communities worldwide for shared disaster preparedness and response."
-        }
-      }
-    },
-    "whatWeDo": {
-      "title": "What We Do",
-      "description": "DisasterWatch is a comprehensive disaster management platform that bridges the gap between communities and emergency responders. We provide real-time reporting, coordinated response, and vital resources when disasters strike.",
-      "features": {
-        "realTimeMonitoring": {
-          "title": "Real-Time Monitoring",
-          "description": "24/7 disaster tracking and community reporting system"
-        },
-        "communityNetwork": {
-          "title": "Community Network",
-          "description": "Connect with local volunteers and emergency responders"
-        },
-        "preciseAlerts": {
-          "title": "Precise Alerts",
-          "description": "Location-based warnings and emergency notifications"
-        }
-      },
-      "learnMore": "Learn More About Our Work",
-      "systemStatus": {
-        "active": "Active",
-        "monitoring": "Monitoring",
-        "realTime": "Real-time",
-        "alerts": "Alerts",
-        "communityReports": "Community Reports",
-        "emergencyResponse": "Emergency Response",
-        "volunteerNetwork": "Volunteer Network",
-        "ready": "Ready",
-        "connected": "Connected"
-      }
-    },
-    "organization": {
-      "title": "Our Organization",
-      "description": "Built by a dedicated team of emergency management professionals, technologists, and community advocates committed to making disaster response more effective and accessible.",
-      "expertTeam": {
-        "title": "Expert Team",
-        "description": "Emergency management specialists, software engineers, and community organizers working together to save lives and protect communities.",
-        "certifications": [
-          "Emergency Management Certified",
-          "Technology Innovation Leaders",
-          "Community Safety Advocates"
-        ]
-      },
-      "globalNetwork": {
-        "title": "Global Network",
-        "description": "Partnering with emergency services, NGOs, and community organizations worldwide to create a comprehensive disaster response ecosystem.",
-        "partnerships": [
-          "Emergency Services Partners",
-          "NGO Collaborations",
-          "Community Organizations"
-        ]
-      },
-      "innovation": {
-        "title": "Innovation Driven",
-        "description": "Continuously improving our platform with cutting-edge technology, user feedback, and lessons learned from real-world disaster response.",
-        "focus": [
-          "Real-time Technology",
-          "User-Centered Design",
-          "Continuous Improvement"
-        ]
-      }
-    },
-    "leadership": {
-      "title": "Our Leadership Team",
-      "description": "Meet the experienced professionals leading DisasterWatch's mission to transform disaster response and build resilient communities worldwide.",
-      "team": {
-        "sarahChen": {
-          "name": "Dr. Sarah Chen",
-          "title": "Executive Director",
-          "bio": "Former FEMA Regional Administrator with 15+ years in emergency management. PhD in Crisis Leadership from Harvard. Led response efforts for major disasters affecting over 2 million people.",
-          "badge": "Leadership"
-        },
-        "michaelRodriguez": {
-          "name": "Captain Michael Rodriguez",
-          "title": "Emergency Response Coordinator",
-          "bio": "20-year veteran firefighter and paramedic. Certified Emergency Manager (CEM) specializing in multi-agency coordination. Coordinates real-time response operations across 12 states.",
-          "badge": "Emergency Response"
-        },
-        "priyaPatel": {
-          "name": "Dr. Priya Patel",
-          "title": "Technology Director",
-          "bio": "Former Google AI researcher with expertise in real-time data systems. PhD in Computer Science from MIT. Pioneered machine learning applications for disaster prediction and response optimization.",
-          "badge": "Technology"
-        },
-        "mariaSantos": {
-          "name": "Maria Santos",
-          "title": "Community Outreach Manager",
-          "bio": "Former Red Cross International Operations Manager. Fluent in 5 languages. Masters in International Relations. Built volunteer networks in 25+ countries and trained over 10,000 community responders.",
-          "badge": "Community"
-        },
-        "jamesThompson": {
-          "name": "James Thompson",
-          "title": "Operations Manager",
-          "bio": "Former military logistics officer with NATO peacekeeping experience. MBA in Operations Management. Specializes in resource coordination and supply chain management for emergency response operations.",
-          "badge": "Operations"
-        }
-      }
-    },
-    "cta": {
-      "title": "Ready to Make a Difference?",
-      "description": "Join our community of emergency responders, volunteers, and concerned citizens working together to build safer, more resilient communities.",
-      "getInvolved": "Get Involved",
-      "contactUs": "Contact Us",
-      "contact": {
-        "title": "Get in Touch",
-        "email": {
-          "label": "Email",
-          "value": "contact@disasterwatch.org"
-        },
-        "phone": {
-          "label": "Emergency Hotline",
-          "value": "24/7 Support Available"
-        },
-        "responseTime": {
-          "label": "Response Time",
-          "value": "Real-time monitoring"
-        }
-      }
+    "stats": {
+      "totalReports": "Total Reports",
+      "verifiedReports": "Verified Reports",
+      "activeCases": "Active Cases",
+      "livesImpacted": "Lives Impacted",
+      "activeDisasters": "Active Disasters",
+      "realTimeIncidents": "Real-Time Incidents",
+      "criticalEvents": "Critical Events",
+      "urgentSituations": "Urgent Situations",
+      "highSeverity": "High Severity",
+      "majorIncidents": "Major Incidents",
+      "dataSources": "Data Sources",
+      "liveMonitoring": "Live Monitoring",
+      "realTimeIntelligence": "Real-Time Intelligence",
+      "savingLives": "Saving Lives",
+      "smartTechnology": "With Smart Technology",
+      "platformDescription": "Our advanced platform processes millions of data points daily to deliver predictive insights and real-time monitoring for faster, more effective disaster response."
     }
   },
   "reports": {
@@ -764,12 +611,6 @@
       "kbzPay": "KBZ Pay",
       "wavePay": "Wave Pay"
     },
-    "stats": {
-      "livesHelped": "Lives Helped",
-      "fundsToPrograms": "Direct Impact",
-      "emergencyResponse": "Response Time",
-      "countriesServed": "Countries"
-    },
     "impact": {
       "title": "Your Impact",
       "subtitle": "See how your donation makes a difference",
@@ -822,14 +663,6 @@
     "impact": "Volunteer Impact by the Numbers",
     "readyToHelp": "Ready to Become a Volunteer Hero?",
     "joinVolunteers": "Join over 50,000 volunteers worldwide"
-  },
-  "whatWeDo": {
-    "title": "What We Do",
-    "subtitle": "Comprehensive disaster management solutions",
-    "services": "Our Services",
-    "technology": "Technology & Innovation",
-    "impact": "Our Impact",
-    "caseStudies": "Success Stories"
   },
   "forms": {
     "validation": {

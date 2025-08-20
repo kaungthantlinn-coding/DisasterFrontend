@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -78,7 +78,14 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const menuItems = [
+  // Check if user is SuperAdmin
+  const isSuperAdmin = user?.roles?.some(role => 
+    typeof role === 'string' 
+      ? role.toLowerCase() === 'superadmin' 
+      : role === 'superadmin'
+  );
+
+  const baseMenuItems = [
     {
       icon: <LayoutDashboard className="w-5 h-5" />,
       label: 'Dashboard',
@@ -129,6 +136,44 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     }
   ];
 
+  const superAdminMenuItems = [
+    {
+      icon: <BarChart3 className="w-5 h-5" />,
+      label: 'User Analytics',
+      path: '/admin/user-analytics',
+      badge: undefined
+    },
+    {
+      icon: <Activity className="w-5 h-5" />,
+      label: 'Sessions',
+      path: '/admin/sessions',
+      badge: undefined
+    },
+    {
+      icon: <Shield className="w-5 h-5" />,
+      label: 'Roles',
+      path: '/admin/roles',
+      badge: undefined
+    },
+    {
+      icon: <Zap className="w-5 h-5" />,
+      label: 'Permissions',
+      path: '/admin/permissions',
+      badge: undefined
+    },
+    {
+      icon: <Activity className="w-5 h-5" />,
+      label: 'System Health',
+      path: '/admin/system-health',
+      badge: undefined
+    }
+  ];
+
+  // Combine menu items based on user role
+  const menuItems = isSuperAdmin 
+    ? [...baseMenuItems.slice(0, -2), ...superAdminMenuItems, ...baseMenuItems.slice(-2)]
+    : baseMenuItems;
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -169,7 +214,7 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
               <Shield className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-semibold text-slate-900">Admin Panel</span>
+            <span className="text-lg font-semibold text-slate-900">{isSuperAdmin ? 'Super Admin Panel' : 'Admin Panel'}</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
