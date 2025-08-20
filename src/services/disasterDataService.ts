@@ -1,9 +1,14 @@
-
-import { RealWorldDisaster, USGSEarthquakeResponse, USGSEarthquake } from '../types';
-import { requestManager } from '../utils/requestManager';
+import {
+  RealWorldDisaster,
+  USGSEarthquakeResponse,
+  USGSEarthquake,
+} from "../types";
+import { DisasterReportDto } from "../types/DisasterReport";
+import { requestManager } from "../utils/requestManager";
 
 // USGS Earthquake API endpoints
-const USGS_BASE_URL = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary';
+const USGS_BASE_URL =
+  "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary";
 
 // Available USGS feeds
 export const USGS_FEEDS = {
@@ -18,32 +23,47 @@ export const USGS_FEEDS = {
 } as const;
 
 // Severity mapping based on earthquake magnitude
-const getMagnitudeSeverity = (magnitude: number): 'low' | 'medium' | 'high' | 'critical' => {
-  if (magnitude >= 7.0) return 'critical';
-  if (magnitude >= 6.0) return 'high';
-  if (magnitude >= 4.5) return 'medium';
-  return 'low';
+const getMagnitudeSeverity = (
+  magnitude: number
+): "low" | "medium" | "high" | "critical" => {
+  if (magnitude >= 7.0) return "critical";
+  if (magnitude >= 6.0) return "high";
+  if (magnitude >= 4.5) return "medium";
+  return "low";
 };
 
 // Alert level to severity mapping
-const getAlertSeverity = (alert?: string): 'low' | 'medium' | 'high' | 'critical' => {
+const getAlertSeverity = (
+  alert?: string
+): "low" | "medium" | "high" | "critical" => {
   switch (alert) {
-    case 'red': return 'critical';
-    case 'orange': return 'high';
-    case 'yellow': return 'medium';
-    case 'green':
-    default: return 'low';
+    case "red":
+      return "critical";
+    case "orange":
+      return "high";
+    case "yellow":
+      return "medium";
+    case "green":
+    default:
+      return "low";
   }
 };
 
 // Helper function to get the higher severity level
-const getHigherSeverity = (severity1: 'low' | 'medium' | 'high' | 'critical', severity2: 'low' | 'medium' | 'high' | 'critical'): 'low' | 'medium' | 'high' | 'critical' => {
-  const severityOrder = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
-  return severityOrder[severity1] >= severityOrder[severity2] ? severity1 : severity2;
+const getHigherSeverity = (
+  severity1: "low" | "medium" | "high" | "critical",
+  severity2: "low" | "medium" | "high" | "critical"
+): "low" | "medium" | "high" | "critical" => {
+  const severityOrder = { low: 1, medium: 2, high: 3, critical: 4 };
+  return severityOrder[severity1] >= severityOrder[severity2]
+    ? severity1
+    : severity2;
 };
 
 // Convert USGS earthquake data to our standard format
-const convertUSGSToDisaster = (earthquake: USGSEarthquake): RealWorldDisaster => {
+const convertUSGSToDisaster = (
+  earthquake: USGSEarthquake
+): RealWorldDisaster => {
   const { properties, geometry, id } = earthquake;
   const [longitude, latitude, depth] = geometry.coordinates;
 
@@ -52,26 +72,26 @@ const convertUSGSToDisaster = (earthquake: USGSEarthquake): RealWorldDisaster =>
   const alertSeverity = getAlertSeverity(properties.alert);
   const finalSeverity = getHigherSeverity(magnitudeSeverity, alertSeverity);
 
-
-
   return {
     id: id || `earthquake-${Date.now()}`,
-    title: properties.title || 'Earthquake Event',
-    description: `${(properties.magType || 'M').toUpperCase()} ${properties.mag || 'Unknown'} earthquake ${properties.place || 'Unknown location'}. ${
-      properties.felt ? `Felt by ${properties.felt} people. ` : ''
-    }${properties.tsunami ? 'Tsunami warning issued. ' : ''}`,
+    title: properties.title || "Earthquake Event",
+    description: `${(properties.magType || "M").toUpperCase()} ${
+      properties.mag || "Unknown"
+    } earthquake ${properties.place || "Unknown location"}. ${
+      properties.felt ? `Felt by ${properties.felt} people. ` : ""
+    }${properties.tsunami ? "Tsunami warning issued. " : ""}`,
     location: {
       coordinates: { lat: latitude || 0, lng: longitude || 0 },
-      place: properties.place || 'Unknown location',
+      place: properties.place || "Unknown location",
     },
-    disasterType: 'earthquake',
+    disasterType: "earthquake",
     severity: finalSeverity,
     magnitude: properties.mag || 0,
     time: new Date(properties.time || Date.now()),
     updatedAt: new Date(properties.updated || Date.now()),
-    source: 'USGS',
-    url: properties.url || '',
-    alertLevel: properties.alert || 'green',
+    source: "USGS",
+    url: properties.url || "",
+    alertLevel: properties.alert || "green",
     depth: depth || 0,
     felt: properties.felt || 0,
     tsunami: properties.tsunami === 1,
@@ -82,7 +102,8 @@ const convertUSGSToDisaster = (earthquake: USGSEarthquake): RealWorldDisaster =>
 // Disaster Data Service
 export class DisasterDataService {
   private static instance: DisasterDataService;
-  private cache: Map<string, { data: RealWorldDisaster[]; timestamp: number }> = new Map();
+  private cache: Map<string, { data: DisasterReportDto[]; timestamp: number }> =
+    new Map();
   private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes - longer cache to reduce API calls
 
   static getInstance(): DisasterDataService {
@@ -96,36 +117,39 @@ export class DisasterDataService {
     return Date.now() - timestamp < this.CACHE_DURATION;
   }
 
-  private ongoingRequests: Map<string, Promise<RealWorldDisaster[]>> = new Map();
+  private ongoingRequests: Map<string, Promise<DisasterReportDto[]>> =
+    new Map();
 
-// Fetch USGS earthquake data
-  async fetchUSGSEarthquakes(feedType: keyof typeof USGS_FEEDS = 'M2_5_DAY'): Promise<RealWorldDisaster[]> {
+  // Fetch USGS earthquake data
+  async fetchUSGSEarthquakes(
+    feedType: keyof typeof USGS_FEEDS = "M2_5_DAY"
+  ): Promise<DisasterReportDto[]> {
     const cacheKey = `usgs_${feedType}`;
     const cached = this.cache.get(cacheKey);
-    
+
     if (cached && this.isCacheValid(cached.timestamp)) {
       return cached.data;
     }
 
     // Use global request manager to prevent duplicate calls
-    return requestManager.executeRequest(cacheKey, () => 
+    return requestManager.executeRequest(cacheKey, () =>
       this.performUSGSRequest(feedType, cacheKey, cached)
     );
   }
 
   private async performUSGSRequest(
-    feedType: keyof typeof USGS_FEEDS, 
-    cacheKey: string, 
-    cached?: { data: RealWorldDisaster[]; timestamp: number }
-  ): Promise<RealWorldDisaster[]> {
+    feedType: keyof typeof USGS_FEEDS,
+    cacheKey: string,
+    cached?: { data: DisasterReportDto[]; timestamp: number }
+  ): Promise<DisasterReportDto[]> {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-      
+
       const response = await fetch(USGS_FEEDS[feedType], {
         headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'DisasterResponse-App/1.0',
+          Accept: "application/json",
+          "User-Agent": "DisasterResponse-App/1.0",
         },
         signal: controller.signal,
       });
@@ -139,7 +163,7 @@ export class DisasterDataService {
       const data: USGSEarthquakeResponse = await response.json();
 
       const disasters = data.features.map(convertUSGSToDisaster);
-      
+
       // Cache the results
       this.cache.set(cacheKey, {
         data: disasters,
@@ -148,42 +172,45 @@ export class DisasterDataService {
 
       return disasters;
     } catch (error) {
-        if (error instanceof Error) {
-          if (error.name === 'AbortError') {
-            // Request timed out
-          } else if (error.message.includes('Failed to fetch') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
-            // Network error
-          }
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          // Request timed out
+        } else if (
+          error.message.includes("Failed to fetch") ||
+          error.message.includes("ERR_NAME_NOT_RESOLVED")
+        ) {
+          // Network error
         }
+      }
 
-        // Return cached data if available, even if expired
-        if (cached) {
-          return cached.data;
-        }
+      // Return cached data if available, even if expired
+      if (cached) {
+        return cached.data;
+      }
 
-        // If no cached data available, return empty array
-        return [];
+      // If no cached data available, return empty array
+      return [];
     }
   }
 
-// Fetch significant earthquakes
-  async fetchSignificantEarthquakes(): Promise<RealWorldDisaster[]> {
+  // Fetch significant earthquakes
+  async fetchSignificantEarthquakes(): Promise<DisasterReportDto[]> {
     try {
       const [significantDay, m45Day] = await Promise.allSettled([
-        this.fetchUSGSEarthquakes('SIGNIFICANT_DAY'),
-        this.fetchUSGSEarthquakes('M4_5_DAY'),
+        this.fetchUSGSEarthquakes("SIGNIFICANT_DAY"),
+        this.fetchUSGSEarthquakes("M4_5_DAY"),
       ]);
 
-      const disasters: RealWorldDisaster[] = [];
-      
-      if (significantDay.status === 'fulfilled') {
+      const disasters: DisasterReportDto[] = [];
+
+      if (significantDay.status === "fulfilled") {
         disasters.push(...significantDay.value);
       }
-      
-      if (m45Day.status === 'fulfilled') {
+
+      if (m45Day.status === "fulfilled") {
         // Filter out duplicates by ID
-        const existingIds = new Set(disasters.map(d => d.id));
-        const newDisasters = m45Day.value.filter(d => !existingIds.has(d.id));
+        const existingIds = new Set(disasters.map((d) => d.id));
+        const newDisasters = m45Day.value.filter((d) => !existingIds.has(d.id));
         disasters.push(...newDisasters);
       }
 
@@ -197,9 +224,9 @@ export class DisasterDataService {
   }
 
   // Fetch all recent disasters
-  async fetchAllRecentDisasters(): Promise<RealWorldDisaster[]> {
+  async fetchAllRecentDisasters(): Promise<DisasterReportDto[]> {
     try {
-      const earthquakes = await this.fetchUSGSEarthquakes('M2_5_DAY');
+      const earthquakes = await this.fetchUSGSEarthquakes("M2_5_DAY");
 
       return earthquakes;
     } catch (error) {
@@ -218,7 +245,7 @@ export class DisasterDataService {
   }> {
     try {
       const disasters = await this.fetchAllRecentDisasters();
-      
+
       const stats = disasters.reduce(
         (acc, disaster) => {
           acc.totalActive++;

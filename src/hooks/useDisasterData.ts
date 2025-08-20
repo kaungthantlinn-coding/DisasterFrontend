@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { RealWorldDisaster } from '../types';
 import { disasterDataService } from '../services/disasterDataService';
+import { DisasterReportDto } from '../types/DisasterReport';
 
 interface UseDisasterDataOptions {
   autoRefresh?: boolean;
@@ -9,7 +10,7 @@ interface UseDisasterDataOptions {
 }
 
 interface UseDisasterDataReturn {
-  disasters: RealWorldDisaster[];
+  disasters: DisasterReportDto[];
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
@@ -30,7 +31,7 @@ export const useDisasterData = (options: UseDisasterDataOptions = {}): UseDisast
     includeSignificantOnly = true,
   } = options;
 
-  const [disasters, setDisasters] = useState<RealWorldDisaster[]>([]);
+  const [disasters, setDisasters] = useState<DisasterReportDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);

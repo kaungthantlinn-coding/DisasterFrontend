@@ -1,5 +1,5 @@
-import { apiClient } from './client';
-import { Report } from '../types';
+import { apiClient } from "./client";
+import { Report } from "../types";
 
 // Report submission interface
 export interface ReportSubmissionData {
@@ -7,7 +7,7 @@ export interface ReportSubmissionData {
   disasterDetail: string;
   customDisasterDetail?: string;
   description: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
   dateTime: string;
   location: {
     address: string;
@@ -16,22 +16,22 @@ export interface ReportSubmissionData {
   };
   impactType: string[];
   customImpactType?: string;
-  affectedPeople: number;
-  estimatedDamage?: string;
-  assistanceNeeded: string[];
-  assistanceDescription: string;
-  urgencyLevel: 'immediate' | 'within_24h' | 'within_week' | 'non_urgent';
-  contactName: string;
-  contactPhone?: string;
-  contactEmail?: string;
-  isEmergency: boolean;
+  //affectedPeople: number;
+  //estimatedDamage?: string;
+  //assistanceNeeded: string[];
+  //assistanceDescription: string;
+  //urgencyLevel: 'immediate' | 'within_24h' | 'within_week' | 'non_urgent';
+  //contactName: string;
+  //contactPhone?: string;
+  //contactEmail?: string;
+  //isEmergency: boolean;
   photos?: File[];
 }
 
 // API response interfaces
 export interface ReportSubmissionResponse {
   id: string;
-  status: 'pending' | 'verified' | 'resolved';
+  status: "pending" | "verified" | "resolved";
   submittedAt: string;
   estimatedResponseTime: string;
 }
@@ -63,40 +63,46 @@ export class ReportsAPI {
   /**
    * Submit a new disaster impact report
    */
-  static async submitReport(data: ReportSubmissionData): Promise<ReportSubmissionResponse> {
+  static async submitReport(
+    data: ReportSubmissionData
+  ): Promise<ReportSubmissionResponse> {
     try {
       // Create FormData for file upload
       const formData = new FormData();
-      
+
       // Add all text fields
       Object.entries(data).forEach(([key, value]) => {
-        if (key === 'photos') return; // Handle photos separately
-        if (key === 'location' || key === 'impactType' || key === 'assistanceNeeded') {
+        if (key === "photos") return; // Handle photos separately
+        if (
+          key === "location" ||
+          key === "impactType" ||
+          key === "assistanceNeeded"
+        ) {
           formData.append(key, JSON.stringify(value));
         } else {
           formData.append(key, String(value));
         }
       });
-      
+
       // Add photos if any
       if (data.photos && data.photos.length > 0) {
         data.photos.forEach((photo, index) => {
           formData.append(`photos`, photo);
         });
       }
-      
-      const response = await apiClient.post('/reports', formData, {
+
+      const response = await apiClient.post("/reports", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
         timeout: 30000, // 30 seconds for file upload
       });
-      
+
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to submit report. Please try again.'
+        error.response?.data?.message ||
+          "Failed to submit report. Please try again."
       );
     }
   }
@@ -114,12 +120,12 @@ export class ReportsAPI {
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
-      
+
       // Add filters to params
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
-            if (typeof value === 'object') {
+            if (typeof value === "object") {
               params.append(key, JSON.stringify(value));
             } else {
               params.append(key, String(value));
@@ -127,13 +133,13 @@ export class ReportsAPI {
           }
         });
       }
-      
+
       const response = await apiClient.get(`/reports?${params.toString()}`);
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to fetch reports. Please try again.'
+        error.response?.data?.message ||
+          "Failed to fetch reports. Please try again."
       );
     }
   }
@@ -147,8 +153,8 @@ export class ReportsAPI {
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to fetch report details. Please try again.'
+        error.response?.data?.message ||
+          "Failed to fetch report details. Please try again."
       );
     }
   }
@@ -157,20 +163,20 @@ export class ReportsAPI {
    * Update report status (admin only)
    */
   static async updateReportStatus(
-    id: string, 
-    status: 'pending' | 'verified' | 'resolved',
+    id: string,
+    status: "pending" | "verified" | "resolved",
     notes?: string
   ): Promise<Report> {
     try {
       const response = await apiClient.patch(`/reports/${id}/status`, {
         status,
-        notes
+        notes,
       });
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to update report status. Please try again.'
+        error.response?.data?.message ||
+          "Failed to update report status. Please try again."
       );
     }
   }
@@ -186,13 +192,13 @@ export class ReportsAPI {
     try {
       const response = await apiClient.post(`/reports/${reportId}/assistance`, {
         description,
-        providerName
+        providerName,
       });
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to add assistance log. Please try again.'
+        error.response?.data?.message ||
+          "Failed to add assistance log. Please try again."
       );
     }
   }
@@ -209,12 +215,12 @@ export class ReportsAPI {
     averageResponseTime: string;
   }> {
     try {
-      const response = await apiClient.get('/reports/statistics');
+      const response = await apiClient.get("/reports/statistics");
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to fetch statistics. Please try again.'
+        error.response?.data?.message ||
+          "Failed to fetch statistics. Please try again."
       );
     }
   }
@@ -228,14 +234,14 @@ export class ReportsAPI {
     radius: number = 10 // kilometers
   ): Promise<Report[]> {
     try {
-      const response = await apiClient.get('/reports/nearby', {
-        params: { lat, lng, radius }
+      const response = await apiClient.get("/reports/nearby", {
+        params: { lat, lng, radius },
       });
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to fetch nearby reports. Please try again.'
+        error.response?.data?.message ||
+          "Failed to fetch nearby reports. Please try again."
       );
     }
   }
@@ -249,14 +255,14 @@ export class ReportsAPI {
     pageSize: number = 20
   ): Promise<ReportsListResponse> {
     try {
-      const response = await apiClient.get('/reports/search', {
-        params: { q: query, page, pageSize }
+      const response = await apiClient.get("/reports/search", {
+        params: { q: query, page, pageSize },
       });
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to search reports. Please try again.'
+        error.response?.data?.message ||
+          "Failed to search reports. Please try again."
       );
     }
   }
@@ -269,8 +275,8 @@ export class ReportsAPI {
       await apiClient.delete(`/reports/${id}`);
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to delete report. Please try again.'
+        error.response?.data?.message ||
+          "Failed to delete report. Please try again."
       );
     }
   }
@@ -279,16 +285,16 @@ export class ReportsAPI {
    * Export reports data (admin only)
    */
   static async exportReports(
-    format: 'csv' | 'excel' | 'pdf' = 'csv',
+    format: "csv" | "excel" | "pdf" = "csv",
     filters?: ReportFilters
   ): Promise<Blob> {
     try {
       const params = new URLSearchParams({ format });
-      
+
       if (filters) {
         Object.entries(filters).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
-            if (typeof value === 'object') {
+            if (typeof value === "object") {
               params.append(key, JSON.stringify(value));
             } else {
               params.append(key, String(value));
@@ -296,16 +302,19 @@ export class ReportsAPI {
           }
         });
       }
-      
-      const response = await apiClient.get(`/reports/export?${params.toString()}`, {
-        responseType: 'blob'
-      });
-      
+
+      const response = await apiClient.get(
+        `/reports/export?${params.toString()}`,
+        {
+          responseType: "blob",
+        }
+      );
+
       return response.data;
     } catch (error: any) {
       throw new Error(
-        error.response?.data?.message || 
-        'Failed to export reports. Please try again.'
+        error.response?.data?.message ||
+          "Failed to export reports. Please try again."
       );
     }
   }

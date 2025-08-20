@@ -4,8 +4,10 @@ import { useAuthStore } from "../stores/authStore";
 
 const API_BASE = "http://localhost:5057/api/ImpactType";
 
+const authState = useAuthStore.getState();
 const getAuthHeaders = (token?: string) => {
-  const authToken = token || useAuthStore.getState().accessToken;
+  const authToken =
+    token || authState.accessToken || localStorage.getItem("token");
   if (!authToken) throw new Error("❌ Auth token is required");
   return {
     headers: {
@@ -21,5 +23,8 @@ export const ImpactTypeService = {
       getAuthHeaders(token)
     );
     return response.data;
+  },
+  async create(dto: { name: string }, token?: string): Promise<void> {
+    await axios.post(API_BASE, dto, getAuthHeaders(token));
   },
 };
