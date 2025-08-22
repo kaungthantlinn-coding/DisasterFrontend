@@ -63,7 +63,7 @@ const getHigherSeverity = (
 // Convert USGS earthquake data to our standard format
 const convertUSGSToDisaster = (
   earthquake: USGSEarthquake
-): RealWorldDisaster => {
+): DisasterReportDto => {
   const { properties, geometry, id } = earthquake;
   const [longitude, latitude, depth] = geometry.coordinates;
 
@@ -71,6 +71,14 @@ const convertUSGSToDisaster = (
   const magnitudeSeverity = getMagnitudeSeverity(properties.mag || 0);
   const alertSeverity = getAlertSeverity(properties.alert);
   const finalSeverity = getHigherSeverity(magnitudeSeverity, alertSeverity);
+
+  // Convert string severity to SeverityLevel enum
+  const severityMap = {
+    'low': 0,
+    'medium': 1,
+    'high': 2,
+    'critical': 3
+  };
 
   return {
     id: id || `earthquake-${Date.now()}`,
@@ -80,22 +88,19 @@ const convertUSGSToDisaster = (
     } earthquake ${properties.place || "Unknown location"}. ${
       properties.felt ? `Felt by ${properties.felt} people. ` : ""
     }${properties.tsunami ? "Tsunami warning issued. " : ""}`,
-    location: {
-      coordinates: { lat: latitude || 0, lng: longitude || 0 },
-      place: properties.place || "Unknown location",
-    },
-    disasterType: "earthquake",
-    severity: finalSeverity,
-    magnitude: properties.mag || 0,
-    time: new Date(properties.time || Date.now()),
-    updatedAt: new Date(properties.updated || Date.now()),
-    source: "USGS",
-    url: properties.url || "",
-    alertLevel: properties.alert || "green",
-    depth: depth || 0,
-    felt: properties.felt || 0,
-    tsunami: properties.tsunami === 1,
-    significance: properties.sig || 0,
+    timestamp: new Date(properties.time || Date.now()).toISOString(),
+    severity: severityMap[finalSeverity] as any,
+    status: 'Accepted' as any,
+    disasterTypeName: "Earthquake",
+    disasterTypeId: 1,
+    userId: "usgs-system",
+    userName: "USGS Monitoring System",
+    impactDetails: [],
+    photoUrls: [],
+    latitude: latitude || 0,
+    longitude: longitude || 0,
+    address: properties.place || "Unknown location",
+    coordinatePrecision: 1
   };
 };
 

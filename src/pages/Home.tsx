@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   CheckCircle,
@@ -20,7 +19,6 @@ import {
   RefreshCw,
   Target,
   Calendar,
-  MapIcon,
 } from "lucide-react";
 
 // Components
@@ -34,9 +32,9 @@ import { useAuth } from "../hooks/useAuth";
 import { useRoles } from "../hooks/useRoles";
 import {
   DisasterReportDto,
-  ReportStatus,
   SeverityLevel,
 } from "../types/DisasterReport";
+import { RealWorldDisaster } from "../types";
 import { getAcceptedDisasterReports } from "../services/disasterReportService";
 
 const Home: React.FC = () => {
@@ -50,10 +48,15 @@ const Home: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Auth and roles
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { isAdmin, isCj, isOnlyUser } = useRoles();
+  
+  // Only use role functions if authenticated
+  const safeIsAdmin = () => isAuthenticated && isAdmin();
+  const safeIsCj = () => isAuthenticated && isCj();
+  const safeIsOnlyUser = () => !isAuthenticated || isOnlyUser();
 
-  // Real-world disaster data
+  // Real-world disaster data - fetch for all users to show live map
   const {
     disasters,
     loading: disastersLoading,
@@ -61,14 +64,44 @@ const Home: React.FC = () => {
     statistics,
     refresh,
   } = useDisasterData({
-    autoRefresh: true,
+    autoRefresh: true, // Always auto-refresh for live data
     refreshInterval: 15 * 60 * 1000, // 15 minutes - reduced frequency for home page
     includeSignificantOnly: true,
+    enabled: true, // Always fetch data to show live disasters on home page
+  });
+
+  // Transform DisasterReportDto to RealWorldDisaster for map component
+  const transformedDisasters: RealWorldDisaster[] = disasters.map(disaster => {
+    // Convert numeric severity to string
+    const getSeverityString = (severity: SeverityLevel): string => {
+      switch (severity) {
+        case SeverityLevel.Critical: return 'critical';
+        case SeverityLevel.High: return 'high';
+        case SeverityLevel.Medium: return 'medium';
+        case SeverityLevel.Low: return 'low';
+        default: return 'medium';
+      }
+    };
+
+    return {
+      id: disaster.id,
+      title: disaster.title,
+      description: disaster.description,
+      location: {
+        coordinates: { lat: disaster.latitude || 0, lng: disaster.longitude || 0 },
+        place: disaster.address || 'Unknown Location'
+      },
+      disasterType: disaster.disasterTypeName?.toLowerCase() as any || 'other',
+      severity: getSeverityString(disaster.severity) as any,
+      time: new Date(disaster.timestamp),
+      updatedAt: new Date(disaster.timestamp),
+      source: 'DisasterWatch',
+      alertLevel: disaster.severity === SeverityLevel.Critical ? 'red' : disaster.severity === SeverityLevel.High ? 'orange' : 'yellow'
+    };
   });
 
   // Check permissions
-  const canViewReports = isAuthenticated && (isAdmin() || isCj());
-  const canCreateReports = !isAuthenticated || !isOnlyUser();
+  const canCreateReports = !isAuthenticated || (isAuthenticated && !safeIsOnlyUser());
 
   // Hero content with refined professional disaster response images
   const heroSlides = [
@@ -770,8 +803,7 @@ const Home: React.FC = () => {
                     ) : (
                       <div className="bg-slate-800 rounded-2xl h-80 overflow-hidden">
                         <SimpleLeafletMap
-                          disasters={disasters || []}
-                          loading={disastersLoading}
+                          disasters={transformedDisasters}
                           className="w-full h-full rounded-2xl"
                         />
                       </div>
@@ -993,7 +1025,7 @@ const Home: React.FC = () => {
       </main>
 
       <Footer />
-      <ChatWidget />
+      <ChatWidget currentUserId={user?.userId || ''} />
 
       {/* Scroll to Top Button */}
       {showScrollTop && (

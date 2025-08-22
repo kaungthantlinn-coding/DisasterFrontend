@@ -696,15 +696,13 @@ const AdminPanel: React.FC = () => {
                   </div>
                 )}
                 
-                {!sidebarCollapsed && (
-                  <button
-                    onClick={handleLogout}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    title="Logout"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                )}
+                <button
+                  onClick={handleLogout}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>

@@ -12,15 +12,6 @@ import {
   Globe
 } from 'lucide-react';
 
-// Note: Mock reports have been removed. Use the ReportsAPI and useReports hook for real data.
-
-export const mockStatistics: Statistics = {
-  reportsSubmitted: 2847,
-  livesHelped: 12450,
-  verifiedReports: 2189,
-  averageResponseTime: '< 2hrs'
-};
-
 export const organizationFeatures: Feature[] = [
   {
     id: '1',
@@ -60,40 +51,4 @@ export const organizationFeatures: Feature[] = [
   }
 ];
 
-export const mockPartners: Partner[] = [
-  {
-    id: '1',
-    name: 'Red Cross',
-    logo: 'https://images.pexels.com/photos/3862627/pexels-photo-3862627.jpeg?auto=compress&cs=tinysrgb&w=120&h=60&dpr=1',
-    website: 'https://redcross.org'
-  },
-  {
-    id: '2',
-    name: 'FEMA',
-    logo: 'https://images.pexels.com/photos/3862627/pexels-photo-3862627.jpeg?auto=compress&cs=tinysrgb&w=120&h=60&dpr=1',
-    website: 'https://fema.gov'
-  },
-  {
-    id: '3',
-    name: 'Local Emergency Services',
-    logo: 'https://images.pexels.com/photos/3862627/pexels-photo-3862627.jpeg?auto=compress&cs=tinysrgb&w=120&h=60&dpr=1'
-  },
-  {
-    id: '4',
-    name: 'Salvation Army',
-    logo: 'https://images.pexels.com/photos/3862627/pexels-photo-3862627.jpeg?auto=compress&cs=tinysrgb&w=120&h=60&dpr=1',
-    website: 'https://salvationarmy.org'
-  },
-  {
-    id: '5',
-    name: 'United Way',
-    logo: 'https://images.pexels.com/photos/3862627/pexels-photo-3862627.jpeg?auto=compress&cs=tinysrgb&w=120&h=60&dpr=1',
-    website: 'https://unitedway.org'
-  },
-  {
-    id: '6',
-    name: 'Habitat for Humanity',
-    logo: 'https://images.pexels.com/photos/3862627/pexels-photo-3862627.jpeg?auto=compress&cs=tinysrgb&w=120&h=60&dpr=1',
-    website: 'https://habitat.org'
-  }
-];
+
