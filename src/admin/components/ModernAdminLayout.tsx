@@ -17,9 +17,7 @@ import {
   Sun,
   Moon,
   ChevronDown,
-  Zap,
-  Shield,
-  Activity
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -138,33 +136,9 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const superAdminMenuItems = [
     {
-      icon: <BarChart3 className="w-5 h-5" />,
-      label: 'User Analytics',
-      path: '/admin/user-analytics',
-      badge: undefined
-    },
-    {
-      icon: <Activity className="w-5 h-5" />,
-      label: 'Sessions',
-      path: '/admin/sessions',
-      badge: undefined
-    },
-    {
       icon: <Shield className="w-5 h-5" />,
       label: 'Roles',
       path: '/admin/roles',
-      badge: undefined
-    },
-    {
-      icon: <Zap className="w-5 h-5" />,
-      label: 'Permissions',
-      path: '/admin/permissions',
-      badge: undefined
-    },
-    {
-      icon: <Activity className="w-5 h-5" />,
-      label: 'System Health',
-      path: '/admin/system-health',
       badge: undefined
     }
   ];

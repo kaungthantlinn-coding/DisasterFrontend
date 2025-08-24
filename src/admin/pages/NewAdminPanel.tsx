@@ -16,12 +16,7 @@ import AdminSupportRequestManagement from './AdminSupportRequestManagement';
 import OrganizationManagement from './OrganizationManagement';
 
 // Import SuperAdmin components
-import UserAnalyticsDashboard from '../../components/admin/UserAnalyticsDashboard';
-import UserSessionManager from '../../components/admin/UserSessionManager';
-import AuditLogViewer from '../../components/admin/AuditLogViewer';
 import RoleManagement from './RoleManagement';
-import PermissionManagement from './PermissionManagement';
-import SystemHealth from './SystemHealth';
 
 const NewAdminPanel: React.FC = () => {
   const location = useLocation();
@@ -43,18 +38,10 @@ const NewAdminPanel: React.FC = () => {
     } else if (path.includes('/admin/users')) {
       // Use AdvancedUserManagement for SuperAdmin, regular UserManagement for Admin
       return isSuperAdmin ? <AdvancedUserManagement /> : <UserManagement />;
-    } else if (path.includes('/admin/user-analytics')) {
-      return isSuperAdmin ? <UserAnalyticsDashboard /> : <ModernDashboard />;
-    } else if (path.includes('/admin/sessions')) {
-      return isSuperAdmin ? <UserSessionManager /> : <ModernDashboard />;
     } else if (path.includes('/admin/audit-logs')) {
-      return isSuperAdmin ? <AuditLogViewer /> : <AuditLogsPage />;
+      return <AuditLogsPage />;
     } else if (path.includes('/admin/roles')) {
       return isSuperAdmin ? <RoleManagement /> : <ModernDashboard />;
-    } else if (path.includes('/admin/permissions')) {
-      return isSuperAdmin ? <PermissionManagement /> : <ModernDashboard />;
-    } else if (path.includes('/admin/system-health')) {
-      return isSuperAdmin ? <SystemHealth /> : <ModernDashboard />;
     } else if (path.includes('/admin/organizations')) {
       return <OrganizationManagement />;
     } else if (path.includes('/admin/reports')) {

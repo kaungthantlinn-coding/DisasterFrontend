@@ -53,15 +53,21 @@ import {
 import {
   Permission,
   PermissionCategory,
-  Role,
+  Role as PermissionRole,
   PERMISSION_METADATA,
   SYSTEM_ROLES
 } from '../../types/permissions';
+import { Role } from '../../types/roles';
 import { AuditAction, AuditCategory } from '../../types/audit';
 import {
-  useCurrentUserPermissions,
-  useRoles
+  useCurrentUserPermissions
 } from '../../hooks/usePermissions';
+import {
+  useRoles,
+  useCreateRole,
+  useUpdateRole,
+  useDeleteRole
+} from '../../hooks/useRoleManagement';
 import { useAuditLogger } from '../../hooks/useAudit';
 import { SuperAdminGuard } from '../guards/PermissionGuard';
 import { toast } from 'sonner';
@@ -76,48 +82,44 @@ interface RoleManagementProps {
 interface RoleFormData {
   name: string;
   description: string;
-  permissions: Permission[];
   isActive: boolean;
 }
 
 const roleSchema = z.object({
   name: z.string().min(1, 'Role name is required').max(50, 'Role name must be less than 50 characters'),
   description: z.string().min(1, 'Description is required').max(200, 'Description must be less than 200 characters'),
-  permissions: z.array(z.nativeEnum(Permission)).min(1, 'At least one permission is required'),
   isActive: z.boolean()
 });
 
 const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<PermissionCategory | 'all'>('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [permissionSearchQuery, setPermissionSearchQuery] = useState('');
 
   const { hasPermission } = useCurrentUserPermissions();
-  const { sortedRoles, createRole, updateRole, deleteRole } = useRoles();
+  const { data: rolesData } = useRoles();
+  const createRoleMutation = useCreateRole();
+  const updateRoleMutation = useUpdateRole();
+  const deleteRoleMutation = useDeleteRole();
   const { logAction } = useAuditLogger();
+
+  const roles = rolesData?.roles || [];
+  const sortedRoles = roles;
 
   const { register, handleSubmit, formState: { errors }, setValue, watch, reset } = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema),
     defaultValues: {
       name: '',
       description: '',
-      permissions: [],
       isActive: true
     }
   });
 
-  const watchedPermissions = watch('permissions');
-
   // Combine system and custom roles
   const allRoles = useMemo(() => {
-    const systemRoles = Object.values(SYSTEM_ROLES) as unknown as Role[];
-    const roles = sortedRoles ? [...systemRoles, ...sortedRoles] : systemRoles;
-    
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -128,57 +130,50 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
     }
     
     return roles;
-  }, [sortedRoles, searchQuery]);
+  }, [roles, searchQuery]);
 
-  // Filter permissions for the permission selector
-  const filteredPermissions = useMemo(() => {
-    let permissions = Object.values(Permission);
-
-    // Filter by search query
-    if (permissionSearchQuery) {
-      const query = permissionSearchQuery.toLowerCase();
-      permissions = permissions.filter(permission => {
-        const metadata = PERMISSION_METADATA[permission];
-        return (
-          permission.toLowerCase().includes(query) ||
-          metadata.description.toLowerCase().includes(query) ||
-          metadata.category.toLowerCase().includes(query)
-        );
-      });
+  // Open edit dialog with role data
+  const openEditDialog = (role: Role) => {
+    if (role.isSystem) {
+      toast.error('System roles cannot be edited');
+      return;
     }
+    
+    setSelectedRole(role);
+    setValue('name', role.name);
+    setValue('description', role.description);
+    setValue('isActive', role.isActive);
+    setShowEditDialog(true);
+  };
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      permissions = permissions.filter(permission => 
-        PERMISSION_METADATA[permission].category === selectedCategory
-      );
+  // Open duplicate dialog with role data
+  const openDuplicateDialog = (role: Role) => {
+    setSelectedRole(role);
+    setValue('name', `${role.name} (Copy)`);
+    setValue('description', `Copy of ${role.description}`);
+    setValue('isActive', true);
+    setShowDuplicateDialog(true);
+  };
+
+  // Open delete dialog
+  const openDeleteDialog = (role: Role) => {
+    if (role.isSystem) {
+      toast.error('System roles cannot be deleted');
+      return;
     }
-
-    return permissions;
-  }, [permissionSearchQuery, selectedCategory]);
-
-  // Group permissions by category for better organization
-  const groupedPermissions = useMemo(() => {
-    const groups = Object.values(PermissionCategory).reduce((acc, category) => {
-      acc[category] = [];
-      return acc;
-    }, {} as Record<PermissionCategory, Permission[]>);
-
-    for (const permission of filteredPermissions) {
-      const metadata = PERMISSION_METADATA[permission];
-      if (metadata && metadata.category && groups[metadata.category]) {
-        groups[metadata.category].push(permission);
-      }
-    }
-
-    return groups;
-  }, [filteredPermissions]);
+    
+    setSelectedRole(role);
+    setShowDeleteDialog(true);
+  };
 
   // Handle role creation
   const handleCreateRole = async (data: RoleFormData) => {
     try {
-      const roleData = { ...data, displayName: data.name };
-      await createRole(roleData);
+      const roleData = {
+        name: data.name,
+        description: data.description
+      };
+      await createRoleMutation.mutateAsync(roleData);
 
       logAction(
         AuditAction.ROLE_CREATED,
@@ -201,7 +196,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
     if (!selectedRole) return;
 
     try {
-      await updateRole({ roleId: selectedRole.id, data });
+      await updateRoleMutation.mutateAsync({ roleId: selectedRole.id, data });
 
       logAction(
         AuditAction.ROLE_UPDATED,
@@ -222,10 +217,10 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
 
   // Handle role deletion
   const handleDeleteRole = async () => {
-    if (!selectedRole || selectedRole.isSystemRole) return;
+    if (!selectedRole || selectedRole.isSystem) return;
 
     try {
-      await deleteRole({ roleId: selectedRole.id });
+      await deleteRoleMutation.mutateAsync({ roleId: selectedRole.id });
 
       logAction(
         AuditAction.ROLE_DELETED,
@@ -250,12 +245,9 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
     try {
       const roleData = {
         name: data.name,
-        displayName: data.name,
-        description: data.description,
-        permissions: selectedRole.permissions,
-        isActive: data.isActive,
+        description: data.description
       };
-      await createRole(roleData);
+      await createRoleMutation.mutateAsync(roleData);
 
       await logAction(
         AuditAction.ROLE_DUPLICATED,
@@ -271,85 +263,6 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
     } catch (error) {
       toast.error('Failed to duplicate role');
       console.error('Role duplication error:', error);
-    }
-  };
-
-  // Open edit dialog with role data
-  const openEditDialog = (role: Role) => {
-    if (role.isSystemRole) {
-      toast.error('System roles cannot be edited');
-      return;
-    }
-    
-    setSelectedRole(role);
-    setValue('name', role.name);
-    setValue('description', role.description);
-    setValue('permissions', role.permissions);
-    setValue('isActive', role.isActive);
-    setShowEditDialog(true);
-  };
-
-  // Open duplicate dialog with role data
-  const openDuplicateDialog = (role: Role) => {
-    setSelectedRole(role);
-    setValue('name', `${role.name} (Copy)`);
-    setValue('description', `Copy of ${role.description}`);
-    setValue('permissions', role.permissions);
-    setValue('isActive', true);
-    setShowDuplicateDialog(true);
-  };
-
-  // Open delete dialog
-  const openDeleteDialog = (role: Role) => {
-    if (role.isSystemRole) {
-      toast.error('System roles cannot be deleted');
-      return;
-    }
-    
-    setSelectedRole(role);
-    setShowDeleteDialog(true);
-  };
-
-  // Toggle permission selection
-  const togglePermission = (permission: Permission) => {
-    const currentPermissions = watchedPermissions || [];
-    const isSelected = currentPermissions.includes(permission);
-    
-    if (isSelected) {
-      setValue('permissions', currentPermissions.filter(p => p !== permission));
-    } else {
-      setValue('permissions', [...currentPermissions, permission]);
-    }
-  };
-
-  // Select all permissions in a category
-  const selectCategoryPermissions = (category: PermissionCategory) => {
-    const categoryPermissions = groupedPermissions[category];
-    const currentPermissions = watchedPermissions || [];
-    const newPermissions = [...new Set([...currentPermissions, ...categoryPermissions])];
-    setValue('permissions', newPermissions);
-  };
-
-  // Deselect all permissions in a category
-  const deselectCategoryPermissions = (category: PermissionCategory) => {
-    const categoryPermissions = groupedPermissions[category];
-    const currentPermissions = watchedPermissions || [];
-    const newPermissions = currentPermissions.filter(p => !categoryPermissions.includes(p));
-    setValue('permissions', newPermissions);
-  };
-
-  // Get category icon
-  const getCategoryIcon = (category: PermissionCategory) => {
-    switch (category) {
-      case PermissionCategory.USER_MANAGEMENT:
-        return <Users className="h-4 w-4" />;
-      case PermissionCategory.REPORT_MANAGEMENT:
-        return <FileText className="h-4 w-4" />;
-      case PermissionCategory.SYSTEM_SETTINGS:
-        return <Settings className="h-4 w-4" />;
-      // Add other cases as per your actual PermissionCategory enum
-      default:
-        return <Shield className="h-4 w-4" />;
     }
   };
 
@@ -411,7 +324,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
                   <TableRow>
                     <TableHead>Role</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Permissions</TableHead>
+                    <TableHead>Users</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
@@ -436,16 +349,14 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={role.isSystemRole ? 'secondary' : 'default'}>
-                            {role.isSystemRole ? 'System' : 'Custom'}
+                          <Badge variant={role.isSystem ? 'secondary' : 'default'}>
+                            {role.isSystem ? 'System' : 'Custom'}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Badge variant="outline">
-                              {role.permissions.length} permissions
-                            </Badge>
-                          </div>
+                          <Badge variant="outline">
+                            {role.userCount} users
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge variant={role.isActive ? 'default' : 'secondary'}>
@@ -471,7 +382,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
                                 Duplicate
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              {!role.isSystemRole && (
+                              {!role.isSystem && (
                                 <>
                                   <DropdownMenuItem 
                                     onClick={() => openEditDialog(role)}
@@ -504,36 +415,24 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
 
         {/* Create Role Dialog */}
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Create New Role</DialogTitle>
               <DialogDescription>
-                Define a new role with specific permissions
+                Define a new role for the system
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleSubmit(handleCreateRole)} className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Role Name</label>
-                  <Input
-                    {...register('name')}
-                    placeholder="Enter role name"
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
-                  )}
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    {...register('isActive')}
-                    id="isActive"
-                  />
-                  <label htmlFor="isActive" className="text-sm font-medium">
-                    Active Role
-                  </label>
-                </div>
+            <form onSubmit={handleSubmit(handleCreateRole)} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Role Name</label>
+                <Input
+                  {...register('name')}
+                  placeholder="Enter role name"
+                />
+                {errors.name && (
+                  <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+                )}
               </div>
               
               <div>
@@ -548,98 +447,14 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
                 )}
               </div>
               
-              <div>
-                <label className="text-sm font-medium mb-4 block">Permissions</label>
-                
-                {/* Permission Search */}
-                <div className="mb-4">
-                  <Input
-                    placeholder="Search permissions..."
-                    value={permissionSearchQuery}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPermissionSearchQuery(e.target.value)}
-                  />
-                </div>
-                
-                {/* Permission Categories */}
-                <div className="space-y-4">
-                  {Object.entries(groupedPermissions).map(([category, permissions]) => {
-                    if (permissions.length === 0) return null;
-                    
-                    const selectedCount = permissions.filter(p => watchedPermissions?.includes(p)).length;
-                    const allSelected = selectedCount === permissions.length;
-                    
-                    return (
-                      <Card key={category}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              {getCategoryIcon(category as PermissionCategory)}
-                              <CardTitle className="text-base">
-                                {category.replace('_', ' ')}
-                              </CardTitle>
-                              <Badge variant="outline">
-                                {selectedCount}/{permissions.length}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => selectCategoryPermissions(category as PermissionCategory)}
-                                disabled={allSelected}
-                              >
-                                Select All
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => deselectCategoryPermissions(category as PermissionCategory)}
-                                disabled={selectedCount === 0}
-                              >
-                                Clear
-                              </Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid gap-3 md:grid-cols-2">
-                            {permissions.map((permission) => {
-                              const isSelected = watchedPermissions?.includes(permission) || false;
-                              const metadata = PERMISSION_METADATA[permission];
-                              
-                              return (
-                                <div key={permission} className="flex items-start space-x-3">
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onCheckedChange={() => togglePermission(permission)}
-                                    id={permission}
-                                  />
-                                  <div className="flex-1">
-                                    <label
-                                      htmlFor={permission}
-                                      className="text-sm font-medium cursor-pointer"
-                                    >
-                                      {permission}
-                                    </label>
-                                    <p className="text-xs text-muted-foreground">
-                                      {metadata.description}
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                
-                {errors.permissions && (
-                  <p className="text-sm text-destructive mt-2">{errors.permissions.message}</p>
-                )}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  {...register('isActive')}
+                  id="isActive"
+                />
+                <label htmlFor="isActive" className="text-sm font-medium">
+                  Active Role
+                </label>
               </div>
               
               <DialogFooter>
@@ -657,37 +472,24 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
 
         {/* Edit Role Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Edit Role</DialogTitle>
               <DialogDescription>
-                Modify the role's permissions and settings
+                Modify the role's settings
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleSubmit(handleUpdateRole)} className="space-y-6">
-              {/* Same form content as create dialog */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Role Name</label>
-                  <Input
-                    {...register('name')}
-                    placeholder="Enter role name"
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
-                  )}
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    {...register('isActive')}
-                    id="editIsActive"
-                  />
-                  <label htmlFor="editIsActive" className="text-sm font-medium">
-                    Active Role
-                  </label>
-                </div>
+            <form onSubmit={handleSubmit(handleUpdateRole)} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Role Name</label>
+                <Input
+                  {...register('name')}
+                  placeholder="Enter role name"
+                />
+                {errors.name && (
+                  <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
+                )}
               </div>
               
               <div>
@@ -702,98 +504,14 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
                 )}
               </div>
               
-              <div>
-                <label className="text-sm font-medium mb-4 block">Permissions</label>
-                
-                {/* Permission Search */}
-                <div className="mb-4">
-                  <Input
-                    placeholder="Search permissions..."
-                    value={permissionSearchQuery}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPermissionSearchQuery(e.target.value)}
-                  />
-                </div>
-                
-                {/* Permission Categories - Same as create dialog */}
-                <div className="space-y-4">
-                  {Object.entries(groupedPermissions).map(([category, permissions]) => {
-                    if (permissions.length === 0) return null;
-                    
-                    const selectedCount = permissions.filter(p => watchedPermissions?.includes(p)).length;
-                    const allSelected = selectedCount === permissions.length;
-                    
-                    return (
-                      <Card key={category}>
-                        <CardHeader className="pb-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-2">
-                              {getCategoryIcon(category as PermissionCategory)}
-                              <CardTitle className="text-base">
-                                {category.replace('_', ' ')}
-                              </CardTitle>
-                              <Badge variant="outline">
-                                {selectedCount}/{permissions.length}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => selectCategoryPermissions(category as PermissionCategory)}
-                                disabled={allSelected}
-                              >
-                                Select All
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => deselectCategoryPermissions(category as PermissionCategory)}
-                                disabled={selectedCount === 0}
-                              >
-                                Clear
-                              </Button>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid gap-3 md:grid-cols-2">
-                            {permissions.map((permission) => {
-                              const isSelected = watchedPermissions?.includes(permission) || false;
-                              const metadata = PERMISSION_METADATA[permission];
-                              
-                              return (
-                                <div key={permission} className="flex items-start space-x-3">
-                                  <Checkbox
-                                    checked={isSelected}
-                                    onCheckedChange={() => togglePermission(permission)}
-                                    id={`edit-${permission}`}
-                                  />
-                                  <div className="flex-1">
-                                    <label
-                                      htmlFor={`edit-${permission}`}
-                                      className="text-sm font-medium cursor-pointer"
-                                    >
-                                      {permission}
-                                    </label>
-                                    <p className="text-xs text-muted-foreground">
-                                      {metadata.description}
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                
-                {errors.permissions && (
-                  <p className="text-sm text-destructive mt-2">{errors.permissions.message}</p>
-                )}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  {...register('isActive')}
+                  id="editIsActive"
+                />
+                <label htmlFor="editIsActive" className="text-sm font-medium">
+                  Active Role
+                </label>
               </div>
               
               <DialogFooter>
@@ -815,7 +533,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
             <DialogHeader>
               <DialogTitle>Duplicate Role</DialogTitle>
               <DialogDescription>
-                Create a copy of "{selectedRole?.name}" with the same permissions
+                Create a copy of "{selectedRole?.name}"
               </DialogDescription>
             </DialogHeader>
             
@@ -852,15 +570,6 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ className }) => {
                   Active Role
                 </label>
               </div>
-              
-              {selectedRole && (
-                <Alert>
-                  <CheckCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    This role will be created with {selectedRole.permissions.length} permissions from "{selectedRole.name}"
-                  </AlertDescription>
-                </Alert>
-              )}
               
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={closeDialogs}>

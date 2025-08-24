@@ -1,13 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { roleManagementApi, CreateRoleDto, UpdateRoleDto, CloneRoleDto, RoleFilters } from '@/apis/roleManagement';
+import { roleManagementApi, RoleFilters } from '@/apis/roleManagement';
+import { CreateRoleDto, UpdateRoleDto } from '@/types/roles';
 import { toast } from 'sonner';
 
 // Query Keys
 export const roleManagementKeys = {
   all: ['roleManagement'] as const,
   roles: (filters?: RoleFilters) => [...roleManagementKeys.all, 'roles', filters] as const,
-  role: (id: number) => [...roleManagementKeys.all, 'role', id] as const,
-  roleUsers: (id: number) => [...roleManagementKeys.all, 'roleUsers', id] as const,
+  role: (id: string) => [...roleManagementKeys.all, 'role', id] as const,
+  roleUsers: (id: string) => [...roleManagementKeys.all, 'roleUsers', id] as const,
 };
 
 // Get roles with statistics
@@ -20,7 +21,7 @@ export const useRoles = (filters?: RoleFilters) => {
 };
 
 // Get specific role
-export const useRole = (id: number) => {
+export const useRole = (id: string) => {
   return useQuery({
     queryKey: roleManagementKeys.role(id),
     queryFn: () => roleManagementApi.getRole(id),
@@ -29,7 +30,7 @@ export const useRole = (id: number) => {
 };
 
 // Get role users
-export const useRoleUsers = (id: number) => {
+export const useRoleUsers = (id: string) => {
   return useQuery({
     queryKey: roleManagementKeys.roleUsers(id),
     queryFn: () => roleManagementApi.getRoleUsers(id),
@@ -59,8 +60,12 @@ export const useUpdateRole = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, dto }: { id: number; dto: UpdateRoleDto }) => 
-      roleManagementApi.updateRole(id, dto),
+    mutationFn: ({ roleId, data }: { roleId: string; data: any }) => 
+      roleManagementApi.updateRole(roleId, {
+        name: data.name,
+        description: data.description,
+        isActive: data.isActive
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: roleManagementKeys.all });
       toast.success('Role updated successfully!');
@@ -77,7 +82,7 @@ export const useDeleteRole = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => roleManagementApi.deleteRole(id),
+    mutationFn: ({ roleId }: { roleId: string }) => roleManagementApi.deleteRole(roleId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: roleManagementKeys.all });
       toast.success('Role deleted successfully!');
@@ -89,20 +94,3 @@ export const useDeleteRole = () => {
   });
 };
 
-// Clone role mutation
-export const useCloneRole = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, dto }: { id: number; dto: CloneRoleDto }) => 
-      roleManagementApi.cloneRole(id, dto),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: roleManagementKeys.all });
-      toast.success('Role cloned successfully!');
-    },
-    onError: (error: any) => {
-      const message = error.response?.data?.message || 'Failed to clone role';
-      toast.error(message);
-    },
-  });
-};
