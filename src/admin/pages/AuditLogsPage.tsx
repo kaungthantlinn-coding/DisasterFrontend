@@ -1,20 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  History,
-  Search,
-  Filter,
-  Download,
-  RefreshCw,
-  ChevronLeft,
+import { 
+  History, 
+  Filter, 
+  Search, 
+  Download, 
+  Calendar, 
+  User, 
+  RefreshCw, 
+  AlertCircle, 
+  ChevronLeft, 
   ChevronRight,
-  Calendar,
-  User,
-  AlertCircle,
-  Eye,
-  ExternalLink
+  X,
+  Eye
 } from 'lucide-react';
-import { useAuditLog, useAuditLogStats, AuditLogEntry, AuditLogFilters } from '../../hooks/useAuditLog';
+import { useAuth } from '../../hooks/useAuth';
+import { useAuditLog, useAuditLogStats, useAuditFilterOptions, AuditLogEntry, AuditLogFilters } from '../../hooks/useAuditLog';
+import { useAuthStore } from '../../stores/authStore';
+import ExportAuditLogsModal from '../components/ExportAuditLogsModal';
+
+// Action display mapping for better user experience
+const actionDisplayMap: { [key: string]: string } = {
+  'LOGIN_SUCCESS': 'Login Success',
+  'LOGIN_FAILED': 'Login Failed',
+  'LOGOUT': 'Logout',
+  'USER_CREATED': 'User Created',
+  'USER_UPDATED': 'User Updated',
+  'USER_SUSPENDED': 'User Suspended',
+  'USER_REACTIVATED': 'User Reactivated',
+  'USER_DEACTIVATED': 'User Deactivated',
+  'DONATION_CREATED': 'Donation Created',
+  'DONATION_UPDATED': 'Donation Updated',
+  'ORGANIZATION_REGISTERED': 'Organization Registered',
+  'ORGANIZATION_UPDATED': 'Organization Updated',
+  'REPORT_POST': 'Report Created',
+  'REPORT_PUT': 'Report Updated',
+  'REPORT_DELETE': 'Report Deleted',
+  'AUDIT_LOGS_EXPORTED_ADVANCED': 'Accessed Audit Logs',
+  'PROFILE_UPDATED': 'Profile Updated'
+};
+
+// Format audit details with bulk operation handling
+const formatAuditDetails = (log: any) => {
+  if (log.metadata?.operationType === 'bulk') {
+    return `${log.details} (Bulk Operation)`;
+  }
+  return log.details;
+};
+
+// Format action display name
+const formatActionName = (action: string) => {
+  return actionDisplayMap[action] || action;
+};
 
 interface AuditLogTableRowProps {
   log: AuditLogEntry;
@@ -23,18 +60,6 @@ interface AuditLogTableRowProps {
 
 const AuditLogTableRow: React.FC<AuditLogTableRowProps> = ({ log, onViewDetails }) => {
 
-  const getHumanFriendlyAction = (action: string) => {
-    if (action.includes('login')) return 'Login';
-    if (action.includes('logout')) return 'Logout';
-    if (action.includes('create') || action.includes('add')) return 'Create';
-    if (action.includes('update') || action.includes('edit') || action.includes('modify')) return 'Edit';
-    if (action.includes('delete') || action.includes('remove')) return 'Delete';
-    if (action.includes('suspend')) return 'Suspend';
-    if (action.includes('role')) return 'Role Update';
-    if (action.includes('audit')) return 'Accessed Audit Logs';
-    if (action.includes('profile')) return 'Updated Profile';
-    return action;
-  };
 
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleString('en-US', {
@@ -59,14 +84,14 @@ const AuditLogTableRow: React.FC<AuditLogTableRowProps> = ({ log, onViewDetails 
       {/* Action Column - Human-friendly words */}
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="text-sm font-medium text-gray-900">
-          {getHumanFriendlyAction(log.action)}
+          {formatActionName(log.action)}
         </div>
       </td>
       
       {/* Description Column - Key details */}
       <td className="px-6 py-4">
-        <div className="text-sm text-gray-900 truncate max-w-xs" title={log.details}>
-          {log.details || 'No additional details'}
+        <div className="text-sm text-gray-900 truncate max-w-xs" title={formatAuditDetails(log)}>
+          {formatAuditDetails(log) || 'No additional details'}
         </div>
       </td>
       
@@ -81,9 +106,8 @@ const AuditLogTableRow: React.FC<AuditLogTableRowProps> = ({ log, onViewDetails 
       </td>
       
       {/* Time Column - Short readable date with AM/PM */}
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {formatTimestamp(log.timestamp)}
-      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{log.userId}</td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatTimestamp(log.timestamp)}</td>
       
       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
         <button
@@ -103,8 +127,15 @@ const AuditLogsPage: React.FC = () => {
   const [pageSize, setPageSize] = useState(20);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState<AuditLogFilters>({});
-  const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
+  const [selectedLog, setSelectedLog] = useState<any | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+
+  // Get auth token and user from store
+  const { accessToken, user } = useAuthStore();
+  
+  // Get dynamic filter options
+  const { filterOptions, isLoading: isLoadingOptions } = useAuditFilterOptions();
 
   // API calls
   const { data: auditLogData, isLoading, error, refetch } = useAuditLog({
@@ -112,111 +143,141 @@ const AuditLogsPage: React.FC = () => {
     pageSize,
     filters: {
       ...filters,
-      ...(searchTerm && { action: searchTerm })
+      ...(searchTerm && { searchTerm: searchTerm })
     }
   });
 
   const { stats: auditStats, refetch: refetchStats } = useAuditLogStats();
 
-  // Mock data for demonstration (replace with actual API data)
-  const mockAuditLogs: AuditLogEntry[] = [
-    {
-      id: '1',
-      userId: 'user-123-456-789',
-      userName: 'Kaung Kaung Thant Linn',
-      action: 'user_login',
-      targetType: 'system',
-      targetName: 'Auth Service',
-      details: 'Successful login via /api/auth/login',
-      ipAddress: '192.168.1.100',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      timestamp: new Date().toISOString(),
-      severity: 'low'
-    },
-    {
-      id: '2',
-      userId: 'admin-456-789-123',
-      userName: 'Test Admin',
-      action: 'user_create',
-      targetType: 'user',
-      targetName: 'User Service',
-      details: 'Added new user with role: user',
-      ipAddress: '192.168.1.101',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      timestamp: new Date(Date.now() - 6 * 60 * 1000).toISOString(),
-      severity: 'low'
-    },
-    {
-      id: '3',
-      userId: 'admin-456-789-123',
-      userName: 'Test Admin',
-      action: 'user_edit',
-      targetType: 'user',
-      targetName: 'User Service',
-      details: 'Updated user profile information',
-      ipAddress: '192.168.1.101',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      severity: 'low'
-    },
-    {
-      id: '4',
-      userId: 'admin-456-789-123',
-      userName: 'Test Admin',
-      action: 'user_suspend',
-      targetType: 'user',
-      targetName: 'User Service',
-      details: 'Suspended user account for policy violation',
-      ipAddress: '192.168.1.101',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      severity: 'medium'
-    },
-    {
-      id: '5',
-      userId: 'admin-456-789-123',
-      userName: 'Test Admin',
-      action: 'user_delete',
-      targetType: 'user',
-      targetName: 'User Service',
-      details: 'Permanently deleted user account',
-      ipAddress: '192.168.1.101',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      severity: 'high'
-    },
-    {
-      id: '6',
-      userId: 'user-789-123-456',
-      userName: 'John Smith',
-      action: 'audit_access',
-      targetType: 'system',
-      targetName: 'Admin Panel',
-      details: 'Accessed audit logs section',
-      ipAddress: '192.168.1.102',
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      timestamp: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-      severity: 'low'
-    }
-  ];
-
   const handleFilterChange = (key: keyof AuditLogFilters, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev: AuditLogFilters) => ({
       ...prev,
       [key]: value || undefined
     }));
     setCurrentPage(1);
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format: string, fields: string[], exportFilters: any) => {
     try {
-      // This would typically call an API endpoint to generate and download a CSV/Excel file
-      console.log('Exporting audit logs...');
-      // Implementation would depend on your backend API
+      console.log('Exporting audit logs...', { format, fields, exportFilters });
+      
+      // Prepare export request for backend API
+      // Map frontend filter values to backend arrays
+      const mapFrontendToBackend = (frontendValue: string, type: string) => {
+        if (!frontendValue) return null;
+        
+        // Map user-friendly labels to backend values
+        const actionMap: { [key: string]: string[] } = {
+          'Login': ['LOGIN_SUCCESS', 'LOGIN_FAILED', 'USER_LOGIN_SUCCESS', 'USER_LOGIN_FAILED'],
+          'Logout': ['LOGOUT'],
+          'Create': ['DONATION_CREATED', 'ORGANIZATION_REGISTERED', 'REPORT_POST', 'USER_CREATED'],
+          'Edit': ['DONATION_UPDATED', 'ORGANIZATION_UPDATED', 'REPORT_PUT', 'USER_UPDATED'],
+          'Delete': ['REPORT_DELETE'],
+          'Suspend': ['USER_SUSPENDED'],
+          'Reactivate': ['USER_REACTIVATED', 'USER_DEACTIVATED'],
+          'Accessed Audit Logs': ['AUDIT_LOGS_EXPORTED_ADVANCED'],
+          'Updated Profile': ['PROFILE_UPDATED']
+        };
+
+        const targetTypeMap: { [key: string]: string[] } = {
+          'Audit': ['Audit'],
+          'General': ['General'],
+          'HttpRequest': ['HttpRequest'],
+          'UserRole': ['UserRole']
+        };
+
+        if (type === 'action' && actionMap[frontendValue]) {
+          return actionMap[frontendValue];
+        }
+        if (type === 'targetType' && targetTypeMap[frontendValue]) {
+          return targetTypeMap[frontendValue];
+        }
+        
+        return [frontendValue];
+      };
+
+      const exportRequest = {
+        format,
+        fields,
+        filters: {
+          action: exportFilters.action || null,
+          targetType: mapFrontendToBackend(exportFilters.targetType, 'targetType'),
+          maxRecords: 10000,
+          sanitizeData: true
+        }
+      };
+
+      // Check if user is authenticated
+      if (!accessToken) {
+        throw new Error('Authentication required. Please log in again.');
+      }
+
+      // Check if user has required permissions for export
+      const userRoles = user?.roles || [];
+      const hasExportPermission = userRoles.some(role => 
+        role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'
+      );
+      
+      if (!hasExportPermission) {
+        throw new Error('Export permission denied. Admin or SuperAdmin role required.');
+      }
+
+      // Call backend export API
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
+      const response = await fetch(`${apiBaseUrl}/audit-logs/export`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(exportRequest)
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (response.ok) {
+        const blob = await response.blob();
+        console.log('Blob size:', blob.size, 'Type:', blob.type);
+        
+        if (blob.size === 0) {
+          throw new Error('Export file is empty');
+        }
+
+        const filename = response.headers.get('Content-Disposition')
+          ?.split('filename=')[1]?.replace(/"/g, '') || `audit-logs-${new Date().toISOString().split('T')[0]}.${format}`;
+        
+        console.log('Downloading:', filename);
+        
+        // Force immediate download - no DOM manipulation
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        
+        // Trigger download immediately
+        setTimeout(() => {
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 0);
+
+        console.log('Download triggered for:', filename);
+        alert(`Export completed successfully: ${filename}`);
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `Export failed: ${response.statusText}`);
+      }
+      
     } catch (error) {
       console.error('Export failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Export failed. Please try again.';
+      alert(`Export failed: ${errorMessage}`);
     }
   };
+
 
   const handleRefresh = () => {
     refetch();
@@ -224,8 +285,7 @@ const AuditLogsPage: React.FC = () => {
   };
 
   const totalPages = auditLogData?.totalPages || 1;
-  // Use mock data for demonstration (replace with: auditLogData?.logs || [])
-  const logs = mockAuditLogs;
+  const logs = auditLogData?.logs || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -255,7 +315,7 @@ const AuditLogsPage: React.FC = () => {
                 <RefreshCw className="w-5 h-5" />
               </button>
               <button
-                onClick={handleExport}
+                onClick={() => setShowExportModal(true)}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Download className="w-4 h-4 mr-2" />
@@ -359,45 +419,40 @@ const AuditLogsPage: React.FC = () => {
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Action
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700">Action</label>
                     <select
                       value={filters.action || ''}
                       onChange={(e) => handleFilterChange('action', e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={isLoadingOptions}
                     >
                       <option value="">All Actions</option>
-                      <option value="user_login">Login</option>
-                      <option value="user_logout">Logout</option>
-                      <option value="user_create">Create</option>
-                      <option value="user_edit">Edit</option>
-                      <option value="user_delete">Delete</option>
-                      <option value="user_suspend">Suspend</option>
-                      <option value="audit_access">Accessed Audit Logs</option>
-                      <option value="profile_update">Updated Profile</option>
+                      {filterOptions?.actions.map((action) => (
+                        <option key={action} value={action}>
+                          {action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Target Type
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700">Target Type</label>
                     <select
                       value={filters.targetType || ''}
                       onChange={(e) => handleFilterChange('targetType', e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      disabled={isLoadingOptions}
                     >
                       <option value="">All Types</option>
-                      <option value="user">User</option>
-                      <option value="report">Report</option>
-                      <option value="system">System</option>
+                      {filterOptions?.targetTypes.map((targetType) => (
+                        <option key={targetType} value={targetType}>
+                          {targetType}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Start Date
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700">Start Date</label>
                     <input
                       type="date"
                       value={filters.startDate || ''}
@@ -406,9 +461,7 @@ const AuditLogsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      End Date
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700">End Date</label>
                     <input
                       type="date"
                       value={filters.endDate || ''}
@@ -441,6 +494,9 @@ const AuditLogsPage: React.FC = () => {
                     Target
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actor ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Time
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -451,21 +507,21 @@ const AuditLogsPage: React.FC = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={7} className="px-6 py-12 text-center">
                       <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-600" />
                       <p className="text-gray-500">Loading audit logs...</p>
                     </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={7} className="px-6 py-12 text-center">
                       <AlertCircle className="w-6 h-6 mx-auto mb-2 text-red-600" />
                       <p className="text-red-600">Error loading audit logs: {error}</p>
                     </td>
                   </tr>
                 ) : logs.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={7} className="px-6 py-12 text-center">
                       <History className="w-12 h-12 mx-auto mb-2 text-gray-300" />
                       <p className="text-gray-500">No audit logs found</p>
                     </td>
@@ -596,7 +652,7 @@ const AuditLogsPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Details</label>
-                <p className="mt-1 text-sm text-gray-900">{selectedLog.details}</p>
+                <div className="text-sm text-gray-600">{selectedLog.details}</div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Timestamp</label>
@@ -616,6 +672,14 @@ const AuditLogsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Export Modal */}
+      <ExportAuditLogsModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExport}
+        currentFilters={filters}
+      />
     </div>
   );
 };
