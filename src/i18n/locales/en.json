@@ -165,6 +165,14 @@
       "resourceManagement": {
         "title": "Resource Management",
         "description": "Track and coordinate emergency resources, supplies, and personnel for optimal disaster response effectiveness."
+      },
+      "recoveryAnalytics": {
+        "title": "Recovery Analytics",
+        "description": "Data-driven recovery planning with progress tracking and resource optimization tools."
+      },
+      "precisionResponse": {
+        "title": "Precision Response",
+        "description": "Targeted emergency response coordination with AI-powered resource deployment strategies."
       }
     },
     "map": {
