@@ -50,21 +50,24 @@ api.interceptors.request.use(
       }
     }
 
-    // Add request ID for tracking
+    // Add request metadata for tracking
     config.metadata = {
       startTime: Date.now(),
       requestId: Math.random().toString(36).substr(2, 9),
     };
 
+    console.log('🚀 API Request:', {
+      url: config.baseURL + config.url,
+      method: config.method,
+      headers: config.headers,
+      data: config.data,
+      requestId: config.metadata.requestId,
+    });
+
     return config;
   },
   (error) => {
-    const apiError = errorHandler.fromAxiosError(error);
-    ErrorTracker.getInstance().track(apiError, {
-      component: 'API',
-      action: 'request_error',
-    });
-    return Promise.reject(apiError);
+    return Promise.reject(error);
   }
 );
 
@@ -73,6 +76,15 @@ api.interceptors.response.use(
   (response) => {
     // Track successful requests
     const duration = Date.now() - (response.config.metadata?.startTime || 0);
+    
+    console.log('✅ API Response:', {
+      url: response.config.url,
+      method: response.config.method,
+      status: response.status,
+      duration: `${duration}ms`,
+      data: response.data,
+      requestId: response.config.metadata?.requestId,
+    });
     
     return response;
   },
@@ -84,6 +96,16 @@ api.interceptors.response.use(
       console.error('Backend server is not running or unreachable at:', API_BASE_URL);
       console.error('Please ensure the DisasterApp backend is running on localhost:5057');
     }
+
+    console.error('❌ API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+      requestId: error.config?.metadata?.requestId,
+      baseURL: API_BASE_URL,
+    });
 
     // Track API errors, but avoid duplicate tracking during retries
     // We'll let the authService handle error tracking for auth operations
@@ -154,7 +176,18 @@ export const apiService = {
     },
 
     googleLogin: async (credential: string) => {
+      console.log('🔍 Google Login - Sending credential to backend:', {
+        credentialLength: credential?.length,
+        credentialStart: credential?.substring(0, 20) + '...',
+      });
+      
       const response = await api.post('/Auth/google-login', { idToken: credential });
+      
+      console.log('🔍 Google Login - Backend response:', {
+        status: response.status,
+        data: response.data,
+      });
+      
       return response.data;
     },
     
