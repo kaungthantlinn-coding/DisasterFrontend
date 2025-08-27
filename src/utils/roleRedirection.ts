@@ -11,6 +11,11 @@ export const getRoleBasedRedirectPath = (user: User | null, defaultPath: string 
     return defaultPath;
   }
 
+  // Super Admin users should be redirected to admin dashboard (unified panel)
+  if (user.roles.includes('superadmin') || user.roles.includes('super_admin')) {
+    return '/admin';
+  }
+
   // Admin users should be redirected to admin panel
   if (user.roles.includes('admin')) {
     return '/admin';
@@ -35,8 +40,11 @@ export const shouldRedirectBasedOnRole = (user: User | null): boolean => {
     return false;
   }
 
-  // Redirect admin and CJ users to their specific dashboards
-  return user.roles.includes('admin') || user.roles.includes('cj');
+  // Redirect superadmin, admin and CJ users to their specific dashboards
+  return user.roles.includes('superadmin') || 
+         user.roles.includes('super_admin') || 
+         user.roles.includes('admin') || 
+         user.roles.includes('cj');
 };
 
 /**
@@ -47,6 +55,10 @@ export const shouldRedirectBasedOnRole = (user: User | null): boolean => {
 export const getRedirectDestinationName = (user: User | null): string => {
   if (!user || !user.roles || user.roles.length === 0) {
     return 'Home';
+  }
+
+  if (user.roles.includes('superadmin') || user.roles.includes('super_admin')) {
+    return 'Super Admin Dashboard';
   }
 
   if (user.roles.includes('admin')) {

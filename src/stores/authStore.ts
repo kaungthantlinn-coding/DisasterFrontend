@@ -68,15 +68,9 @@ export const useAuthStore = create<AuthStore>()(
       logout: async () => {
         try {
           // Call server logout to clear HTTP-only refresh token cookie
-          const response = await fetch('/api/Auth/logout', {
-            method: 'POST',
-            credentials: 'include' // Important for cookies
-          });
-          if (!response.ok) {
-            console.warn('Server logout failed, clearing local state anyway');
-          }
+          await apiClient.post('/Auth/logout');
         } catch (error) {
-          console.error('API logout failed', error);
+          console.warn('Server logout failed, clearing local state anyway', error);
         }
         
         // Always clear local state

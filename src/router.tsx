@@ -108,6 +108,18 @@ const AdminApp = () => {
                 secondary: "#fff",
               },
             },
+            loading: {
+              duration: Infinity,
+              style: {
+                background: "linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%)",
+                borderLeft: "5px solid rgb(59, 130, 246)",
+                color: "#1e3a8a",
+              },
+              iconTheme: {
+                primary: "rgb(59, 130, 246)",
+                secondary: "#fff",
+              },
+            },
           }}
         />
       </QueryClientProvider>

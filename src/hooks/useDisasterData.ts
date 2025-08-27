@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RealWorldDisaster } from '../types';
 import { disasterDataService } from '../services/disasterDataService';
 import { DisasterReportDto } from '../types/DisasterReport';
 
@@ -7,6 +6,7 @@ interface UseDisasterDataOptions {
   autoRefresh?: boolean;
   refreshInterval?: number; // in milliseconds
   includeSignificantOnly?: boolean;
+  enabled?: boolean; // Whether to fetch data at all
 }
 
 interface UseDisasterDataReturn {
@@ -29,6 +29,7 @@ export const useDisasterData = (options: UseDisasterDataOptions = {}): UseDisast
     autoRefresh = true,
     refreshInterval = 10 * 60 * 1000, // 10 minutes default - reduced frequency
     includeSignificantOnly = true,
+    enabled = true, // Default to enabled
   } = options;
 
   const [disasters, setDisasters] = useState<DisasterReportDto[]>([]);
@@ -53,7 +54,20 @@ export const useDisasterData = (options: UseDisasterDataOptions = {}): UseDisast
       const stats = disasterData.reduce(
         (acc, disaster) => {
           acc.totalActive++;
-          acc[disaster.severity]++;
+          switch (disaster.severity) {
+            case 3: // Critical
+              acc.critical++;
+              break;
+            case 2: // High
+              acc.high++;
+              break;
+            case 1: // Medium
+              acc.medium++;
+              break;
+            case 0: // Low
+              acc.low++;
+              break;
+          }
           return acc;
         },
         { totalActive: 0, critical: 0, high: 0, medium: 0, low: 0 }
@@ -76,14 +90,18 @@ export const useDisasterData = (options: UseDisasterDataOptions = {}): UseDisast
     await fetchData();
   }, [fetchData]);
 
-  // Initial data fetch
+  // Initial data fetch - only if enabled
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (enabled) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [fetchData, enabled]);
 
-  // Auto-refresh setup
+  // Auto-refresh setup - only if enabled and autoRefresh is true
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!enabled || !autoRefresh) return;
 
     const interval = setInterval(() => {
       fetchData();

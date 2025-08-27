@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
+import { fetchAuditFilterOptions, AuditFilterOptions } from '../apis/auditLog';
 
 export interface AuditLogEntry {
   id: string;
@@ -125,5 +126,67 @@ export const useAuditLogStats = () => {
     isLoading,
     error,
     refetch: fetchStats
+  };
+};
+
+// Hook for fetching available audit filter options
+export const useAuditFilterOptions = () => {
+  const [filterOptions, setFilterOptions] = useState<AuditFilterOptions | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOptions = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const options = await fetchAuditFilterOptions();
+      setFilterOptions(options);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch filter options');
+      // Set fallback options based on known database values
+      setFilterOptions({
+        actions: [
+          'LOGIN_SUCCESS',
+          'LOGIN_FAILED',
+          'USER_LOGIN_SUCCESS', 
+          'USER_LOGIN_FAILED',
+          'LOGOUT',
+          'USER_CREATED',
+          'USER_UPDATED',
+          'USER_SUSPENDED',
+          'USER_REACTIVATED',
+          'USER_DEACTIVATED',
+          'DONATION_CREATED',
+          'DONATION_UPDATED',
+          'ORGANIZATION_REGISTERED',
+          'ORGANIZATION_UPDATED',
+          'REPORT_POST',
+          'REPORT_PUT',
+          'REPORT_DELETE',
+          'AUDIT_LOGS_EXPORTED_ADVANCED',
+          'PROFILE_UPDATED'
+        ],
+        targetTypes: [
+          'Audit',
+          'General',
+          'HttpRequest', 
+          'UserRole'
+        ]
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOptions();
+  }, []);
+
+  return {
+    filterOptions,
+    isLoading,
+    error,
+    refetch: fetchOptions
   };
 };

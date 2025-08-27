@@ -92,7 +92,14 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const menuItems = [
+  // Check if user is SuperAdmin
+  const isSuperAdmin = user?.roles?.some(role => 
+    typeof role === 'string' 
+      ? role.toLowerCase() === 'superadmin' 
+      : role === 'superadmin'
+  );
+
+  const baseMenuItems = [
     {
       icon: <LayoutDashboard className="w-5 h-5" />,
       label: "Dashboard",
@@ -142,6 +149,20 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       badge: undefined,
     },
   ];
+
+  const superAdminMenuItems = [
+    {
+      icon: <Shield className="w-5 h-5" />,
+      label: 'Roles',
+      path: '/admin/roles',
+      badge: undefined
+    }
+  ];
+
+  // Combine menu items based on user role
+  const menuItems = isSuperAdmin 
+    ? [...baseMenuItems.slice(0, -2), ...superAdminMenuItems, ...baseMenuItems.slice(-2)]
+    : baseMenuItems;
 
   const handleLogout = async () => {
     try {

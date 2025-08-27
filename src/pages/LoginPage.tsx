@@ -1,13 +1,27 @@
 import React from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { Shield, ArrowLeft, Lock, Mail } from 'lucide-react';
+import { ArrowLeft, Lock, Mail } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { getRoleBasedRedirectPath, logRoleBasedRedirection } from '../utils/roleRedirection';
 import LoginForm from '../components/LoginForm';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 
 const LoginPage: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  // Wait for authentication initialization to complete
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg mb-4 mx-auto">
+            <Lock size={32} className="text-white" />
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     const redirectPath = getRoleBasedRedirectPath(user);
@@ -26,13 +40,13 @@ const LoginPage: React.FC = () => {
 
       {/* Back to Home Link */}
       <div className="absolute top-6 left-6 z-10">
-        <Link
-          to="/"
-          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors group"
+        <button
+          onClick={() => window.location.href = '/'}
+          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors group cursor-pointer"
         >
           <ArrowLeft size={20} className="mr-2 group-hover:-translate-x-1 transition-transform" />
           <span className="font-medium">Back to Home</span>
-        </Link>
+        </button>
       </div>
 
       <div className="relative sm:mx-auto sm:w-full sm:max-w-md">
