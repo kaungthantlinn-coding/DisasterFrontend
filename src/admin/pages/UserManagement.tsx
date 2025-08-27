@@ -4,7 +4,6 @@ import RoleEditModal from '../../components/modals/RoleEditModal';
 import UserHistoryModal from '../../components/modals/UserHistoryModal';
 import ExportUsersModal from '../../components/modals/ExportUsersModal';
 import UserManagementCharts from '../components/UserManagementCharts';
-import SimpleAddUserModal from '../../components/modals/SimpleAddUserModal';
 import {
   Users,
   Search,
@@ -31,13 +30,11 @@ import {
   Mail,
   Phone,
   Download,
-  BarChart3,
-  UserPlus
+  BarChart3
 } from 'lucide-react';
 import { useUserManagement } from '../../hooks/useUserManagement';
 import { useConfirmationModal } from '../../hooks/useConfirmationModal';
 import { useAuthStore } from '../../stores/authStore';
-import { useCurrentUserPermissions } from '../../hooks/usePermissions';
 import Avatar from '../../components/Common/Avatar';
 import { extractPhotoUrl } from '../../utils/avatarUtils';
 import {
@@ -352,13 +349,8 @@ const UserManagement: React.FC = () => {
     isOpen: boolean;
   }>({ isOpen: false });
 
-  const [createUserModal, setCreateUserModal] = useState<{
-    isOpen: boolean;
-  }>({ isOpen: false });
-
   // Charts visibility state
   const [showCharts, setShowCharts] = useState(true);
-  const { isSuperAdmin } = useCurrentUserPermissions();
 
 
 
@@ -664,28 +656,25 @@ const UserManagement: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              {isSuperAdmin() && (
-                <button
-                  onClick={() => setCreateUserModal({ isOpen: true })}
-                  className="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-green-600 to-emerald-600 border-2 border-transparent rounded-xl hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-4 focus:ring-green-500/20 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
-                >
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  Add User
-                </button>
-              )}
-              {isSuperAdmin() && (
-                <button
-                  onClick={() => setShowCharts(!showCharts)}
-                  className={`inline-flex items-center px-6 py-3 text-sm font-semibold border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 transform hover:scale-105 ${
-                    showCharts
-                      ? 'text-blue-700 bg-blue-50 border-blue-300 hover:bg-blue-100 shadow-md'
-                      : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50 shadow-sm hover:shadow-md'
-                  }`}
-                >
-                  <BarChart3 className="w-5 h-5 mr-2" />
-                  {showCharts ? 'Hide Analytics' : 'Show Analytics'}
-                </button>
-              )}
+              <button
+                onClick={() => setShowCharts(!showCharts)}
+                className={`inline-flex items-center px-6 py-3 text-sm font-semibold border-2 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 transform hover:scale-105 ${
+                  showCharts
+                    ? 'text-blue-700 bg-blue-50 border-blue-300 hover:bg-blue-100 shadow-md'
+                    : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50 shadow-sm hover:shadow-md'
+                }`}
+              >
+                <BarChart3 className="w-5 h-5 mr-2" />
+                {showCharts ? 'Hide Analytics' : 'Show Analytics'}
+              </button>
+              <button
+                onClick={refresh}
+                disabled={isLoading}
+                className="inline-flex items-center px-6 py-3 text-sm font-semibold text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md"
+              >
+                <RefreshCw className={`w-5 h-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
               <button
                 onClick={() => setExportUsersModal({ isOpen: true })}
                 className="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 border-2 border-transparent rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
@@ -772,7 +761,7 @@ const UserManagement: React.FC = () => {
         </div>
 
         {/* User Management Charts */}
-        {showCharts && isSuperAdmin() && (
+        {showCharts && (
           <div className="mb-8">
             <UserManagementCharts />
           </div>
@@ -1185,15 +1174,6 @@ const UserManagement: React.FC = () => {
          totalUsers={computedDisplayStats.totalUsers || 0}
          availableRoles={availableRoles}
        />
-
-      <SimpleAddUserModal
-        isOpen={createUserModal.isOpen}
-        onClose={() => setCreateUserModal({ isOpen: false })}
-        onSuccess={() => {
-          setCreateUserModal({ isOpen: false });
-          refresh(); // Refresh the user list after successful creation
-        }}
-      />
 
       {/* Beautiful Confirmation Modal */}
       <ConfirmationModal {...modalProps} />

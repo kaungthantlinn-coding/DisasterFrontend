@@ -54,7 +54,7 @@ export const getById = async (
 export const createDisasterReport = async (
   dto: FormData,
   token?: string
-): Promise<DisasterReportDto> => {
+): Promise<DisasterReportCreateDto> => {
   console.log("🔍 === SERVICE LAYER DEBUG ===");
   console.log("📦 FormData received in service:");
   for (let [key, value] of dto.entries()) {
@@ -137,7 +137,7 @@ export const rejectDisasterReport = async (
 
 export const updateReportStatus = async (
   id: string,
-  status: "Verified" | "Rejected",
+  status: "Accepted" | "Rejected",
   token?: string
 ) => {
   const config = getAuthHeaders(token);

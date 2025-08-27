@@ -1,12 +1,6 @@
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  Routes,
-  Route,
-  Link,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect, useMemo } from 'react';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Users,
@@ -26,11 +20,11 @@ import {
   ChevronDown,
   Zap,
   Shield,
-  Activity,
-} from "lucide-react";
-import { useAuth } from "../../hooks/useAuth";
-import { NotificationAPI } from "../../services/Notification";
-import type { NotificationDTO } from "../../types/Notification";
+  Activity
+} from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { NotificationAPI } from '../../services/Notification';
+import type { NotificationDTO } from '../../types/Notification';
 
 interface SidebarItemProps {
   icon: React.ReactNode;
@@ -45,13 +39,13 @@ interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({
-  icon,
-  label,
-  path,
-  badge,
+const SidebarItem: React.FC<SidebarItemProps> = ({ 
+  icon, 
+  label, 
+  path, 
+  badge, 
   isActive = false,
-  onClick,
+  onClick 
 }) => {
   return (
     <Link
@@ -59,24 +53,20 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
       onClick={onClick}
       className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
         isActive
-          ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25"
-          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+          ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25'
+          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
       }`}
     >
-      <div
-        className={`flex-shrink-0 w-5 h-5 ${
-          isActive ? "text-white" : "text-slate-400 group-hover:text-slate-600"
-        }`}
-      >
+      <div className={`flex-shrink-0 w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`}>
         {icon}
       </div>
       <span className="ml-3 truncate">{label}</span>
       {badge && (
-        <span
-          className={`ml-auto px-2 py-0.5 text-xs font-medium rounded-full ${
-            isActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-600"
-          }`}
-        >
+        <span className={`ml-auto px-2 py-0.5 text-xs font-medium rounded-full ${
+          isActive 
+            ? 'bg-white/20 text-white' 
+            : 'bg-blue-100 text-blue-600'
+        }`}>
           {badge}
         </span>
       )}
@@ -92,95 +82,74 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  // Check if user is SuperAdmin
-  const isSuperAdmin = user?.roles?.some(role => 
-    typeof role === 'string' 
-      ? role.toLowerCase() === 'superadmin' 
-      : role === 'superadmin'
-  );
-
-  const baseMenuItems = [
+  const menuItems = [
     {
       icon: <LayoutDashboard className="w-5 h-5" />,
-      label: "Dashboard",
-      path: "/admin",
-      badge: undefined,
+      label: 'Dashboard',
+      path: '/admin',
+      badge: undefined
     },
     {
       icon: <Users className="w-5 h-5" />,
-      label: "Users",
-      path: "/admin/users",
+      label: 'Users',
+      path: '/admin/users',
       //badge: '1.2k'
     },
     {
       icon: <Building2 className="w-5 h-5" />,
-      label: "Organizations",
-      path: "/admin/organizations",
-      badge: undefined,
+      label: 'Organizations',
+      path: '/admin/organizations',
+      badge: undefined
     },
     {
       icon: <FileText className="w-5 h-5" />,
-      label: "Reports",
-      path: "/admin/reports",
-      badge: "23",
+      label: 'Reports',
+      path: '/admin/reports',
+      badge: '23'
     },
     {
       icon: <MessageSquare className="w-5 h-5" />,
-      label: "Support",
-      path: "/admin/support-requests",
-      badge: "5",
+      label: 'Support',
+      path: '/admin/support-requests',
+      badge: '5'
     },
     {
       icon: <BarChart3 className="w-5 h-5" />,
-      label: "Analytics",
-      path: "/admin/analytics",
-      badge: undefined,
+      label: 'Analytics',
+      path: '/admin/analytics',
+      badge: undefined
     },
     {
       icon: <History className="w-5 h-5" />,
-      label: "Audit Logs",
-      path: "/admin/audit-logs",
-      badge: undefined,
+      label: 'Audit Logs',
+      path: '/admin/audit-logs',
+      badge: undefined
     },
     {
       icon: <Settings className="w-5 h-5" />,
-      label: "Settings",
-      path: "/admin/settings",
-      badge: undefined,
-    },
-  ];
-
-  const superAdminMenuItems = [
-    {
-      icon: <Shield className="w-5 h-5" />,
-      label: 'Roles',
-      path: '/admin/roles',
+      label: 'Settings',
+      path: '/admin/settings',
       badge: undefined
     }
   ];
 
-  // Combine menu items based on user role
-  const menuItems = isSuperAdmin 
-    ? [...baseMenuItems.slice(0, -2), ...superAdminMenuItems, ...baseMenuItems.slice(-2)]
-    : baseMenuItems;
-
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/login");
+      navigate('/login');
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error('Logout failed:', error);
     }
   };
 
   useEffect(() => {
     if (sidebarOpen) {
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = 'unset';
     }
     return () => {
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = 'unset';
     };
   }, [sidebarOpen]);
 
@@ -188,21 +157,18 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const {
     data: adminNotifications = [],
     isLoading: notifLoading,
-    refetch: refetchNotifications,
+    refetch: refetchNotifications
   } = useQuery<NotificationDTO[]>({
-    queryKey: ["admin-notifications"],
+    queryKey: ['admin-notifications'],
     queryFn: async () => {
       try {
         return await NotificationAPI.getAdminNotifications();
       } catch (e) {
-        console.warn(
-          "Admin notifications failed, falling back to user notifications:",
-          e
-        );
+        console.warn('Admin notifications failed, falling back to user notifications:', e);
         try {
           return await NotificationAPI.getUserNotifications();
         } catch (e2) {
-          console.error("Both admin and user notifications failed:", e2);
+          console.error('Both admin and user notifications failed:', e2);
           return [];
         }
       }
@@ -212,7 +178,7 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   });
 
   const unreadCount = useMemo(
-    () => adminNotifications.filter((n) => !n.isRead).length,
+    () => adminNotifications.filter(n => !n.isRead).length,
     [adminNotifications]
   );
 
@@ -223,30 +189,26 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   }, [showNotifications, refetchNotifications]);
 
   return (
-    <div className={`min-h-screen bg-slate-50 ${darkMode ? "dark" : ""}`}>
+    <div className={`min-h-screen bg-slate-50 ${darkMode ? 'dark' : ''}`}>
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div
+        <div 
           className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
         {/* Sidebar header */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-slate-200">
           <div className="flex items-center space-x-3">
             <div className="flex items-center justify-center w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
               <Shield className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-semibold text-slate-900">
-              Admin Panel
-            </span>
+            <span className="text-lg font-semibold text-slate-900">Admin Panel</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -277,16 +239,16 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-sm font-medium text-white">
-                  {user?.name?.charAt(0)?.toUpperCase() || "A"}
+                  {user?.name?.charAt(0)?.toUpperCase() || 'A'}
                 </span>
               </div>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-900 truncate">
-                {user?.name || "Admin User"}
+                {user?.name || 'Admin User'}
               </p>
               <p className="text-xs text-slate-500 truncate">
-                {user?.email || "admin@example.com"}
+                {user?.email || 'admin@example.com'}
               </p>
             </div>
             <button
@@ -312,7 +274,7 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               >
                 <Menu className="w-5 h-5" />
               </button>
-
+              
               {/* Search bar */}
               <div className="hidden md:flex items-center space-x-4">
                 <div className="relative">
@@ -331,18 +293,14 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
               <div className="relative">
                 <button
                   className="relative p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
-                  onClick={() => setShowNotifications((s) => !s)}
+                  onClick={() => setShowNotifications(s => !s)}
                   aria-label="Notifications"
-                  title={
-                    unreadCount > 0
-                      ? `${unreadCount} unread notifications`
-                      : "Notifications"
-                  }
+                  title={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
                 >
                   <Bell className="w-5 h-5" />
                   {unreadCount > 0 ? (
                     <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center border-2 border-white">
-                      {unreadCount > 99 ? "99+" : unreadCount}
+                      {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   ) : (
                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white" />
@@ -352,9 +310,7 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-lg z-50">
                     <div className="p-3 flex items-center justify-between border-b">
-                      <span className="text-sm font-semibold text-slate-900">
-                        Notifications
-                      </span>
+                      <span className="text-sm font-semibold text-slate-900">Notifications</span>
                       <button
                         className="text-xs text-blue-600 hover:text-blue-700"
                         onClick={async () => {
@@ -362,7 +318,7 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                             await NotificationAPI.markAllAsRead();
                             await refetchNotifications();
                           } catch (e) {
-                            console.warn("Failed to mark all as read:", e);
+                            console.warn('Failed to mark all as read:', e);
                           }
                         }}
                       >
@@ -371,11 +327,8 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                     </div>
                     <div className="max-h-96 overflow-auto">
                       {notifLoading ? (
-                        <div className="p-4 text-sm text-slate-500">
-                          Loading...
-                        </div>
-                      ) : adminNotifications &&
-                        adminNotifications.length > 0 ? (
+                        <div className="p-4 text-sm text-slate-500">Loading...</div>
+                      ) : adminNotifications && adminNotifications.length > 0 ? (
                         adminNotifications.map((n) => (
                           <div
                             key={n.id}
@@ -388,51 +341,33 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                               setShowNotifications(false);
                               // Deep link to review page if notification has a disasterReportId
                               if (n.disasterReportId) {
-                                navigate(
-                                  `/admin/reports/review/${n.disasterReportId}`
-                                );
+                                navigate(`/admin/reports/review/${n.disasterReportId}`);
                               } else {
-                                navigate("/admin/reports");
+                                navigate('/admin/reports');
                               }
                             }}
                           >
-                            <div
-                              className={`w-2 h-2 rounded-full mt-2 mr-3 ${
-                                n.isRead ? "bg-slate-300" : "bg-red-500"
-                              }`}
-                            />
+                            <div className={`w-2 h-2 rounded-full mt-2 mr-3 ${n.isRead ? 'bg-slate-300' : 'bg-red-500'}`} />
                             <div className="flex-1">
-                              <div className="text-sm font-medium text-slate-900">
-                                {n.title || "Notification"}
-                              </div>
-                              <div className="text-xs text-slate-600 mt-0.5">
-                                {n.message}
-                              </div>
-                              <div className="text-[10px] text-slate-400 mt-1">
-                                {new Date(n.createdAt).toLocaleString()}
-                              </div>
+                              <div className="text-sm font-medium text-slate-900">{n.title || 'Notification'}</div>
+                              <div className="text-xs text-slate-600 mt-0.5">{n.message}</div>
+                              <div className="text-[10px] text-slate-400 mt-1">{new Date(n.createdAt).toLocaleString()}</div>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <div className="p-4 text-sm text-slate-500">
-                          No notifications
-                        </div>
+                        <div className="p-4 text-sm text-slate-500">No notifications</div>
                       )}
                     </div>
                   </div>
                 )}
               </div>
-
+              
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               >
-                {darkMode ? (
-                  <Sun className="w-5 h-5" />
-                ) : (
-                  <Moon className="w-5 h-5" />
-                )}
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
 
               {/* User dropdown */}
@@ -440,7 +375,7 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                 <button className="flex items-center space-x-2 p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
                   <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <span className="text-xs font-medium text-white">
-                      {user?.name?.charAt(0)?.toUpperCase() || "A"}
+                      {user?.name?.charAt(0)?.toUpperCase() || 'A'}
                     </span>
                   </div>
                   <ChevronDown className="w-4 h-4" />
@@ -451,7 +386,9 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         </header>
 
         {/* Page content */}
-        <main className="p-6">{children}</main>
+        <main className="p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { useAuthStore } from "../stores/authStore";
+import { useAuthStore } from "../stores/authStore"; // Import auth store
 import { useRoles } from "../hooks/useRoles";
 import Header from "../components/Layout/Header";
 import AdminDashboard from "../components/AdminDashboard";
 import CjChatList from "./CjChatList";
+
 import {
   AlertTriangle,
   Eye,
@@ -14,7 +15,7 @@ import {
   Calendar,
   Clock,
   Plus,
-  XCircle, // Added for Rejected Reports icon
+  Heart,
 } from "lucide-react";
 import { showInfoToast } from "../utils/notifications";
 import { DisasterReportDto, ReportStatus } from "../types/DisasterReport";
@@ -29,7 +30,6 @@ interface StatCardProps {
 }
 
 interface ReportCardProps {
-  id: string;
   title: string;
   description: string;
   status: "Verified" | "Pending" | "Rejected";
@@ -40,7 +40,6 @@ interface ReportCardProps {
 }
 
 interface AssistanceCardProps {
-  id: number;
   title: string;
   description: string;
   date: string;
@@ -69,7 +68,6 @@ const StatCard: React.FC<StatCardProps> = ({
 );
 
 const ReportCard: React.FC<ReportCardProps> = ({
-  id,
   title,
   description,
   status,
@@ -153,7 +151,6 @@ const ReportCard: React.FC<ReportCardProps> = ({
 };
 
 const AssistanceCard: React.FC<AssistanceCardProps> = ({
-  id,
   title,
   description,
   date,
@@ -201,16 +198,13 @@ const AssistanceCard: React.FC<AssistanceCardProps> = ({
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const { accessToken } = useAuthStore();
+  const { accessToken } = useAuthStore(); // Get accessToken from auth store
   const { isAdmin } = useRoles();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"reports" | "assistance">(
     "reports"
   );
   const [showChatModal, setShowChatModal] = useState(false);
-  const [reportsData, setReportsData] = useState<DisasterReportDto[]>([]);
-  const [reportsLoading, setReportsLoading] = useState(true);
-  const [reportsError, setReportsError] = useState<string | null>(null);
 
   // Render admin dashboard for admin users
   if (isAdmin()) {
@@ -222,14 +216,19 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  // State for reports data
+  const [reportsData, setReportsData] = useState<DisasterReportDto[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(true);
+  const [reportsError, setReportsError] = useState<string | null>(null);
+
   // Fetch reports data
   useEffect(() => {
     const fetchReports = async () => {
       try {
+        // Convert null to undefined to match getMyReports's parameter type
         const token = accessToken || undefined;
         if (user?.userId) {
           const reports = await getMyReports(user.userId, token);
-          console.log("Fetched reports:", reports); // Debug API response
           setReportsData(reports);
         }
       } catch (error) {
@@ -243,7 +242,7 @@ const Dashboard: React.FC = () => {
     if (user && user.userId) {
       fetchReports();
     }
-  }, [user, accessToken]);
+  }, [user, accessToken]); // Add accessToken to dependencies
 
   // Get user stats from API data
   const stats = {
@@ -253,73 +252,65 @@ const Dashboard: React.FC = () => {
         const reportStatus =
           typeof r.status === "string" ? r.status : String(r.status);
         return (
-          reportStatus === "Verified" ||
-          reportStatus === "Accepted" ||
-          reportStatus === ReportStatus.Accepted
+          reportStatus === "Verified" || reportStatus === ReportStatus.Accepted
         );
       }).length || 0,
-    rejectedReports:
-      reportsData.filter((r) => {
-        const reportStatus =
-          typeof r.status === "string" ? r.status : String(r.status);
-        return (
-          reportStatus === "Rejected" ||
-          reportStatus === ReportStatus.Rejected ||
-          reportStatus === "2"
-        );
-      }).length || 0,
+    assistanceProvided: 0, // This would come from assistance tracking API
   };
 
-  // Map reports to ReportCard props
+  // Get user's reports from API data with type-safe status mapping
+  // getMyReports already returns only the current user's reports
   const myReports = reportsData.map((report: DisasterReportDto) => {
     let status: "Verified" | "Pending" | "Rejected";
 
-    // Debug logging to inspect status
+    // Debug logging to see what status values we're getting
     console.log(
-      "Processing Report ID:",
+      "Report ID:",
       report.id,
       "Status:",
       report.status,
       "Type:",
-      typeof report.status
+      typeof report.status,
+      "Raw report object:",
+      report
     );
+    
+    // Temporary alert to see the actual status values in the browser
+    if (report.id) {
+      console.warn(`Report ${report.id} has status: "${report.status}" (${typeof report.status})`);
+    }
 
-    // Handle status mapping
+    // Handle different status formats that might come from API
     const reportStatus = report.status;
-
-    if (reportStatus == null) {
-      console.warn(
-        `Report ${report.id} has null/undefined status, defaulting to Pending`
-      );
-      status = "Pending";
-    } else if (typeof reportStatus === "number") {
+    
+    // Check if status is a number (0=Pending, 1=Accepted, 2=Rejected)
+    if (typeof reportStatus === "number") {
       switch (reportStatus) {
-        case 1:
+        case 1: // Accepted
           status = "Verified";
           break;
-        case 2:
+        case 2: // Rejected
           status = "Rejected";
           break;
-        case 0:
+        case 0: // Pending
         default:
           status = "Pending";
           break;
       }
     } else {
-      // Handle string values with case-insensitive comparison
-      const statusString = String(reportStatus).toLowerCase();
+      // Handle string values
+      const statusString = typeof reportStatus === "string" ? reportStatus : String(reportStatus);
       switch (statusString) {
-        case "accepted":
-        case "verified":
-        case ReportStatus.Accepted.toLowerCase():
+        case "Accepted":
+        case ReportStatus.Accepted:
           status = "Verified";
           break;
-        case "rejected":
-        case ReportStatus.Rejected.toLowerCase():
+        case "Rejected":
+        case ReportStatus.Rejected:
           status = "Rejected";
           break;
-        case "pending":
-        case ReportStatus.Pending.toLowerCase():
+        case "Pending":
+        case ReportStatus.Pending:
         default:
           status = "Pending";
           break;
@@ -328,25 +319,60 @@ const Dashboard: React.FC = () => {
 
     return {
       id: report.id,
-      title: report.title || "Untitled Report",
+      title: report.title,
       description:
-        report.description && report.description.length > 100
+        report.description.length > 100
           ? report.description.substring(0, 100) + "..."
-          : report.description || "No description provided", 
+          : report.description,
       status,
-      date: report.timestamp
-        ? new Date(report.timestamp).toLocaleDateString()
-        : "Unknown date",
+      date: new Date(report.timestamp).toLocaleDateString(),
       image:
         report.photoUrls?.[0] ||
         "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center",
     };
   });
 
+  const myAssistance = [
+    {
+      id: 1,
+      title: "Flooding in Downtown District",
+      description:
+        "Provided emergency shelter coordination with Red Cross. Secured temporary housing for 8 families.",
+      date: "Jan 16, 2024",
+      status: "Endorsed" as const,
+    },
+    {
+      id: 2,
+      title: "Wildfire Damage Assessment",
+      description:
+        "Coordinated evacuation transportation for 5 elderly residents.",
+      date: "Jan 13, 2024",
+    },
+  ];
+
+  const assistanceReceived = [
+    {
+      id: 1,
+      organization: "Red Cross",
+      type: "Emergency Supplies",
+      date: "16/01/2024",
+      status: "Endorsed" as const,
+    },
+    {
+      id: 2,
+      organization: "Local Volunteers",
+      type: "Cleanup Help",
+      date: "18/01/2024",
+    },
+  ];
+
+  // Show user dashboard
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 navbar-spacing pb-8">
+        {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -367,6 +393,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard
             icon={<Eye className="w-6 h-6" />}
@@ -383,14 +410,15 @@ const Dashboard: React.FC = () => {
             iconColor="text-green-600"
           />
           <StatCard
-            icon={<XCircle className="w-6 h-6" />}
-            title="Rejected Reports"
-            value={reportsLoading ? "..." : stats.rejectedReports}
-            bgColor="bg-red-100" // Changed to match rejected status
-            iconColor="text-red-600" // Changed to match rejected status
+            icon={<Heart className="w-6 h-6" />}
+            title="Assistance Provided"
+            value={stats.assistanceProvided}
+            bgColor="bg-red-50"
+            iconColor="text-red-600"
           />
         </div>
 
+        {/* Activity Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-8">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
@@ -401,10 +429,11 @@ const Dashboard: React.FC = () => {
               </p>
             </div>
 
+            {/* Tab Navigation */}
             <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-6">
               <button
                 onClick={() => setActiveTab("reports")}
-                className={`flex-1 py-2 px-4 rounded-md text-sm font-bold transition-colors ${
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
                   activeTab === "reports"
                     ? "bg-white text-gray-900 shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
@@ -412,8 +441,19 @@ const Dashboard: React.FC = () => {
               >
                 My Reports
               </button>
+              <button
+                onClick={() => setActiveTab("assistance")}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === "assistance"
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                My Assistance
+              </button>
             </div>
 
+            {/* Tab Content */}
             {activeTab === "reports" && (
               <div>
                 <div className="flex items-center justify-between mb-4">
@@ -429,27 +469,123 @@ const Dashboard: React.FC = () => {
                   </Link>
                 </div>
                 <div className="space-y-4">
-                  {reportsLoading ? (
-                    <p className="text-gray-600">Loading reports...</p>
-                  ) : reportsError ? (
-                    <p className="text-red-600">{reportsError}</p>
-                  ) : myReports.length === 0 ? (
-                    <p className="text-gray-600">No reports submitted yet.</p>
-                  ) : (
-                    myReports.map((report) => (
-                      <ReportCard
-                        key={report.id}
-                        id={report.id}
-                        title={report.title}
-                        description={report.description}
-                        status={report.status}
-                        date={report.date}
-                        image={report.image}
-                        onView={() => navigate(`/reports/${report.id}`)}
-                        onEdit={() => navigate(`/report/edit/${report.id}`)}
-                      />
-                    ))
-                  )}
+                  {myReports.map((report) => (
+                    <ReportCard
+                      key={report.id}
+                      title={report.title}
+                      description={report.description}
+                      status={report.status}
+                      date={report.date}
+                      image={report.image}
+                      onView={() => {
+                        // Navigate to report detail page
+                        navigate(`/reports/${report.id}`);
+                      }}
+                      onEdit={() => {
+                        // Navigate to edit report page
+                        navigate(`/report/edit/${report.id}`);
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "assistance" && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Assistance I've Provided
+                  </h3>
+                  <button
+                    onClick={() => navigate("/reports")}
+                    className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                  >
+                    Help Others
+                    <ExternalLink className="w-4 h-4 ml-1" />
+                  </button>
+                </div>
+                <div className="space-y-4 mb-8">
+                  {myAssistance.map((assistance) => (
+                    <AssistanceCard
+                      key={assistance.id}
+                      title={assistance.title}
+                      description={assistance.description}
+                      date={assistance.date}
+                      status={assistance.status}
+                      onView={() => {
+                        // Navigate to assistance detail page
+                        navigate(`/assistance/${assistance.id}`);
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Assistance Received Section */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Assistance Received - Flood in Sacramento County, CA
+                  </h3>
+                  <div className="space-y-3">
+                    {assistanceReceived.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3">
+                            <div className="font-medium text-gray-900">
+                              {item.organization}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {item.type}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1 flex items-center">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {item.date}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          {item.status && (
+                            <span
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                item.status === "Endorsed"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {item.status === "Endorsed" ? (
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                              ) : (
+                                <Clock className="w-3 h-3 mr-1" />
+                              )}
+                              {item.status}
+                            </span>
+                          )}
+                          <button
+                            onClick={() => {
+                              if (item.status === "Endorsed") {
+                                // Navigate to assistance received detail
+                                navigate(`/assistance/received/${item.id}`);
+                              } else {
+                                // Handle endorsement logic
+                                showInfoToast(
+                                  "Endorsement functionality will be implemented in a future update.",
+                                  "Feature Coming Soon"
+                                );
+                              }
+                            }}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1 hover:bg-blue-50 rounded transition-colors"
+                          >
+                            {item.status === "Endorsed"
+                              ? "View Report"
+                              : "Endorse"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

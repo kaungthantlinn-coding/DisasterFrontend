@@ -203,8 +203,7 @@ const Reports: React.FC = () => {
       // Disaster type filter
       if (
         selectedDisasterType !== "all" &&
-        report.disasterTypeName?.toLowerCase() !==
-          selectedDisasterType.toLowerCase()
+        report.disasterTypeName !== selectedDisasterType
       ) {
         return false;
       }
@@ -217,12 +216,8 @@ const Reports: React.FC = () => {
         return false;
       }
 
-      // Status filter (only for CJ role)
-      if (
-        isCj() &&
-        selectedStatus !== "all" &&
-        report.status !== selectedStatus
-      ) {
+      // Status filter
+      if (selectedStatus !== "all" && report.status !== selectedStatus) {
         return false;
       }
 
@@ -274,7 +269,6 @@ const Reports: React.FC = () => {
     selectedStatus,
     showOnlyWithImages,
     sortBy,
-    isCj,
   ]);
 
   // Pagination
@@ -542,13 +536,13 @@ const Reports: React.FC = () => {
                   <div className="text-3xl font-bold text-gray-900 mb-2">
                     {
                       filteredAndSortedReports.filter(
-                        (r) => r.status === ReportStatus.Rejected
+                        (r) =>
+                          r.severity.toUpperCase() === "CRITICAL" ||
+                          r.severity.toUpperCase() === "HIGH"
                       ).length
                     }
                   </div>
-                  <div className="text-gray-600 font-medium">
-                    Rejected Reports
-                  </div>
+                  <div className="text-gray-600 font-medium">High Priority</div>
                 </div>
 
                 <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80 text-center">
@@ -690,24 +684,22 @@ const Reports: React.FC = () => {
                       </select>
                     </div>
 
-                    {isCj() && (
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                          Report Status
-                        </label>
-                        <select
-                          value={selectedStatus}
-                          onChange={(e) => setSelectedStatus(e.target.value)}
-                          className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                        >
-                          {statusOptions.map((status) => (
-                            <option key={status} value={status}>
-                              {status === "all" ? "All Statuses" : status}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Report Status
+                      </label>
+                      <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                      >
+                        {statusOptions.map((status) => (
+                          <option key={status} value={status}>
+                            {status === "all" ? "All Statuses" : status}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -830,7 +822,7 @@ const Reports: React.FC = () => {
                     ? searchTerm ||
                       selectedDisasterType !== "all" ||
                       selectedSeverity !== "all" ||
-                      (isCj() && selectedStatus !== "all")
+                      selectedStatus !== "all"
                       ? "No reports match your current filters. Try adjusting your search criteria."
                       : isOnlyUser()
                       ? "No accepted disaster reports available."
@@ -1402,6 +1394,8 @@ const Reports: React.FC = () => {
             )}
           </div>
         </section>
+
+        {/* Featured Reports Section */}
 
         {/* CTA Section */}
         <section className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { Navigate, Link } from 'react-router-dom';
+import { Shield, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { getRoleBasedRedirectPath } from '../utils/roleRedirection';
 import SignupForm from '../components/SignupForm';
@@ -27,13 +27,13 @@ const SignupPage: React.FC = () => {
 
       {/* Back to Home Link */}
       <div className="absolute top-6 left-6 z-10">
-        <button
-          onClick={() => window.location.href = '/'}
-          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors group cursor-pointer"
+        <Link
+          to="/"
+          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors group"
         >
           <ArrowLeft size={20} className="mr-2 group-hover:-translate-x-1 transition-transform" />
           <span className="font-medium">Back to Home</span>
-        </button>
+        </Link>
       </div>
 
       <div className="relative sm:mx-auto sm:w-full sm:max-w-md">

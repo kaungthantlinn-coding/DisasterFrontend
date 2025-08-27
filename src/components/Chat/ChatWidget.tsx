@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { MessageCircle, Headphones, Minimize2, X, Send, ImagePlus } from "lucide-react";
 import { fetchCjUsers } from '../../apis/userManagement';
-import { useAuth } from '../../hooks/useAuth';
 import { sendMessageToCj, fetchConversation, fetchSendersToCj } from '../../apis/chat';
 import ImageViewer from "../Common/ImageViewer";
 import "../../pages/CjChatList.css";
@@ -67,14 +66,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const { isAuthenticated } = useAuth();
-
-  // Fetch CJ users on component mount - only if authenticated
+  // Fetch CJ users on component mount
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchCjUsers().then(setCjUsers).catch(() => setCjUsers([]));
-    }
-  }, [isAuthenticated]);
+    fetchCjUsers().then(setCjUsers).catch(() => setCjUsers([]));
+  }, []);
 
   // Determine if current user is CJ role
   useEffect(() => {

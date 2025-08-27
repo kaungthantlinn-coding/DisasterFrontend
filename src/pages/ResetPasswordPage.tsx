@@ -357,13 +357,13 @@ const ResetPasswordPage: React.FC = () => {
 
       {/* Back to Login Link */}
       <div className="absolute top-6 left-6 z-10">
-        <button
-          onClick={() => window.location.href = '/login'}
-          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors group cursor-pointer"
+        <Link
+          to="/login"
+          className="flex items-center text-blue-600 hover:text-blue-800 transition-colors group"
         >
           <ArrowLeft size={20} className="mr-2 group-hover:-translate-x-1 transition-transform" />
           <span className="font-medium">Back to Login</span>
-        </button>
+        </Link>
       </div>
 
       <div className="relative sm:mx-auto sm:w-full sm:max-w-md">

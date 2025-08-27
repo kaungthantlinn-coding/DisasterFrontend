@@ -72,9 +72,7 @@ const ReportReview: React.FC = () => {
   const [report, setReport] = useState<DisasterReportDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<
-    "accept" | "reject" | null
-  >(null);
+  const [actionLoading, setActionLoading] = useState<"accept" | "reject" | null>(null);
 
   const canAct = useMemo(
     () => report?.status === ReportStatus.Pending,
@@ -158,11 +156,7 @@ const ReportReview: React.FC = () => {
         </button>
 
         {report && (
-          <div
-            className={`px-3 py-1 rounded-full text-xs font-medium ${statusBadge(
-              report.status
-            )}`}
-          >
+          <div className={`px-3 py-1 rounded-full text-xs font-medium ${statusBadge(report.status)}`}>
             {report.status}
           </div>
         )}
@@ -197,18 +191,12 @@ const ReportReview: React.FC = () => {
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <div className="flex items-start justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {report.title}
-                </h1>
+                <h1 className="text-2xl font-bold text-gray-900">{report.title}</h1>
                 <p className="mt-2 text-gray-700">{report.description}</p>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
-                  <div
-                    className={`w-3 h-3 rounded-full ${severityDot(
-                      report.severity
-                    )}`}
-                  ></div>
+                  <div className={`w-3 h-3 rounded-full ${severityDot(report.severity)}`}></div>
                   <span className="text-sm text-gray-900">
                     Severity: <strong>{severityLabel(report.severity)}</strong>
                   </span>
@@ -235,9 +223,7 @@ const ReportReview: React.FC = () => {
           {/* Impact details */}
           {report.impactDetails?.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Impact Details
-              </h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Impact Details</h2>
               <div className="overflow-x-auto -mx-2 sm:mx-0">
                 <table className="min-w-full text-sm">
                   <thead>
@@ -256,9 +242,7 @@ const ReportReview: React.FC = () => {
                             : "-"}
                         </td>
                         <td className="py-2 pr-4 capitalize">
-                          {typeof d.severity === "number"
-                            ? severityLabel(d.severity)
-                            : "-"}
+                          {typeof d.severity === "number" ? severityLabel(d.severity) : "-"}
                         </td>
                         <td className="py-2">{d.description || "-"}</td>
                       </tr>
@@ -277,10 +261,7 @@ const ReportReview: React.FC = () => {
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {report.photoUrls.map((url, idx) => (
-                  <div
-                    key={idx}
-                    className="relative overflow-hidden rounded-lg border"
-                  >
+                  <div key={idx} className="relative overflow-hidden rounded-lg border">
                     <img
                       src={url}
                       alt={`photo-${idx}`}
@@ -319,9 +300,7 @@ const ReportReview: React.FC = () => {
                     ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                     : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
                 }`}
-                title={
-                  !canAct ? "Only pending reports can be rejected" : "Reject"
-                }
+                title={!canAct ? "Only pending reports can be rejected" : "Reject"}
               >
                 {actionLoading === "reject" ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -339,9 +318,7 @@ const ReportReview: React.FC = () => {
                     ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
                     : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
                 }`}
-                title={
-                  !canAct ? "Only pending reports can be accepted" : "Accept"
-                }
+                title={!canAct ? "Only pending reports can be accepted" : "Accept"}
               >
                 {actionLoading === "accept" ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

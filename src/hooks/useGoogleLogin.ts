@@ -67,6 +67,7 @@ export const useGoogleLogin = () => {
       // Handle specific error cases
       if (error.message === 'Account suspended') {
         console.log('🚫 Account suspended error caught - not showing additional toast');
+        // Don't show additional error toast, suspension message already shown
         return;
       }
       
@@ -83,36 +84,13 @@ export const useGoogleLogin = () => {
         return;
       }
       
-      // Enhanced error handling for Google OAuth issues
-      const axiosError = error as any;
-      if (axiosError?.response?.status === 401) {
-        console.log('🔒 401 Unauthorized - Backend authentication failed');
-        toast.error('Authentication failed. Please check your Google account or try again later.', {
-          duration: 6000,
-        });
-      } else if (axiosError?.response?.status === 403) {
-        console.log('🚫 403 Forbidden - Origin not allowed or invalid credentials');
-        toast.error('Google login is not properly configured. Please contact support.', {
-          duration: 6000,
-        });
-      } else if (axiosError?.code === 'NETWORK_ERROR' || !axiosError?.response) {
-        console.log('🌐 Network error - Cannot reach backend');
-        toast.error('Cannot connect to server. Please check your internet connection.', {
-          duration: 6000,
-        });
-      } else {
-        console.log('🔥 Showing generic Google login error toast');
-        toast.error('Google login failed. Please try again.');
-      }
+      console.log('🔥 Showing generic Google login error toast');
+      // Show generic error for other cases
+      toast.error('Google login failed. Please try again.');
       
       handleError(error as Error, {
         component: "useGoogleLogin",
         action: "google_login_mutation",
-        additionalInfo: {
-          status: axiosError?.response?.status,
-          statusText: axiosError?.response?.statusText,
-          errorCode: axiosError?.code
-        }
       });
     },
     retry: (failureCount, error) => {

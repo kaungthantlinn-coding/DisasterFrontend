@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
-import { useRoles } from "../../hooks/useRoles";
-import Header from "../../components/Layout/Header";
-import AdminDashboard from "../components/AdminDashboard";
-import {
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { useRoles } from '../../hooks/useRoles';
+import Header from '../../components/Layout/Header';
+import AdminDashboard from '../components/AdminDashboard';
+import { 
   AlertTriangle,
   Eye,
   ExternalLink,
@@ -12,11 +12,11 @@ import {
   Calendar,
   Clock,
   Plus,
-  Heart,
-} from "lucide-react";
-import { showInfoToast } from "../../utils/notifications";
-import { useReports, useReportsStatistics } from "../../hooks/useReports";
-import SignalRDebug from "../../components/Debug/SignalRDebug";
+  Heart
+} from 'lucide-react';
+import { showInfoToast } from '../../utils/notifications';
+import { useReports, useReportsStatistics } from '../../hooks/useReports';
+import SignalRDebug from '../../components/Debug/SignalRDebug';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -29,7 +29,7 @@ interface StatCardProps {
 interface ReportCardProps {
   title: string;
   description: string;
-  status: "Verified" | "Pending" | "Rejected";
+  status: 'Verified' | 'Pending' | 'Rejected';
   date: string;
   image?: string;
   onView: () => void;
@@ -40,17 +40,11 @@ interface AssistanceCardProps {
   title: string;
   description: string;
   date: string;
-  status?: "Endorsed" | "Pending";
+  status?: 'Endorsed' | 'Pending';
   onView: () => void;
 }
 
-const StatCard: React.FC<StatCardProps> = ({
-  icon,
-  title,
-  value,
-  bgColor,
-  iconColor,
-}) => (
+const StatCard: React.FC<StatCardProps> = ({ icon, title, value, bgColor, iconColor }) => (
   <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
     <div className="flex items-center justify-between">
       <div>
@@ -58,33 +52,23 @@ const StatCard: React.FC<StatCardProps> = ({
         <p className="text-3xl font-bold text-gray-900">{value}</p>
       </div>
       <div className={`p-3 rounded-xl ${bgColor}`}>
-        <div className={iconColor}>{icon}</div>
+        <div className={iconColor}>
+          {icon}
+        </div>
       </div>
     </div>
   </div>
 );
 
-const ReportCard: React.FC<ReportCardProps> = ({
-  title,
-  description,
-  status,
-  date,
-  image,
-  onView,
-  onEdit,
-}) => {
+const ReportCard: React.FC<ReportCardProps> = ({ title, description, status, date, image, onView, onEdit }) => {
   const [imageError, setImageError] = useState(false);
-
+  
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Verified":
-        return "bg-green-100 text-green-800";
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "Rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+      case 'Verified': return 'bg-green-100 text-green-800';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -93,15 +77,9 @@ const ReportCard: React.FC<ReportCardProps> = ({
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-            {description}
-          </p>
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{description}</p>
           <div className="flex items-center justify-between">
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                status
-              )}`}
-            >
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
               <CheckCircle className="w-3 h-3 mr-1" />
               {status}
             </span>
@@ -112,10 +90,10 @@ const ReportCard: React.FC<ReportCardProps> = ({
           </div>
         </div>
         {image && !imageError && (
-          <img
-            src={image}
-            alt={title}
-            className="w-16 h-16 rounded-lg object-cover ml-4 border border-gray-200"
+          <img 
+            src={image} 
+            alt={title} 
+            className="w-16 h-16 rounded-lg object-cover ml-4 border border-gray-200" 
             onError={() => setImageError(true)}
           />
         )}
@@ -126,7 +104,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
         )}
       </div>
       <div className="flex space-x-2">
-        <button
+        <button 
           onClick={onView}
           className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md font-medium transition-colors"
         >
@@ -134,7 +112,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
           View
         </button>
         {onEdit && (
-          <button
+          <button 
             onClick={onEdit}
             className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-md font-medium transition-colors"
           >
@@ -147,65 +125,44 @@ const ReportCard: React.FC<ReportCardProps> = ({
   );
 };
 
-const AssistanceCard: React.FC<AssistanceCardProps> = ({
-  title,
-  description,
-  date,
-  status,
-  onView,
-}) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-            {description}
-          </p>
-          <div className="flex items-center justify-between">
-            {status && (
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  status === "Endorsed"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-yellow-100 text-yellow-800"
-                }`}
-              >
-                {status === "Endorsed" ? (
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                ) : (
-                  <Clock className="w-3 h-3 mr-1" />
-                )}
-                {status}
-              </span>
-            )}
-            <span className="text-xs text-gray-500 flex items-center">
-              <Calendar className="w-3 h-3 mr-1" />
-              {date}
+const AssistanceCard: React.FC<AssistanceCardProps> = ({ title, description, date, status, onView }) => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+    <div className="flex items-start justify-between mb-4">
+      <div className="flex-1">
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
+        <p className="text-gray-600 text-sm mb-3">{description}</p>
+        <div className="flex items-center justify-between">
+          {status && (
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              status === 'Endorsed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {status === 'Endorsed' ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
+              {status}
             </span>
-          </div>
+          )}
+          <span className="text-xs text-gray-500 flex items-center">
+            <Calendar className="w-3 h-3 mr-1" />
+            {date}
+          </span>
         </div>
       </div>
-      <div className="flex space-x-2">
-        <button
-          onClick={onView}
-          className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md font-medium transition-colors"
-        >
-          <Eye className="w-4 h-4 mr-1" />
-          View
-        </button>
-      </div>
     </div>
-  );
-};
+    <button 
+      onClick={onView}
+      className="flex items-center px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md font-medium transition-colors"
+    >
+      <Eye className="w-4 h-4 mr-1" />
+      View Report
+    </button>
+  </div>
+);
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { isAdmin } = useRoles();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"reports" | "assistance">(
-    "reports"
-  );
+  const [activeTab, setActiveTab] = useState<'reports' | 'assistance'>('reports');
+
 
   // Render admin dashboard for admin users
   if (isAdmin()) {
@@ -228,65 +185,53 @@ const Dashboard: React.FC = () => {
 
   // Get user stats from API or use defaults
   const stats = {
-    reportsSubmitted: userReportsData?.length || 0,
-    verifiedReports:
-      userReportsData?.filter((r: any) => r.status === "verified").length || 0,
-    assistanceProvided: 0, // This would come from assistance tracking API
+    reportsSubmitted: userReportsData?.totalCount || 0,
+    verifiedReports: userReportsData?.reports?.filter(r => r.status === 'verified').length || 0,
+    assistanceProvided: 0 // This would come from assistance tracking API
   };
 
   // Get user's reports from API data
-  const myReports = (userReportsData || [])
-    .slice(0, 2)
-    .map((report: any) => ({
-      id: report.id,
-      title: report.title,
-      description:
-        report.description.length > 100
-          ? report.description.substring(0, 100) + "..."
-          : report.description,
-      status:
-        report.status === "resolved"
-          ? "Verified"
-          : ((report.status.charAt(0).toUpperCase() +
-              report.status.slice(1)) as "Verified" | "Pending" | "Rejected"),
-      date: new Date(report.createdAt).toLocaleDateString(),
-      image:
-        report.photos?.[0] ||
-        "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center",
-    }));
+  const myReports = (userReportsData?.reports || []).slice(0, 2).map(report => ({
+    id: report.id,
+    title: report.title,
+    description: report.description.length > 100
+      ? report.description.substring(0, 100) + '...'
+      : report.description,
+    status: report.status === 'resolved' ? 'Verified' : report.status.charAt(0).toUpperCase() + report.status.slice(1) as 'Verified' | 'Pending' | 'Rejected',
+    date: new Date(report.createdAt).toLocaleDateString(),
+    image: report.photos?.[0] || 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center'
+  }));
 
   const myAssistance = [
     {
       id: 1,
-      title: "Flooding in Downtown District",
-      description:
-        "Provided emergency shelter coordination with Red Cross. Secured temporary housing for 8 families.",
-      date: "Jan 16, 2024",
-      status: "Endorsed" as const,
+      title: 'Flooding in Downtown District',
+      description: 'Provided emergency shelter coordination with Red Cross. Secured temporary housing for 8 families.',
+      date: 'Jan 16, 2024',
+      status: 'Endorsed' as const
     },
     {
       id: 2,
-      title: "Wildfire Damage Assessment",
-      description:
-        "Coordinated evacuation transportation for 5 elderly residents.",
-      date: "Jan 13, 2024",
-    },
+      title: 'Wildfire Damage Assessment',
+      description: 'Coordinated evacuation transportation for 5 elderly residents.',
+      date: 'Jan 13, 2024'
+    }
   ];
 
   const assistanceReceived = [
     {
       id: 1,
-      organization: "Red Cross",
-      type: "Emergency Supplies",
-      date: "16/01/2024",
-      status: "Endorsed" as const,
+      organization: 'Red Cross',
+      type: 'Emergency Supplies',
+      date: '16/01/2024',
+      status: 'Endorsed' as const
     },
     {
       id: 2,
-      organization: "Local Volunteers",
-      type: "Cleanup Help",
-      date: "18/01/2024",
-    },
+      organization: 'Local Volunteers',
+      type: 'Cleanup Help',
+      date: '18/01/2024'
+    }
   ];
 
   // Show user dashboard
@@ -299,14 +244,10 @@ const Dashboard: React.FC = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {user?.name}
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Manage your reports and assistance activities
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name}</h1>
+              <p className="text-gray-600 mt-1">Manage your reports and assistance activities</p>
             </div>
-            <Link
+            <Link 
               to="/report/new"
               className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
             >
@@ -346,30 +287,27 @@ const Dashboard: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">My Activity</h2>
-              <p className="text-sm text-gray-600">
-                Track your disaster reports and assistance provided to the
-                community.
-              </p>
+              <p className="text-sm text-gray-600">Track your disaster reports and assistance provided to the community.</p>
             </div>
-
+            
             {/* Tab Navigation */}
             <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-6">
               <button
-                onClick={() => setActiveTab("reports")}
+                onClick={() => setActiveTab('reports')}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === "reports"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
+                  activeTab === 'reports'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 My Reports
               </button>
               <button
-                onClick={() => setActiveTab("assistance")}
+                onClick={() => setActiveTab('assistance')}
                 className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === "assistance"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-600 hover:text-gray-900"
+                  activeTab === 'assistance'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
                 My Assistance
@@ -377,13 +315,11 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            {activeTab === "reports" && (
+            {activeTab === 'reports' && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Reports I've Submitted
-                  </h3>
-                  <Link
+                  <h3 className="text-lg font-semibold text-gray-900">Reports I've Submitted</h3>
+                  <Link 
                     to="/report/new"
                     className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center"
                   >
@@ -414,14 +350,12 @@ const Dashboard: React.FC = () => {
               </div>
             )}
 
-            {activeTab === "assistance" && (
+            {activeTab === 'assistance' && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Assistance I've Provided
-                  </h3>
-                  <button
-                    onClick={() => navigate("/reports")}
+                  <h3 className="text-lg font-semibold text-gray-900">Assistance I've Provided</h3>
+                  <button 
+                    onClick={() => navigate('/reports')}
                     className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center hover:bg-red-50 px-2 py-1 rounded transition-colors"
                   >
                     Help Others
@@ -446,23 +380,14 @@ const Dashboard: React.FC = () => {
 
                 {/* Assistance Received Section */}
                 <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Assistance Received - Flood in Sacramento County, CA
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Assistance Received - Flood in Sacramento County, CA</h3>
                   <div className="space-y-3">
                     {assistanceReceived.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                      >
+                      <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                         <div className="flex-1">
                           <div className="flex items-center space-x-3">
-                            <div className="font-medium text-gray-900">
-                              {item.organization}
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              {item.type}
-                            </div>
+                            <div className="font-medium text-gray-900">{item.organization}</div>
+                            <div className="text-sm text-gray-600">{item.type}</div>
                           </div>
                           <div className="text-xs text-gray-500 mt-1 flex items-center">
                             <Calendar className="w-3 h-3 mr-1" />
@@ -471,39 +396,26 @@ const Dashboard: React.FC = () => {
                         </div>
                         <div className="flex items-center space-x-3">
                           {item.status && (
-                            <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                item.status === "Endorsed"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-yellow-100 text-yellow-800"
-                              }`}
-                            >
-                              {item.status === "Endorsed" ? (
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                              ) : (
-                                <Clock className="w-3 h-3 mr-1" />
-                              )}
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              item.status === 'Endorsed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {item.status === 'Endorsed' ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
                               {item.status}
                             </span>
                           )}
-                          <button
+                          <button 
                             onClick={() => {
-                              if (item.status === "Endorsed") {
+                              if (item.status === 'Endorsed') {
                                 // Navigate to assistance received detail
                                 navigate(`/assistance/received/${item.id}`);
                               } else {
                                 // Handle endorsement logic
-                                showInfoToast(
-                                  "Endorsement functionality will be implemented in a future update.",
-                                  "Feature Coming Soon"
-                                );
+                                showInfoToast('Endorsement functionality will be implemented in a future update.', 'Feature Coming Soon');
                               }
                             }}
                             className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1 hover:bg-blue-50 rounded transition-colors"
                           >
-                            {item.status === "Endorsed"
-                              ? "View Report"
-                              : "Endorse"}
+                            {item.status === 'Endorsed' ? 'View Report' : 'Endorse'}
                           </button>
                         </div>
                       </div>
@@ -515,7 +427,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </main>
-
+      
       {/* SignalR Debug Component */}
       <SignalRDebug />
     </div>

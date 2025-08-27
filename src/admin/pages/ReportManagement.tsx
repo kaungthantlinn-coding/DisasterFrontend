@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Shield,
   Search,
@@ -11,13 +11,19 @@ import {
   Clock,
   MapPin,
   Calendar,
+  User,
   MoreVertical,
+  Image,
   ChevronDown,
   ChevronUp,
+  Star,
+  TrendingUp,
+  Activity,
+  Mail,
   Edit,
   Trash2,
-  Mail,
 } from "lucide-react";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DisasterReportDto,
@@ -26,15 +32,16 @@ import {
 } from "../../types/DisasterReport";
 import {
   getAll,
-  updateReportStatus,
+  acceptDisasterReport,
+  rejectDisasterReport,
   remove as deleteDisasterReport,
 } from "../../services/disasterReportService";
-import { useAuthStore } from "../../stores/authStore";
+
+import SimpleLeafletMap from "../../components/Map/SimpleLeafletMap";
+import type { RealWorldDisaster } from "../../types";
 import Avatar from "../../components/Common/Avatar";
 import { userManagementApi } from "../../apis/userManagement";
 import { extractPhotoUrl } from "../../utils/avatarUtils";
-import ReportMap from "../../components/ReportMap";
-
 interface FilterState {
   status: string;
   type: string;
@@ -65,6 +72,8 @@ const toUiStatus = (
   status: ReportStatus | string | number
 ): "pending" | "verified" | "rejected" => {
   if (typeof status === "number") {
+    // Defensive: handle numeric status if backend returns enum as number
+    // 0: Pending, 1: Accepted, 2: Rejected (assumed)
     if (status === 1) return "verified";
     if (status === 2) return "rejected";
     return "pending";
@@ -78,12 +87,13 @@ const toUiStatus = (
 
 const typeSlug = (name?: string) => (name || "other").trim().toLowerCase();
 
-// Resolve image URL
+// Resolve image URL: works with absolute URLs and server-relative paths
 const buildImageUrl = (u: string) => {
   if (!u) return "";
   if (/^https?:\/\//i.test(u)) return u;
   const base =
     (import.meta as any).env?.VITE_API_BASE_URL || "http://localhost:5057/api";
+  // If API base ends with /api, strip it to get server root for static files
   const root = String(base).replace(/\/api\/?$/i, "/");
   try {
     return new URL(u.replace(/^\/+/, ""), root).toString();
@@ -143,6 +153,7 @@ const getTypeIcon = (type: string) => {
 
 const ReportManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
   const [selectedReports, setSelectedReports] = useState<DisasterReportDto[]>(
     []
   );
@@ -160,7 +171,6 @@ const ReportManagement: React.FC = () => {
     id: string;
     context: "row" | "modal";
   } | null>(null);
-  const [editStatusTarget, setEditStatusTarget] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<FilterState>({
     status: "all",
@@ -170,12 +180,20 @@ const ReportManagement: React.FC = () => {
     location: "",
   });
 
-  const { accessToken } = useAuthStore();
-  const queryClient = useQueryClient();
+  // Cache of submitter userId -> photoUrl (Google, etc.)
+  const [userPhotoMap, setUserPhotoMap] = useState<
+    Record<string, string | undefined>
+  >({});
+  // Cache of submitter userId -> email
+  const [userEmailMap, setUserEmailMap] = useState<
+    Record<string, string | undefined>
+  >({});
 
-  // Fetch reports
+  // Fetch reports via DisasterReport service
   const {
     data: dtoReports = [],
+    isLoading,
+    error,
     refetch,
   } = useQuery<DisasterReportDto[]>({
     queryKey: ["reports"],
@@ -210,7 +228,15 @@ const ReportManagement: React.FC = () => {
       `Performing ${action} on reports:`,
       selectedReports.map((r) => r.id)
     );
+    // Implement bulk actions if needed
     setSelectedReports([]);
+  };
+
+  const queryClient = useQueryClient();
+
+  const handleEditReport = (reportId: string) => {
+    setOpenMenuId(null);
+    navigate(`/report/edit/${reportId}`);
   };
 
   const handleDeleteReport = async (reportId: string) => {
@@ -222,38 +248,77 @@ const ReportManagement: React.FC = () => {
     } catch (err) {
       console.error("Failed to delete report:", err);
     } finally {
-      setDeleteTarget(null);
+      setOpenMenuId(null);
     }
   };
 
   const handleStatusChange = async (
     reportId: string,
-    newUiStatus: "verified" | "rejected"
+    newUiStatus: "pending" | "verified" | "rejected" | "investigating"
   ) => {
-    const newStatus: ReportStatus =
-      newUiStatus === "verified" ? ReportStatus.Accepted : ReportStatus.Rejected;
+    // Determine API action
+    const action =
+      newUiStatus === "verified"
+        ? "accept"
+        : newUiStatus === "rejected"
+        ? "reject"
+        : null;
 
-    // Optimistic update
-    queryClient.setQueryData<DisasterReportDto[]>(["reports"], (old) => {
-      if (!old) return old;
-      return old.map((r) =>
-        r.id === reportId ? { ...r, status: newStatus } : r
+    if (!action) {
+      console.warn(
+        "Unsupported status change for DisasterReport API:",
+        newUiStatus
       );
-    });
-
-    // Update modal state
-    setSelectedReport((prev) =>
-      prev && prev.id === reportId ? { ...prev, status: newStatus } : prev
-    );
-
-    try {
-      await updateReportStatus(reportId, newStatus, accessToken || undefined);
-    } catch (err) {
-      console.error("Failed to update report status:", err);
-      await queryClient.invalidateQueries({ queryKey: ["reports"] });
       return;
     }
 
+    // Optimistic update: update cached list immediately
+    queryClient.setQueryData<DisasterReportDto[]>(["reports"], (old) => {
+      if (!old) return old;
+      return old.map((r) =>
+        r.id === reportId
+          ? {
+              ...r,
+              status:
+                action === "accept"
+                  ? ReportStatus.Accepted
+                  : action === "reject"
+                  ? ReportStatus.Rejected
+                  : r.status,
+            }
+          : r
+      );
+    });
+
+    // Optimistic update: update modal state if open
+    setSelectedReport((prev) =>
+      prev && prev.id === reportId
+        ? {
+            ...prev,
+            status:
+              action === "accept"
+                ? ReportStatus.Accepted
+                : action === "reject"
+                ? ReportStatus.Rejected
+                : prev.status,
+          }
+        : prev
+    );
+
+    try {
+      if (action === "accept") {
+        await acceptDisasterReport(reportId);
+      } else {
+        await rejectDisasterReport(reportId);
+      }
+    } catch (err) {
+      // Revert optimistic update on failure
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      console.error("Failed to update report status:", err);
+      return;
+    }
+
+    // Final sync
     await refetch();
   };
 
@@ -296,16 +361,17 @@ const ReportManagement: React.FC = () => {
         aValue = new Date(a.timestamp).getTime();
         bValue = new Date(b.timestamp).getTime();
         break;
-      case "severity":
+      case "severity": {
         const order = { low: 1, medium: 2, high: 3, critical: 4 };
         aValue = order[toUiSeverity(a.severity)] || 0;
         bValue = order[toUiSeverity(b.severity)] || 0;
         break;
+      }
       case "status":
         aValue = toUiStatus(a.status);
         bValue = toUiStatus(b.status);
         break;
-      case "priority":
+      case "priority": // not in DTO; default to 0
         aValue = 0;
         bValue = 0;
         break;
@@ -332,7 +398,7 @@ const ReportManagement: React.FC = () => {
 
   const totalPages = Math.ceil(sortedReports.length / itemsPerPage);
 
-  // Prefetch submitter avatars
+  // Prefetch submitter avatars for current page
   useEffect(() => {
     const ids = Array.from(
       new Set(paginatedReports.map((r) => r.userId).filter(Boolean))
@@ -371,14 +437,7 @@ const ReportManagement: React.FC = () => {
     };
   }, [paginatedReports]);
 
-  const [userPhotoMap, setUserPhotoMap] = useState<
-    Record<string, string | undefined>
-  >({});
-  const [userEmailMap, setUserEmailMap] = useState<
-    Record<string, string | undefined>
-  >({});
-
-  // Ensure modal submitter avatar
+  // Ensure modal submitter avatar is available
   useEffect(() => {
     const id = selectedReport?.userId;
     if (!id || userPhotoMap[id] !== undefined) return;
@@ -475,9 +534,9 @@ const ReportManagement: React.FC = () => {
                 className="p-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 {sortOrder === "asc" ? (
-                  <ChevronUp className="w-4 h-4" />
+                  <TrendingUp className="w-4 h-4" />
                 ) : (
-                  <ChevronDown className="w-4 h-4" />
+                  <TrendingUp className="w-4 h-4 rotate-180" />
                 )}
               </button>
             </div>
@@ -788,6 +847,7 @@ const ReportManagement: React.FC = () => {
                               </button>
                             </>
                           )}
+
                           <button
                             onClick={() =>
                               setOpenMenuId(
@@ -799,6 +859,7 @@ const ReportManagement: React.FC = () => {
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
+
                           {openMenuId === report.id && (
                             <div className="absolute right-0 top-6 z-20 w-44 bg-white border border-gray-200 rounded-md shadow-lg">
                               <button
@@ -813,20 +874,14 @@ const ReportManagement: React.FC = () => {
                                 View Details
                               </button>
                               <button
-                                onClick={() => {
-                                  setEditStatusTarget(report.id);
-                                  setOpenMenuId(null);
-                                }}
+                                onClick={() => handleEditReport(report.id)}
                                 className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                               >
                                 <Edit className="w-4 h-4 mr-2 text-amber-600" />
-                                Edit Status
+                                Edit Report
                               </button>
                               <button
-                                onClick={() => {
-                                  setDeleteTarget(report.id);
-                                  setOpenMenuId(null);
-                                }}
+                                onClick={() => { setDeleteTarget(report.id); setOpenMenuId(null); }}
                                 className="w-full flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
@@ -954,54 +1009,60 @@ const ReportManagement: React.FC = () => {
                         Submitted:
                       </span>
                       <span className="text-sm text-gray-900">
+                        {Array.isArray(selectedReport.impactDetails) &&
+                          selectedReport.impactDetails.length > 0 && (
+                            <div className="mt-6">
+                              <h4 className="text-md font-semibold text-gray-900 mb-3">
+                                Impact Details
+                              </h4>
+                              <div className="overflow-x-auto -mx-2 sm:mx-0">
+                                <table className="min-w-full text-sm">
+                                  <thead>
+                                    <tr className="text-left text-gray-500">
+                                      <th className="py-2 pr-4">Types</th>
+                                      <th className="py-2 pr-4">Severity</th>
+                                      <th className="py-2">Description</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="text-gray-900">
+                                    {selectedReport.impactDetails.map(
+                                      (d, i) => (
+                                        <tr
+                                          key={d.id ?? i}
+                                          className="border-t"
+                                        >
+                                          <td className="py-2 pr-4">
+                                            {d.impactTypes &&
+                                            d.impactTypes.length > 0
+                                              ? d.impactTypes
+                                                  .map((t) => t.name)
+                                                  .join(", ")
+                                              : d.impactTypeIds &&
+                                                d.impactTypeIds.length > 0
+                                              ? d.impactTypeIds.join(", ")
+                                              : "-"}
+                                          </td>
+                                          <td className="py-2 pr-4 capitalize">
+                                            {typeof d.severity === "number"
+                                              ? toUiSeverity(d.severity)
+                                              : "-"}
+                                          </td>
+                                          <td className="py-2">
+                                            {d.description || "-"}
+                                          </td>
+                                        </tr>
+                                      )
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
                         {selectedReport.timestamp
                           ? new Date(selectedReport.timestamp).toLocaleString()
                           : "-"}
                       </span>
                     </div>
-                    {Array.isArray(selectedReport.impactDetails) &&
-                      selectedReport.impactDetails.length > 0 && (
-                        <div className="mt-6">
-                          <h4 className="text-md font-semibold text-gray-900 mb-3">
-                            Impact Details
-                          </h4>
-                          <div className="overflow-x-auto -mx-2 sm:mx-0">
-                            <table className="min-w-full text-sm">
-                              <thead>
-                                <tr className="text-left text-gray-500">
-                                  <th className="py-2 pr-4">Types</th>
-                                  <th className="py-2 pr-4">Severity</th>
-                                  <th className="py-2">Description</th>
-                                </tr>
-                              </thead>
-                              <tbody className="text-gray-900">
-                                {selectedReport.impactDetails.map((d, i) => (
-                                  <tr key={d.id ?? i} className="border-t">
-                                    <td className="py-2 pr-4">
-                                      {d.impactTypes && d.impactTypes.length > 0
-                                        ? d.impactTypes
-                                            .map((t) => t.name)
-                                            .join(", ")
-                                        : d.impactTypeIds &&
-                                          d.impactTypeIds.length > 0
-                                        ? d.impactTypeIds.join(", ")
-                                        : "-"}
-                                    </td>
-                                    <td className="py-2 pr-4 capitalize">
-                                      {typeof d.severity === "number"
-                                        ? toUiSeverity(d.severity)
-                                        : "-"}
-                                    </td>
-                                    <td className="py-2">
-                                      {d.description || "-"}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      )}
                   </div>
                 </div>
                 <div>
@@ -1032,7 +1093,9 @@ const ReportManagement: React.FC = () => {
                       </p>
                       <p className="text-xs text-gray-500 flex items-center">
                         <Mail className="w-3 h-3 mr-1" />
-                        {userEmailMap[selectedReport.userId] || "-"}
+                        {selectedReport.userEmail ||
+                          userEmailMap[selectedReport.userId] ||
+                          "-"}
                       </p>
                     </div>
                   </div>
@@ -1067,10 +1130,35 @@ const ReportManagement: React.FC = () => {
                         <h4 className="text-md font-semibold text-gray-900 mb-3">
                           Location Map
                         </h4>
-                        <ReportMap
-                          lat={selectedReport.latitude}
-                          lng={selectedReport.longitude}
-                          address={selectedReport.address}
+                        <SimpleLeafletMap
+                          height="300px"
+                          className="rounded-lg overflow-hidden border"
+                          disasters={[
+                            {
+                              id: selectedReport.id,
+                              title: selectedReport.title,
+                              description: selectedReport.description,
+                              location: {
+                                coordinates: {
+                                  lat: selectedReport.latitude,
+                                  lng: selectedReport.longitude,
+                                },
+                                place: selectedReport.address || "",
+                              },
+                              disasterType:
+                                (typeSlug(
+                                  selectedReport.disasterTypeName
+                                ) as any) || "other",
+                              severity: toUiSeverity(selectedReport.severity),
+                              time: selectedReport.timestamp
+                                ? new Date(selectedReport.timestamp)
+                                : new Date(),
+                              updatedAt: selectedReport.timestamp
+                                ? new Date(selectedReport.timestamp)
+                                : new Date(),
+                              source: "DisasterReport",
+                            } as RealWorldDisaster,
+                          ]}
                         />
                       </div>
                     )}
@@ -1110,53 +1198,6 @@ const ReportManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Status Modal */}
-      {editStatusTarget && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl w-full max-w-md shadow-lg">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Edit Report Status
-              </h3>
-              <button
-                onClick={() => setEditStatusTarget(null)}
-                className="text-gray-400 hover:text-gray-600"
-                aria-label="Close"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="px-6 py-5">
-              <p className="text-sm text-gray-700 mb-4">
-                Select a new status for the report.
-              </p>
-              <select
-                onChange={(e) =>
-                  handleStatusChange(
-                    editStatusTarget,
-                    e.target.value as "verified" | "rejected"
-                  )
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select Status</option>
-                <option value="verified">Accepted</option>
-                <option value="rejected">Rejected</option>
-              </select>
-            </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={() => setEditStatusTarget(null)}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-black hover:bg-gray-50"
-              >
-                OK
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Reject Confirmation Modal */}
       {rejectTarget && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl w-full max-w-md shadow-lg">
@@ -1204,14 +1245,11 @@ const ReportManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {deleteTarget && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl w-full max-w-md shadow-lg">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Confirm Delete
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Delete</h3>
               <button
                 onClick={() => setDeleteTarget(null)}
                 className="text-gray-400 hover:text-gray-600"
@@ -1222,8 +1260,7 @@ const ReportManagement: React.FC = () => {
             </div>
             <div className="px-6 py-5">
               <p className="text-sm text-gray-700">
-                Deleting this report is permanent and cannot be undone. Are you
-                sure you want to proceed?
+                Deleting this report is permanent and cannot be undone. Are you sure you want to proceed?
               </p>
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
