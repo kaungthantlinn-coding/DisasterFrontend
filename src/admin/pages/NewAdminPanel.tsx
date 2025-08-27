@@ -5,7 +5,6 @@ import ModernAdminLayout from '../components/ModernAdminLayout';
 import ModernDashboard from '../components/ModernDashboard';
 
 import UserManagement from './UserManagement';
-import AdvancedUserManagement from './AdvancedUserManagement';
 
 // Import existing admin pages
 import Analytics from './Analytics';
@@ -15,9 +14,6 @@ import AuditLogsPage from './AuditLogsPage';
 import AdminSupportRequestManagement from './AdminSupportRequestManagement';
 import OrganizationManagement from './OrganizationManagement';
 import ReportReview from './ReportReview';
-
-// Import SuperAdmin components
-import RoleManagement from './RoleManagement';
 
 const NewAdminPanel: React.FC = () => {
   const location = useLocation();
@@ -37,12 +33,9 @@ const NewAdminPanel: React.FC = () => {
     if (path === '/admin' || path === '/admin/') {
       return <ModernDashboard />;
     } else if (path.includes('/admin/users')) {
-      // Use AdvancedUserManagement for SuperAdmin, regular UserManagement for Admin
-      return isSuperAdmin ? <AdvancedUserManagement /> : <UserManagement />;
+      return <UserManagement />;
     } else if (path.includes('/admin/audit-logs')) {
       return <AuditLogsPage />;
-    } else if (path.includes('/admin/roles')) {
-      return isSuperAdmin ? <RoleManagement /> : <ModernDashboard />;
     } else if (path.includes('/admin/organizations')) {
       return <OrganizationManagement />;
     } else if (path.includes('/admin/reports')) {
@@ -66,7 +59,7 @@ const NewAdminPanel: React.FC = () => {
       {/* Use Routes/Route for simpler routing or renderContent for role-based routing */}
       <Routes>
         <Route path="/" element={<ModernDashboard />} />
-        <Route path="/users" element={isSuperAdmin ? <AdvancedUserManagement /> : <UserManagement />} />
+        <Route path="/users" element={<UserManagement />} />
         <Route path="/organizations" element={<OrganizationManagement />} />
         <Route path="/reports" element={<ReportManagement />} />
         {/* Deep-link review route (nested under /admin) */}
@@ -75,7 +68,6 @@ const NewAdminPanel: React.FC = () => {
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/audit-logs" element={<AuditLogsPage />} />
         <Route path="/settings" element={<SystemSettings />} />
-        <Route path="/roles" element={isSuperAdmin ? <RoleManagement /> : <ModernDashboard />} />
       </Routes>
     </ModernAdminLayout>
   );
