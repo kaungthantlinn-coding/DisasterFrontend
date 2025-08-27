@@ -199,7 +199,11 @@ export const apiService = {
         
         return response.data;
       } catch (error) {
-        console.error('❌ Google Login - Backend error:', error);
+        console.error('❌ Google Login - Backend error:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+        });
         throw error;
       }
     },
