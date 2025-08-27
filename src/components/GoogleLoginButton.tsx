@@ -17,6 +17,9 @@ const GoogleLoginButton: React.FC = () => {
 
     script.onload = () => {
       if (window.google) {
+        console.log('🔍 Google Sign-In script loaded successfully');
+        console.log('🔍 Using Google Client ID:', clientIdData.clientId);
+        
         window.google.accounts.id.initialize({
           client_id: clientIdData.clientId,
           callback: handleGoogleResponse,
@@ -35,6 +38,10 @@ const GoogleLoginButton: React.FC = () => {
       }
     };
 
+    script.onerror = () => {
+      console.error('❌ Failed to load Google Sign-In script');
+    };
+
     return () => {
       if (script.parentNode) {
         script.parentNode.removeChild(script);
@@ -48,9 +55,19 @@ const GoogleLoginButton: React.FC = () => {
     if (response.credential) {
       console.log('🔍 Google Credential Length:', response.credential.length);
       console.log('🔍 Google Credential Preview:', response.credential.substring(0, 50) + '...');
+      
+      // Validate the credential format
+      if (typeof response.credential !== 'string' || response.credential.length < 100) {
+        console.error('❌ Invalid Google credential format');
+        return;
+      }
+      
       googleLoginMutation.mutate(response.credential);
     } else {
       console.error('❌ No credential in Google response:', response);
+      if (response.error) {
+        console.error('❌ Google Sign-In Error:', response.error);
+      }
     }
   };
 
