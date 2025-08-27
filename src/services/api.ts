@@ -6,6 +6,8 @@ import { showErrorToast } from '../utils/notifications';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
 
+console.log('🔧 API Base URL:', API_BASE_URL);
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -57,7 +59,9 @@ api.interceptors.request.use(
     };
 
     console.log('🚀 API Request:', {
-      url: config.baseURL + config.url,
+      baseURL: config.baseURL,
+      url: config.url,
+      fullURL: config.baseURL + config.url,
       method: config.method,
       headers: config.headers,
       data: config.data,
@@ -67,6 +71,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('❌ API Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -99,10 +104,13 @@ api.interceptors.response.use(
 
     console.error('❌ API Error:', {
       url: error.config?.url,
+      fullURL: error.config?.baseURL + error.config?.url,
       method: error.config?.method,
       status: error.response?.status,
+      statusText: error.response?.statusText,
       data: error.response?.data,
       message: error.message,
+      code: error.code,
       requestId: error.config?.metadata?.requestId,
       baseURL: API_BASE_URL,
     });
@@ -181,14 +189,19 @@ export const apiService = {
         credentialStart: credential?.substring(0, 20) + '...',
       });
       
-      const response = await api.post('/Auth/google-login', { idToken: credential });
-      
-      console.log('🔍 Google Login - Backend response:', {
-        status: response.status,
-        data: response.data,
-      });
-      
-      return response.data;
+      try {
+        const response = await api.post('/Auth/google-login', { idToken: credential });
+        
+        console.log('🔍 Google Login - Backend response:', {
+          status: response.status,
+          data: response.data,
+        });
+        
+        return response.data;
+      } catch (error) {
+        console.error('❌ Google Login - Backend error:', error);
+        throw error;
+      }
     },
     
     logout: async () => {
