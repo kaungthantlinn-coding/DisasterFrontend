@@ -1,8 +1,9 @@
-import { DisasterCategory } from "./DisasterType";
+import { DisasterCategory } from './DisasterType';
 import { ImpactDetailCreateDto, ImpactDetailDto } from "./ImpactDetail";
 import { PhotoDto } from "./photo";
 
 export interface DisasterReportCreateDto {
+  
   title: string;
   description: string;
   timestamp: string;
@@ -28,6 +29,8 @@ export interface DisasterReportDto {
   timestamp: string;
   severity: SeverityLevel;
   status: ReportStatus;
+  DisasterCategory:DisasterCategory
+  disasterEventName:string;
   disasterTypeName: string;
   disasterTypeId: number;
   userId: string;
@@ -64,14 +67,14 @@ export interface DisasterReportFilters {
 }
 
 export enum SeverityLevel {
-  Low = 0,
-  Medium = 1,
-  High = 2,
-  Critical = 3,
+  Low = "Low",
+  Medium = "Medium",
+  High = "High",
+  Critical = "Critical",
 }
 
 export enum ReportStatus {
   Pending = "Pending",
-  Accepted = "Accepted",
+  Accepted = "Verified",
   Rejected = "Rejected",
 }

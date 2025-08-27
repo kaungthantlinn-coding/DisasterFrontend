@@ -11,6 +11,7 @@ import ReportManagement from './ReportManagement';
 import AuditLogsPage from './AuditLogsPage';
 import AdminSupportRequestManagement from './AdminSupportRequestManagement';
 import OrganizationManagement from './OrganizationManagement';
+import ReportReview from './ReportReview';
 
 const NewAdminPanel: React.FC = () => {
   return (
@@ -20,6 +21,8 @@ const NewAdminPanel: React.FC = () => {
         <Route path="/users" element={<UserManagement />} />
         <Route path="/organizations" element={<OrganizationManagement />} />
         <Route path="/reports" element={<ReportManagement />} />
+        {/* Deep-link review route (nested under /admin) */}
+        <Route path="reports/review/:id" element={<ReportReview />} />
         <Route path="/support-requests" element={<AdminSupportRequestManagement />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/audit-logs" element={<AuditLogsPage />} />

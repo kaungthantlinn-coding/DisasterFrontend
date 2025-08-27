@@ -6,7 +6,8 @@ import {
 } from "../types/DisasterReport";
 import { useAuthStore } from "../stores/authStore";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5057/api";
 const API_BASE = `${API_BASE_URL}/DisasterReport`;
 
 const getAuthHeaders = (token?: string) => {
@@ -136,7 +137,7 @@ export const rejectDisasterReport = async (
 
 export const updateReportStatus = async (
   id: string,
-  status: "Accepted" | "Rejected",
+  status: "Verified" | "Rejected",
   token?: string
 ) => {
   const config = getAuthHeaders(token);
@@ -144,6 +145,17 @@ export const updateReportStatus = async (
     `${API_BASE}/${id}/status`,
     { status },
     config
+  );
+  return response.data;
+};
+
+export const getMyReports = async (
+  userId: string,
+  token?: string
+): Promise<DisasterReportDto[]> => {
+  const response = await axios.get<DisasterReportDto[]>(
+    `${API_BASE}/user/${userId}`,
+    getAuthHeaders(token)
   );
   return response.data;
 };

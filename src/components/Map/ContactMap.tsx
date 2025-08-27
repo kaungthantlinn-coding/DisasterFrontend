@@ -1,13 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
-import { MapPin, Navigation } from 'lucide-react';
+import React, { useEffect, useRef, useState } from "react";
+import L from "leaflet";
+import { MapPin, Navigation } from "lucide-react";
 
 // Fix for default markers in Leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
 interface ContactMapProps {
@@ -31,7 +34,7 @@ const ContactMap: React.FC<ContactMapProps> = ({
     name: "DisasterWatch Headquarters",
     address: "123 Emergency Response Ave, Disaster City, DC 12345",
     phone: "+1 (555) 123-4567",
-    email: "contact@disasterwatch.org"
+    email: "contact@disasterwatch.org",
   };
 
   useEffect(() => {
@@ -40,7 +43,7 @@ const ContactMap: React.FC<ContactMapProps> = ({
     const initializeMap = () => {
       try {
         setMapError(null);
-        
+
         // Clean up existing map
         if (mapInstanceRef.current) {
           mapInstanceRef.current.remove();
@@ -49,7 +52,7 @@ const ContactMap: React.FC<ContactMapProps> = ({
 
         // Check if mapRef.current is available
         if (!mapRef.current) {
-          throw new Error('Map container not available');
+          throw new Error("Map container not available");
         }
 
         const map = L.map(mapRef.current, {
@@ -70,8 +73,8 @@ const ContactMap: React.FC<ContactMapProps> = ({
         mapInstanceRef.current = map;
 
         // Add tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors",
           maxZoom: 19,
           minZoom: 1,
         }).addTo(map);
@@ -89,7 +92,7 @@ const ContactMap: React.FC<ContactMapProps> = ({
               <div class="absolute top-8 left-1/2 transform -translate-x-1/2 w-1 h-4 bg-blue-600"></div>
             </div>
           `,
-          className: 'custom-marker',
+          className: "custom-marker",
           iconSize: [32, 48],
           iconAnchor: [16, 48],
           popupAnchor: [0, -48],
@@ -97,7 +100,7 @@ const ContactMap: React.FC<ContactMapProps> = ({
 
         // Add marker for headquarters
         const marker = L.marker([headquarters.lat, headquarters.lng], {
-          icon: customIcon
+          icon: customIcon,
         }).addTo(map);
 
         // Create popup content
@@ -147,23 +150,26 @@ const ContactMap: React.FC<ContactMapProps> = ({
         `;
 
         marker.bindPopup(popupContent, {
-          className: 'custom-contact-popup',
+          className: "custom-contact-popup",
           maxWidth: 280,
           closeButton: true,
         });
 
         // Add tooltip
-        marker.bindTooltip(`
+        marker.bindTooltip(
+          `
           <div class="text-center">
             <div class="font-semibold text-sm">${headquarters.name}</div>
             <div class="text-xs text-gray-600">Click for details</div>
           </div>
-        `, {
-          permanent: false,
-          direction: 'top',
-          offset: [0, -10],
-          className: 'custom-contact-tooltip'
-        });
+        `,
+          {
+            permanent: false,
+            direction: "top",
+            offset: [0, -10],
+            className: "custom-contact-tooltip",
+          }
+        );
 
         // Open popup by default
         marker.openPopup();
@@ -176,10 +182,9 @@ const ContactMap: React.FC<ContactMapProps> = ({
             map.invalidateSize();
           }
         }, 100);
-
       } catch (error) {
-        console.error('Error initializing map:', error);
-        setMapError('Failed to load map. Please try refreshing the page.');
+        console.error("Error initializing map:", error);
+        setMapError("Failed to load map. Please try refreshing the page.");
         setIsMapReady(false);
       }
     };
@@ -198,7 +203,7 @@ const ContactMap: React.FC<ContactMapProps> = ({
 
   const openInGoogleMaps = () => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${headquarters.lat},${headquarters.lng}`;
-    window.open(url, '_blank');
+    window.open(url, "_blank");
   };
 
   if (mapError) {
@@ -208,10 +213,7 @@ const ContactMap: React.FC<ContactMapProps> = ({
           <div className="text-center p-4">
             <MapPin size={24} className="text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-600 mb-3">{mapError}</p>
-            <button
-              onClick={openInGoogleMaps}
-              className="btn-primary text-sm"
-            >
+            <button onClick={openInGoogleMaps} className="btn-primary text-sm">
               <Navigation size={14} className="mr-1" />
               Open in Google Maps
             </button>
@@ -226,8 +228,8 @@ const ContactMap: React.FC<ContactMapProps> = ({
       <div
         ref={mapRef}
         style={{
-          height: '100%',
-          width: '100%',
+          height: "100%",
+          width: "100%",
         }}
         className="rounded-lg overflow-hidden shadow-lg"
       />

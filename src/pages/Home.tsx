@@ -21,6 +21,11 @@ import {
   Target,
   Calendar,
   MapIcon,
+  Waves,
+  Flame,
+  Mountain,
+  Wind,
+  Truck,
 } from "lucide-react";
 
 // Components
@@ -299,18 +304,74 @@ const Home: React.FC = () => {
     fetchAcceptedReports();
   }, []);
 
+  const getSeverityText = (severity: SeverityLevel) => {
+    switch (severity) {
+      case SeverityLevel.Low:
+        return "Low";
+      case SeverityLevel.Medium:
+        return "Medium";
+      case SeverityLevel.High:
+        return "High";
+      case SeverityLevel.Critical:
+        return "Critical";
+      default:
+        return "Unknown";
+    }
+  };
+
   const getSeverityColor = (severity: SeverityLevel) => {
     switch (severity) {
       case SeverityLevel.Low:
-        return "border-green-500 text-green-500";
+        return "bg-green-500";
       case SeverityLevel.Medium:
-        return "border-yellow-500 text-yellow-500";
+        return "bg-yellow-500";
       case SeverityLevel.High:
-        return "border-orange-500 text-orange-500";
+        return "bg-orange-500";
       case SeverityLevel.Critical:
-        return "border-red-500 text-red-500";
+        return "bg-red-500";
       default:
-        return "border-gray-500 text-gray-500";
+        return "bg-gray-500";
+    }
+  };
+
+  // Get disaster type icon
+  const getDisasterIcon = (type: string) => {
+    const iconProps = { size: 16, className: "text-white" };
+    switch (type.toLowerCase()) {
+      case "flood":
+        return <Waves {...iconProps} />;
+      case "fire":
+        return <Flame {...iconProps} />;
+      case "earthquake":
+        return <Mountain {...iconProps} />;
+      case "storm":
+        return <Wind {...iconProps} />;
+      case "landslide":
+        return <Mountain {...iconProps} />;
+      case "accident":
+        return <Truck {...iconProps} />;
+      default:
+        return <AlertTriangle {...iconProps} />;
+    }
+  };
+
+  // Get disaster type color
+  const getDisasterColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "flood":
+        return "from-blue-500 to-blue-600";
+      case "fire":
+        return "from-red-500 to-orange-500";
+      case "earthquake":
+        return "from-yellow-600 to-orange-600";
+      case "storm":
+        return "from-gray-500 to-gray-600";
+      case "landslide":
+        return "from-amber-600 to-yellow-600";
+      case "accident":
+        return "from-purple-500 to-purple-600";
+      default:
+        return "from-gray-500 to-gray-600";
     }
   };
 
@@ -606,58 +667,58 @@ const Home: React.FC = () => {
                 {recentDisasters.map((disaster) => (
                   <div
                     key={disaster.id}
-                    className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300 border border-gray-100/80"
+                    className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80"
                   >
                     <div className="aspect-[4/3] overflow-hidden relative">
                       <img
-                        src={disaster.photoUrls?.[0] || "/placeholder.jpg"}
-                        alt={disaster.title || "Disaster Photo"}
+                        src={
+                          disaster.photoUrls?.[0] ||
+                          "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+                        }
+                        alt={disaster.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute top-3 right-3">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold border ${getSeverityColor(
-                            disaster.severity
-                          )}`}
+                      <div className="absolute top-4 left-4">
+                        <div
+                          className={`px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(
+                            disaster.disasterTypeName
+                          )} text-white text-sm font-semibold flex items-center shadow-lg`}
                         >
-                          {disaster.severity}
-                        </span>
-                      </div>
-                      {disaster.status && (
-                        <div className="absolute top-3 left-3">
-                          <div className="bg-green-600 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center">
-                            <CheckCircle size={12} className="mr-1" />
-                            Verified
-                          </div>
+                          {getDisasterIcon(disaster.disasterTypeName)}
+                          <span className="ml-2 capitalize">
+                            {disaster.disasterTypeName}
+                          </span>
                         </div>
-                      )}
+                      </div>
+                      <div className="absolute top-4 right-4">
+                        <div
+                          className={`inline-flex items-center px-3 py-1 rounded-full ${getSeverityColor(
+                            disaster.severity
+                          )} text-white text-sm font-semibold`}
+                        >
+                          <AlertTriangle size={14} className="mr-1" />
+                          {getSeverityText(disaster.severity)}
+                        </div>
+                      </div>
                     </div>
                     <div className="p-6">
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">
                         {disaster.title}
                       </h3>
-                      {/* <div className="flex items-center text-gray-600 text-sm mb-2">
-                        <MapIcon size={14} className="mr-1" />
-                        {disaster.location.address}
-                      </div> */}
-                      <div className="flex items-center text-gray-600 text-sm mb-3">
-                        <Calendar size={14} className="mr-1" />
-                        {disaster.timestamp}
+                      <p className="text-gray-600 mb-4 line-clamp-2">
+                        {disaster.description}
+                      </p>
+                      <div className="flex items-center text-gray-500 mb-4">
+                        <MapPin size={16} className="mr-2" />
+                        <span className="text-sm">{disaster.address}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-blue-600">
-                          {disaster.description}
-                        </span>
-
-                        <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                          <Link
-                            to={`/reports/${disaster.id}`}
-                            className="text-blue-600"
-                          >
-                            View Details →
-                          </Link>
-                        </button>
-                      </div>
+                      <Link
+                        to={`/reports/${disaster.id}`}
+                        className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        View Details
+                        <ArrowRight size={16} className="ml-1" />
+                      </Link>
                     </div>
                   </div>
                 ))}
