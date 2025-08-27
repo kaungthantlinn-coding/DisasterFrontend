@@ -1,7 +1,8 @@
 import axios from "axios";
 import { CreatePhotoDto, PhotoDto, UpdatePhotoDto } from "../types/photo";
 
-const API_BASE = "http://localhost:5057/api/photo";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5057/api";
+const API_BASE = `${API_BASE_URL}/photo`;
 
 const getAuthHeaders = (token?: string) => {
   const authToken = token || localStorage.getItem("token");

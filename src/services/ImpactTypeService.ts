@@ -2,7 +2,8 @@ import axios from "axios";
 import { ImpactTypeDto } from "../types/ImpactType";
 import { useAuthStore } from "../stores/authStore";
 
-const API_BASE = "http://localhost:5057/api/ImpactType";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5057/api";
+const API_BASE = `${API_BASE_URL}/ImpactType`;
 
 const authState = useAuthStore.getState();
 const getAuthHeaders = (token?: string) => {
