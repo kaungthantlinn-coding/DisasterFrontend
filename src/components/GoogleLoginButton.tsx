@@ -43,8 +43,14 @@ const GoogleLoginButton: React.FC = () => {
   }, [clientIdData?.clientId]);
 
   const handleGoogleResponse = (response: any) => {
+    console.log('🔍 Google Sign-In Response:', response);
+    
     if (response.credential) {
+      console.log('🔍 Google Credential Length:', response.credential.length);
+      console.log('🔍 Google Credential Preview:', response.credential.substring(0, 50) + '...');
       googleLoginMutation.mutate(response.credential);
+    } else {
+      console.error('❌ No credential in Google response:', response);
     }
   };
 
