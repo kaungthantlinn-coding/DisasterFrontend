@@ -17,6 +17,14 @@ export const useGoogleLogin = () => {
 
   return useMutation({
     mutationFn: async (credential: string) => {
+      // Validate the credential before sending to backend
+      if (!credential || typeof credential !== 'string' || credential.length < 100) {
+        console.error('❌ Invalid Google credential provided to useGoogleLogin');
+        throw new Error('Invalid Google credential');
+      }
+      
+      console.log('🔍 useGoogleLogin - Sending credential to authService');
+      
       const result = await authService.googleLogin(credential);
 
       if (!result.success) {
@@ -114,7 +122,16 @@ export const useGoogleClientId = () => {
   // Validate client ID
   const isValidClientId = clientId && 
     clientId !== 'YOUR_ACTUAL_GOOGLE_CLIENT_ID_HERE' && 
-    !clientId.includes('123456789-abcdefghijklmnopqrstuvwxyz');
+    !clientId.includes('123456789-abcdefghijklmnopqrstuvwxyz') &&
+    clientId.length > 30 &&  // Google Client IDs are typically longer
+    clientId.includes('.apps.googleusercontent.com'); // Google Client IDs have this suffix
+  
+  console.log('🔍 Google Client ID validation:', {
+    clientIdPresent: !!clientId,
+    clientIdLength: clientId?.length,
+    hasValidFormat: clientId?.includes('.apps.googleusercontent.com'),
+    isValid: isValidClientId,
+  });
   
   return {
     data: isValidClientId ? { clientId } : null,
