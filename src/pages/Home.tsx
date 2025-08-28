@@ -33,15 +33,12 @@ import Header from "../components/Layout/Header";
 import Footer from "../components/Layout/Footer";
 import ChatWidget from "../components/Chat/ChatWidget";
 import SimpleLeafletMap from "../components/Map/SimpleLeafletMap";
+import ScrollingNewsTicker from "../components/Common/ScrollingNewsTicker";
 
 import { useDisasterData } from "../hooks/useDisasterData";
 import { useAuth } from "../hooks/useAuth";
 import { useRoles } from "../hooks/useRoles";
-import {
-  DisasterReportDto,
-  ReportStatus,
-  SeverityLevel,
-} from "../types/DisasterReport";
+import { DisasterReportDto, SeverityLevel } from "../types/DisasterReport";
 import { getAcceptedDisasterReports } from "../services/disasterReportService";
 
 const Home: React.FC = () => {
@@ -382,6 +379,18 @@ const Home: React.FC = () => {
   return (
     <div className="min-h-screen bg-white">
       <Header />
+      {/* Real-time Disaster News Ticker */}
+      <ScrollingNewsTicker
+        autoRefresh={true}
+        refreshInterval={2 * 60 * 1000} // 2 minutes for real-time updates
+        speed="medium"
+        maxItems={50}
+        minSeverity="low" // Show all severity levels for comprehensive coverage
+        showSource={true}
+        showLocation={true}
+        showTime={true}
+        className="sticky top-16 z-40 shadow-lg"
+      />
 
       <main>
         {/* Hero Section */}

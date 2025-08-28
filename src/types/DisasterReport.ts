@@ -51,7 +51,7 @@ export interface DisasterReportUpdateDto {
 }
 
 export interface DisasterReportFilters {
-  disasterType?: string;
+  disasterType?: DisasterCategory;
   severity?: string;
 
   location?: {
@@ -72,6 +72,6 @@ export enum SeverityLevel {
 
 export enum ReportStatus {
   Pending = "Pending",
-  Accepted = "Accepted",
+  Accepted = "Verified",
   Rejected = "Rejected",
 }

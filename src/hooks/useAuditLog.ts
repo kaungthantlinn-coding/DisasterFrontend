@@ -1,26 +1,27 @@
-import { useState, useEffect } from 'react';
-import { api } from '../services/api';
+import { useState, useEffect } from "react";
+import { api } from "../services/api";
+import { fetchAuditFilterOptions, AuditFilterOptions } from "../apis/auditLog";
 
 export interface AuditLogEntry {
   id: string;
   userId: string;
   userName: string;
   action: string;
-  targetType: 'user' | 'report' | 'system';
+  targetType: "user" | "report" | "system";
   targetId?: string;
   targetName?: string;
   details: string;
   ipAddress: string;
   userAgent: string;
   timestamp: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  severity: "low" | "medium" | "high" | "critical";
 }
 
 export interface AuditLogFilters {
   userId?: string;
   action?: string;
-  targetType?: 'user' | 'report' | 'system';
-  severity?: 'low' | 'medium' | 'high' | 'critical';
+  targetType?: "user" | "report" | "system";
+  severity?: "low" | "medium" | "high" | "critical";
   startDate?: string;
   endDate?: string;
 }
@@ -44,7 +45,7 @@ export const useAuditLog = ({
   page = 1,
   pageSize = 20,
   filters = {},
-  enabled = true
+  enabled = true,
 }: UseAuditLogParams = {}) => {
   const [data, setData] = useState<AuditLogResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +53,7 @@ export const useAuditLog = ({
 
   const fetchAuditLogs = async () => {
     if (!enabled) return;
-    
+
     setIsLoading(true);
     setError(null);
 
@@ -61,14 +62,16 @@ export const useAuditLog = ({
         page: page.toString(),
         pageSize: pageSize.toString(),
         ...Object.fromEntries(
-          Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
-        )
+          Object.entries(filters).filter(
+            ([_, value]) => value !== undefined && value !== ""
+          )
+        ),
       });
 
       const response = await api.get(`/audit-logs?${params}`);
       setData(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch audit logs');
+      setError(err.response?.data?.message || "Failed to fetch audit logs");
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +89,7 @@ export const useAuditLog = ({
     data,
     isLoading,
     error,
-    refetch
+    refetch,
   };
 };
 
@@ -97,7 +100,7 @@ export const useAuditLogStats = () => {
     todayLogs: 0,
     criticalLogs: 0,
     userActions: 0,
-    systemActions: 0
+    systemActions: 0,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,10 +110,12 @@ export const useAuditLogStats = () => {
     setError(null);
 
     try {
-      const response = await api.get('/audit-logs/stats');
+      const response = await api.get("/audit-logs/stats");
       setStats(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch audit log statistics');
+      setError(
+        err.response?.data?.message || "Failed to fetch audit log statistics"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -124,6 +129,65 @@ export const useAuditLogStats = () => {
     stats,
     isLoading,
     error,
-    refetch: fetchStats
+    refetch: fetchStats,
+  };
+};
+
+// Hook for fetching available audit filter options
+export const useAuditFilterOptions = () => {
+  const [filterOptions, setFilterOptions] = useState<AuditFilterOptions | null>(
+    null
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchOptions = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const options = await fetchAuditFilterOptions();
+      setFilterOptions(options);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch filter options");
+      // Set fallback options based on known database values
+      setFilterOptions({
+        actions: [
+          "LOGIN_SUCCESS",
+          "LOGIN_FAILED",
+          "USER_LOGIN_SUCCESS",
+          "USER_LOGIN_FAILED",
+          "LOGOUT",
+          "USER_CREATED",
+          "USER_UPDATED",
+          "USER_SUSPENDED",
+          "USER_REACTIVATED",
+          "USER_DEACTIVATED",
+          "DONATION_CREATED",
+          "DONATION_UPDATED",
+          "ORGANIZATION_REGISTERED",
+          "ORGANIZATION_UPDATED",
+          "REPORT_POST",
+          "REPORT_PUT",
+          "REPORT_DELETE",
+          "AUDIT_LOGS_EXPORTED_ADVANCED",
+          "PROFILE_UPDATED",
+        ],
+        targetTypes: ["Audit", "General", "HttpRequest", "UserRole"],
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOptions();
+  }, []);
+
+  return {
+    filterOptions,
+    isLoading,
+    error,
+    refetch: fetchOptions,
   };
 };

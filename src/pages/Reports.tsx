@@ -112,12 +112,8 @@ const Reports: React.FC = () => {
           fetchedReports =
             await DisasterReportService.getAcceptedDisasterReports();
         } else if (isCj()) {
-          // Fetch user's own reports for CJ role
-          if (!authState.userId) {
-            throw new Error("User ID is required for CJ role.");
-          }
-          fetchedReports = await DisasterReportService.getMyReports(
-            authState.userId,
+          // Fetch all reports for CJ role
+          fetchedReports = await DisasterReportService.getAll(
             authState.accessToken ?? undefined
           );
         } else {
@@ -157,11 +153,7 @@ const Reports: React.FC = () => {
         fetchedReports =
           await DisasterReportService.getAcceptedDisasterReports();
       } else if (isCj()) {
-        if (!authState.userId) {
-          throw new Error("User ID is required for CJ role.");
-        }
-        fetchedReports = await DisasterReportService.getMyReports(
-          authState.userId,
+        fetchedReports = await DisasterReportService.getAll(
           authState.accessToken ?? undefined
         );
       } else {
@@ -203,7 +195,8 @@ const Reports: React.FC = () => {
       // Disaster type filter
       if (
         selectedDisasterType !== "all" &&
-        report.disasterTypeName !== selectedDisasterType
+        report.disasterTypeName?.toLowerCase() !==
+          selectedDisasterType.toLowerCase()
       ) {
         return false;
       }
@@ -216,8 +209,12 @@ const Reports: React.FC = () => {
         return false;
       }
 
-      // Status filter
-      if (selectedStatus !== "all" && report.status !== selectedStatus) {
+      // Status filter (only for CJ role)
+      if (
+        isCj() &&
+        selectedStatus !== "all" &&
+        report.status !== selectedStatus
+      ) {
         return false;
       }
 
@@ -269,6 +266,7 @@ const Reports: React.FC = () => {
     selectedStatus,
     showOnlyWithImages,
     sortBy,
+    isCj,
   ]);
 
   // Pagination
@@ -400,10 +398,10 @@ const Reports: React.FC = () => {
                 <AlertTriangle size={16} className="mr-2" />
                 {isOnlyUser()
                   ? "Accepted Critical Reports"
-                  : "Your Critical Reports"}
+                  : "All Critical Reports"}
               </div>
               <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                {isOnlyUser() ? "Accepted" : "Your"}{" "}
+                {isOnlyUser() ? "Accepted" : "All"}{" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-red-600">
                   High-Priority Reports
                 </span>
@@ -411,7 +409,7 @@ const Reports: React.FC = () => {
               <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
                 {isOnlyUser()
                   ? "Accepted high-priority disaster reports requiring immediate attention."
-                  : "Your high-priority disaster reports requiring immediate attention and response efforts."}
+                  : "All high-priority disaster reports requiring immediate attention and response efforts."}
               </p>
             </div>
 
@@ -492,10 +490,9 @@ const Reports: React.FC = () => {
               <div className="text-center mb-16">
                 <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold mb-6">
                   <TrendingUp size={16} className="mr-2" />
-                  Your Report Statistics
+                  Report Statistics
                 </div>
                 <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                  Your{" "}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
                     Emergency Overview
                   </span>
@@ -536,13 +533,13 @@ const Reports: React.FC = () => {
                   <div className="text-3xl font-bold text-gray-900 mb-2">
                     {
                       filteredAndSortedReports.filter(
-                        (r) =>
-                          r.severity.toUpperCase() === "CRITICAL" ||
-                          r.severity.toUpperCase() === "HIGH"
+                        (r) => r.status === ReportStatus.Rejected
                       ).length
                     }
                   </div>
-                  <div className="text-gray-600 font-medium">High Priority</div>
+                  <div className="text-gray-600 font-medium">
+                    Rejected Reports
+                  </div>
                 </div>
 
                 <div className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gray-100/80 text-center">
@@ -577,7 +574,7 @@ const Reports: React.FC = () => {
                   </div>
                   <input
                     type="text"
-                    placeholder="Search your reports by title, description, or location..."
+                    placeholder="Search reports by title, description, or location..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-12 pr-12 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
@@ -684,22 +681,24 @@ const Reports: React.FC = () => {
                       </select>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-3">
-                        Report Status
-                      </label>
-                      <select
-                        value={selectedStatus}
-                        onChange={(e) => setSelectedStatus(e.target.value)}
-                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                      >
-                        {statusOptions.map((status) => (
-                          <option key={status} value={status}>
-                            {status === "all" ? "All Statuses" : status}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {isCj() && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Report Status
+                        </label>
+                        <select
+                          value={selectedStatus}
+                          onChange={(e) => setSelectedStatus(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
+                        >
+                          {statusOptions.map((status) => (
+                            <option key={status} value={status}>
+                              {status === "all" ? "All Statuses" : status}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-3">
@@ -789,7 +788,7 @@ const Reports: React.FC = () => {
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Loading your reports...</p>
+                  <p className="text-gray-600">Loading reports...</p>
                 </div>
               </div>
             ) : error ? (
@@ -822,11 +821,11 @@ const Reports: React.FC = () => {
                     ? searchTerm ||
                       selectedDisasterType !== "all" ||
                       selectedSeverity !== "all" ||
-                      selectedStatus !== "all"
+                      (isCj() && selectedStatus !== "all")
                       ? "No reports match your current filters. Try adjusting your search criteria."
                       : isOnlyUser()
                       ? "No accepted disaster reports available."
-                      : "You haven’t submitted any disaster reports yet."
+                      : "No disaster reports available."
                     : "Please log in to view reports."}
                 </p>
                 <button
@@ -845,11 +844,11 @@ const Reports: React.FC = () => {
                   <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
                     <div className="p-6 border-b border-gray-100">
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        Your Reports Map View
+                        Reports Map View
                       </h3>
                       <p className="text-gray-600">
                         Interactive map showing{" "}
-                        {isOnlyUser() ? "accepted" : "your"} disaster report
+                        {isOnlyUser() ? "accepted" : "all"} disaster report
                         locations
                       </p>
                     </div>
@@ -865,7 +864,7 @@ const Reports: React.FC = () => {
                           <p className="text-gray-600 mb-6 max-w-md">
                             Map integration would show all{" "}
                             {filteredAndSortedReports.length} of{" "}
-                            {isOnlyUser() ? "accepted" : "your"} reports with
+                            {isOnlyUser() ? "accepted" : "all"} reports with
                             interactive markers
                           </p>
                           <div className="flex flex-wrap gap-2 justify-center">
@@ -961,7 +960,7 @@ const Reports: React.FC = () => {
                         </div>
                         <div className="text-sm text-gray-600">
                           Showing {filteredAndSortedReports.length} of{" "}
-                          {isOnlyUser() ? "accepted" : "your"} reports on map
+                          {isOnlyUser() ? "accepted" : "all"} reports on map
                         </div>
                       </div>
                     </div>
@@ -1039,7 +1038,7 @@ const Reports: React.FC = () => {
                             <div className="flex items-center text-gray-500">
                               <User size={16} className="mr-2" />
                               <span className="text-sm">
-                                {report.userName || "You"}
+                                {report.userName || "Unknown"}
                               </span>
                             </div>
                             <div className="flex items-center text-blue-600 font-medium">
@@ -1131,7 +1130,7 @@ const Reports: React.FC = () => {
                                 </div>
                                 <div className="flex items-center">
                                   <User size={16} className="mr-1" />
-                                  {report.userName || "You"}
+                                  {report.userName || "Unknown"}
                                 </div>
                               </div>
                               <div className="flex items-center text-blue-600 font-medium">
@@ -1394,8 +1393,6 @@ const Reports: React.FC = () => {
             )}
           </div>
         </section>
-
-        {/* Featured Reports Section */}
 
         {/* CTA Section */}
         <section className="py-20 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">

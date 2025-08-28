@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 
 // TypeScript interfaces for API responses
 export interface UserListItemDto {
@@ -28,7 +28,7 @@ export interface UserDetailsDto extends UserListItemDto {
   phone?: string;
   location?: string;
   joinDate?: string;
-  status: 'active' | 'inactive' | 'suspended';
+  status: "active" | "inactive" | "suspended";
 }
 
 export interface CreateUserDto {
@@ -55,7 +55,7 @@ export interface ChangeUserPasswordDto {
 
 export interface BulkUserOperationDto {
   userIds: string[];
-  operation: 'blacklist' | 'unblacklist' | 'delete';
+  operation: "blacklist" | "unblacklist" | "delete";
 }
 
 export interface BlacklistUserDto {
@@ -87,7 +87,7 @@ export interface UpdateUserRolesDto {
 }
 
 export interface ExportUsersParams {
-  format: 'pdf' | 'excel' | 'csv';
+  format: "pdf" | "excel" | "csv";
   fields: string[];
   filters?: {
     role?: string;
@@ -124,13 +124,13 @@ export interface UserFilterParams {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;
-  role?: string;           // Specific role name (was roleFilter)
-  status?: string;         // "Active", "Suspended", "All" (was statusFilter)
+  role?: string; // Specific role name (was roleFilter)
+  status?: string; // "Active", "Suspended", "All" (was statusFilter)
   isBlacklisted?: boolean;
   authProvider?: string;
   createdAfter?: Date;
   sortBy?: string;
-  sortDirection?: 'asc' | 'desc';
+  sortDirection?: "asc" | "desc";
 }
 
 // User Management API Service
@@ -139,20 +139,27 @@ export const userManagementApi = {
   async getUsers(params: UserFilterParams = {}): Promise<PagedUserListDto> {
     const queryParams = new URLSearchParams();
 
-    if (params.pageNumber) queryParams.append('pageNumber', params.pageNumber.toString());
-    if (params.pageSize) queryParams.append('pageSize', params.pageSize.toString());
-    if (params.searchTerm && params.searchTerm.trim()) queryParams.append('searchTerm', params.searchTerm.trim());
-    if (params.role && params.role !== 'all') {
-      queryParams.append('role', params.role);
+    if (params.pageNumber)
+      queryParams.append("pageNumber", params.pageNumber.toString());
+    if (params.pageSize)
+      queryParams.append("pageSize", params.pageSize.toString());
+    if (params.searchTerm && params.searchTerm.trim())
+      queryParams.append("searchTerm", params.searchTerm.trim());
+    if (params.role && params.role !== "all") {
+      queryParams.append("role", params.role);
     }
-    if (params.status && params.status !== 'all') {
-      queryParams.append('status', params.status);
+    if (params.status && params.status !== "all") {
+      queryParams.append("status", params.status);
     }
-    if (params.isBlacklisted !== undefined) queryParams.append('isBlacklisted', params.isBlacklisted.toString());
-    if (params.authProvider) queryParams.append('authProvider', params.authProvider);
-    if (params.createdAfter) queryParams.append('createdAfter', params.createdAfter.toISOString());
-    if (params.sortBy) queryParams.append('sortBy', params.sortBy);
-    if (params.sortDirection) queryParams.append('sortDirection', params.sortDirection);
+    if (params.isBlacklisted !== undefined)
+      queryParams.append("isBlacklisted", params.isBlacklisted.toString());
+    if (params.authProvider)
+      queryParams.append("authProvider", params.authProvider);
+    if (params.createdAfter)
+      queryParams.append("createdAfter", params.createdAfter.toISOString());
+    if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+    if (params.sortDirection)
+      queryParams.append("sortDirection", params.sortDirection);
 
     const url = `/UserManagement?${queryParams.toString()}`;
     const response = await apiClient.get(url);
@@ -167,28 +174,34 @@ export const userManagementApi = {
 
   // Create new user
   async createUser(userData: CreateUserDto): Promise<UserDetailsDto> {
-    const response = await apiClient.post('/UserManagement', userData);
+    const response = await apiClient.post("/UserManagement", userData);
     return response.data;
   },
 
   // Update user
-  async updateUser(userId: string, userData: UpdateUserDto): Promise<UserDetailsDto> {
-    console.log('🔍 UpdateUser Request:', {
+  async updateUser(
+    userId: string,
+    userData: UpdateUserDto
+  ): Promise<UserDetailsDto> {
+    console.log("🔍 UpdateUser Request:", {
       userId,
       userData,
-      url: `/UserManagement/${userId}`
+      url: `/UserManagement/${userId}`,
     });
-    
+
     try {
-      const response = await apiClient.put(`/UserManagement/${userId}`, userData);
-      console.log('✅ UpdateUser Success:', response.data);
+      const response = await apiClient.put(
+        `/UserManagement/${userId}`,
+        userData
+      );
+      console.log("✅ UpdateUser Success:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error('❌ 500 Server Error Details:');
-      console.error('Status:', error.response?.status);
-      console.error('Backend Error Data:', error.response?.data);
-      console.error('Request Data:', userData);
-      console.error('User ID:', userId);
+      console.error("❌ 500 Server Error Details:");
+      console.error("Status:", error.response?.status);
+      console.error("Backend Error Data:", error.response?.data);
+      console.error("Request Data:", userData);
+      console.error("User ID:", userId);
       throw error;
     }
   },
@@ -200,60 +213,87 @@ export const userManagementApi = {
   },
 
   // Blacklist (suspend) user
-  async blacklistUser(userId: string, blacklistData?: BlacklistUserDto): Promise<{ message: string }> {
-    const response = await apiClient.post(`/UserManagement/${userId}/blacklist`, blacklistData);
+  async blacklistUser(
+    userId: string,
+    blacklistData?: BlacklistUserDto
+  ): Promise<{ message: string }> {
+    const response = await apiClient.post(
+      `/UserManagement/${userId}/blacklist`,
+      blacklistData
+    );
     return response.data;
   },
 
   // Unblacklist (unsuspend) user
   async unblacklistUser(userId: string): Promise<{ message: string }> {
-    const response = await apiClient.post(`/UserManagement/${userId}/unblacklist`);
+    const response = await apiClient.post(
+      `/UserManagement/${userId}/unblacklist`
+    );
     return response.data;
   },
 
   // Change user password
-  async changeUserPassword(userId: string, passwordData: ChangeUserPasswordDto): Promise<{ message: string }> {
-    const response = await apiClient.post(`/UserManagement/${userId}/change-password`, passwordData);
+  async changeUserPassword(
+    userId: string,
+    passwordData: ChangeUserPasswordDto
+  ): Promise<{ message: string }> {
+    const response = await apiClient.post(
+      `/UserManagement/${userId}/change-password`,
+      passwordData
+    );
     return response.data;
   },
 
   // Update user roles (dedicated endpoint)
-  async updateUserRoles(userId: string, rolesData: UpdateUserRolesDto): Promise<UserDetailsDto> {
-    console.log('🔍 UpdateUserRoles Request:', {
+  async updateUserRoles(
+    userId: string,
+    rolesData: UpdateUserRolesDto
+  ): Promise<UserDetailsDto> {
+    console.log("🔍 UpdateUserRoles Request:", {
       userId,
       rolesData,
-      url: `/UserManagement/${userId}/roles`
+      url: `/UserManagement/${userId}/roles`,
     });
-    
+
     try {
-      const response = await apiClient.put(`/UserManagement/${userId}/roles`, rolesData);
-      console.log('✅ UpdateUserRoles Success:', response.data);
+      const response = await apiClient.put(
+        `/UserManagement/${userId}/roles`,
+        rolesData
+      );
+      console.log("✅ UpdateUserRoles Success:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error('❌ UpdateUserRoles Error Details:');
-      console.error('Status:', error.response?.status);
-      console.error('Backend Error Data:', error.response?.data);
-      console.error('Request Data:', rolesData);
-      console.error('User ID:', userId);
+      console.error("❌ UpdateUserRoles Error Details:");
+      console.error("Status:", error.response?.status);
+      console.error("Backend Error Data:", error.response?.data);
+      console.error("Request Data:", rolesData);
+      console.error("User ID:", userId);
       throw error;
     }
   },
 
   // Bulk operations
-  async bulkOperation(operationData: BulkUserOperationDto): Promise<{ affectedCount: number; message: string }> {
-    const response = await apiClient.post('/UserManagement/bulk-operation', operationData);
+  async bulkOperation(
+    operationData: BulkUserOperationDto
+  ): Promise<{ affectedCount: number; message: string }> {
+    const response = await apiClient.post(
+      "/UserManagement/bulk-operation",
+      operationData
+    );
     return response.data;
   },
 
   // Get dashboard statistics
   async getDashboardStats(): Promise<UserManagementStatsDto> {
-    const response = await apiClient.get('/UserManagement/dashboard/stats');
+    const response = await apiClient.get("/UserManagement/dashboard/stats");
     return response.data;
   },
 
   // Validate user deletion
   async validateDeletion(userId: string): Promise<UserDeletionValidationDto> {
-    const response = await apiClient.get(`/UserManagement/${userId}/validate-deletion`);
+    const response = await apiClient.get(
+      `/UserManagement/${userId}/validate-deletion`
+    );
     return response.data;
   },
 
@@ -264,36 +304,42 @@ export const userManagementApi = {
     pendingReports: number;
     rejectedReports: number;
   }> {
-    const response = await apiClient.get(`/UserManagement/${userId}/report-activity`);
+    const response = await apiClient.get(
+      `/UserManagement/${userId}/report-activity`
+    );
     return response.data;
   },
 
   // Get available roles for dropdown
   async getAvailableRoles(): Promise<string[]> {
-    const response = await apiClient.get('/UserManagement/roles');
+    const response = await apiClient.get("/UserManagement/roles");
     return response.data;
   },
 
   // Get blacklist history for a user
-  async getBlacklistHistory(userId: string): Promise<{ data: BlacklistHistoryDto[] }> {
-    const response = await apiClient.get(`/UserManagement/${userId}/blacklist-history`);
+  async getBlacklistHistory(
+    userId: string
+  ): Promise<{ data: BlacklistHistoryDto[] }> {
+    const response = await apiClient.get(
+      `/UserManagement/${userId}/blacklist-history`
+    );
     return response.data;
   },
 
   // Export users data
   async exportUsers(params: ExportUsersParams): Promise<{ data: Blob }> {
-    const response = await apiClient.post('/UserManagement/export', params, {
-      responseType: 'blob',
+    const response = await apiClient.post("/UserManagement/export", params, {
+      responseType: "blob",
       headers: {
-        'Accept': 'application/octet-stream'
-      }
+        Accept: "application/octet-stream",
+      },
     });
     return { data: response.data };
-  }
+  },
 };
 
 // CJ user list ကို fetch လုပ်တဲ့ function
 export const fetchCjUsers = async () => {
-  const response = await apiClient.get('/UserManagement/cj-users');
+  const response = await apiClient.get("/UserManagement/cj-users");
   return response.data;
 };

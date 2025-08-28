@@ -4,6 +4,125 @@
 @import "./styles/animations.css";
 @import "leaflet/dist/leaflet.css";
 
+/* Disaster News Ticker Animations */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes ticker-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.8), 0 0 30px rgba(239, 68, 68, 0.4);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6),
+      0 0 25px rgba(59, 130, 246, 0.3);
+  }
+}
+
+.animate-scroll-left {
+  animation: scroll-left linear infinite;
+}
+
+.animate-ticker-glow {
+  animation: ticker-glow 2s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Modal z-index utilities */
+.modal-overlay {
+  z-index: 99999 !important;
+}
+
+.modal-content {
+  z-index: 99999 !important;
+  position: relative;
+}
+
+.modal-header {
+  z-index: 100000 !important;
+  position: sticky;
+  top: 0;
+}
+
+/* Ensure modals appear above everything */
+.modal-backdrop {
+  z-index: 99998 !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.modal-dialog {
+  z-index: 99999 !important;
+  position: relative;
+}
+
+/* Enhanced hover effects for disaster news items */
+.disaster-news-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.disaster-news-item:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Link hover effects */
+.disaster-link {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.disaster-link:hover {
+  text-decoration: underline;
+  text-decoration-color: rgba(59, 130, 246, 0.6);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+.disaster-link::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -4px;
+  right: -4px;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.1),
+    transparent
+  );
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.disaster-link:hover::before {
+  opacity: 1;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

@@ -8,12 +8,18 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5057
 // Create axios instance
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // Increased to 30 seconds
   headers: {
     'Content-Type': 'application/json',
   },
   withCredentials: true, // Important for cookies
 });
+
+// Helper function to check if current page is public
+const isPublicPage = () => {
+  const publicPaths = ['/', '/login', '/signup', '/about', '/contact', '/terms', '/privacy', '/what-we-do', '/get-involved', '/donate', '/partnership'];
+  return publicPaths.includes(window.location.pathname);
+};
 
 // Request interceptor to add auth token and check expiration
 apiClient.interceptors.request.use(
@@ -31,14 +37,17 @@ apiClient.interceptors.request.use(
         // Log out user immediately
         authState.logout();
 
-        // Show error message
-        showErrorToast(
-          'Your session has expired. Please log in again.',
-          'Session Expired'
-        );
+        // Only redirect to login if not on a public page
+        if (!isPublicPage()) {
+          // Show error message
+          showErrorToast(
+            'Your session has expired. Please log in again.',
+            'Session Expired'
+          );
 
-        // Redirect to login
-        window.location.href = '/login';
+          // Redirect to login
+          window.location.href = '/login';
+        }
 
         // Reject the request
         return Promise.reject(new Error('Token expired'));
@@ -84,7 +93,10 @@ apiClient.interceptors.response.use(
       if (isRefreshTokenInvalid) {
         console.warn('🔒 Invalid refresh token detected - logging out user immediately');
         authState.logout();
-        window.location.href = '/login';
+        // Only redirect to login if not on a public page
+        if (!isPublicPage()) {
+          window.location.href = '/login';
+        }
         return Promise.reject(new Error('Invalid refresh token'));
       }
 
@@ -121,14 +133,17 @@ apiClient.interceptors.response.use(
           // Refresh failed, log out user
           authState.logout();
 
-          // Show error message
-          showErrorToast(
-            'Your session has expired. Please log in again.',
-            'Session Expired'
-          );
+          // Only redirect to login if not on a public page
+          if (!isPublicPage()) {
+            // Show error message
+            showErrorToast(
+              'Your session has expired. Please log in again.',
+              'Session Expired'
+            );
 
-          // Redirect to login page
-          window.location.href = '/login';
+            // Redirect to login page
+            window.location.href = '/login';
+          }
 
           // Return a more descriptive error
           return Promise.reject(new Error('Authentication failed - session expired'));
