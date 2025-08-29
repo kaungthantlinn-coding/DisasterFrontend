@@ -321,7 +321,6 @@ const ReportMap: React.FC<ReportMapProps> = ({
           }
         });
       } catch (error) {
-        console.error('ReportMap: Error initializing map:', error);
         setMapError(error instanceof Error ? error.message : 'Failed to initialize map');
         setIsMapLoading(false);
       }
@@ -547,13 +546,13 @@ const ReportMap: React.FC<ReportMapProps> = ({
       markersRef.current.push(marker);
     });
 
-    // Fit map to show all markers if there are any
-    if (reports.length > 0 && markersRef.current.length > 0) {
+    // Fit map to show all disasters if there are any
+    if (disasters.length > 0 && markersRef.current.length > 0) {
       try {
         const group = new L.featureGroup(markersRef.current);
         mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
       } catch (error) {
-        console.warn('Map bounds fitting error:', error);
+        // Silently handle bounds fitting errors
       }
     }
   }, [reports, onReportSelect, isMapReady]);
@@ -568,7 +567,6 @@ const ReportMap: React.FC<ReportMapProps> = ({
             // Check if map container exists and is properly initialized
             const container = mapInstanceRef.current.getContainer();
             if (!container || !container.offsetParent) {
-              console.warn('Map container not ready for setView operation');
               return;
             }
 
@@ -580,7 +578,6 @@ const ReportMap: React.FC<ReportMapProps> = ({
             );
           } catch (error) {
             // Silently handle Leaflet positioning errors
-            console.warn('Map positioning error:', error);
           }
         }
       }, 100); // Small delay to ensure map is ready
@@ -592,7 +589,6 @@ const ReportMap: React.FC<ReportMapProps> = ({
   // Get current location with improved error handling
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      console.warn('Geolocation is not supported by this browser.');
       return;
     }
 
@@ -606,14 +602,12 @@ const ReportMap: React.FC<ReportMapProps> = ({
             // Check if map container exists and is properly initialized
             const container = mapInstanceRef.current.getContainer();
             if (!container || !container.offsetParent) {
-              console.warn('Map container not ready for setView operation');
               return;
             }
 
             mapInstanceRef.current.setView([latitude, longitude], 10, { animate: false });
           } catch (error) {
             // Silently handle Leaflet positioning errors
-            console.warn('Map positioning error:', error);
           }
         }
       },
@@ -621,16 +615,12 @@ const ReportMap: React.FC<ReportMapProps> = ({
         // Silently handle geolocation errors to avoid console spam
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            console.warn('Geolocation permission denied by user.');
             break;
           case error.POSITION_UNAVAILABLE:
-            console.warn('Geolocation position unavailable.');
             break;
           case error.TIMEOUT:
-            console.warn('Geolocation request timed out.');
             break;
           default:
-            console.warn('An unknown geolocation error occurred.');
             break;
         }
       },

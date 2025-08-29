@@ -25,13 +25,26 @@ const isPublicPage = () => {
 apiClient.interceptors.request.use(
   (config) => {
     const authState = useAuthStore.getState();
-    const { accessToken } = authState;
+    const { accessToken, isAuthenticated, isInitialized } = authState;
 
-    if (accessToken) {
-      // Check if token is expired before making the request
-      // Skip token expiration check for auth endpoints to allow login/signup
-      const isAuthEndpoint = config.url?.includes('/Auth/');
-      if (isTokenExpired(accessToken) && !isAuthEndpoint) {
+    // Skip auth checks for auth endpoints
+    const isAuthEndpoint = config.url?.includes('/Auth/');
+    
+    if (!isAuthEndpoint) {
+      // Check if authentication is required but not available
+      if (!isAuthenticated || !accessToken) {
+        console.warn('🔒 No authentication - rejecting request');
+        return Promise.reject(new Error('Authentication required'));
+      }
+
+      // Check if authentication is still initializing
+      if (!isInitialized) {
+        console.warn('🔒 Authentication not initialized - rejecting request');
+        return Promise.reject(new Error('Authentication initializing'));
+      }
+
+      // Check if token is expired
+      if (isTokenExpired(accessToken)) {
         console.warn('🔒 Token expired - rejecting request and logging out');
 
         // Log out user immediately
@@ -53,10 +66,8 @@ apiClient.interceptors.request.use(
         return Promise.reject(new Error('Token expired'));
       }
 
-      // Add valid token to request (only for non-auth endpoints or valid tokens)
-      if (!isAuthEndpoint) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
-      }
+      // Add valid token to request
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
     return config;

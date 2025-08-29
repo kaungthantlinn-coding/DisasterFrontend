@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   CheckCircle,
@@ -19,8 +18,6 @@ import {
   MapPin,
   RefreshCw,
   Target,
-  Calendar,
-  MapIcon,
   Waves,
   Flame,
   Mountain,
@@ -52,7 +49,7 @@ const Home: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Auth and roles
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { isAdmin, isCj, isOnlyUser } = useRoles();
 
   // Real-world disaster data
@@ -69,7 +66,6 @@ const Home: React.FC = () => {
   });
 
   // Check permissions
-  const canViewReports = isAuthenticated && (isAdmin() || isCj());
   const canCreateReports = !isAuthenticated || !isOnlyUser();
 
   // Hero content with refined professional disaster response images
@@ -839,11 +835,30 @@ const Home: React.FC = () => {
                       </div>
                     ) : (
                       <div className="bg-slate-800 rounded-2xl h-80 overflow-hidden">
-                        <SimpleLeafletMap
-                          disasters={disasters || []}
-                          loading={disastersLoading}
-                          className="w-full h-full rounded-2xl"
-                        />
+                        {disasters && disasters.length > 0 && (
+                          <div className="text-white p-2 text-xs">
+                            Debug: {disasters.length} disasters loaded
+                          </div>
+                        )}
+                        {!disasters || disasters.length === 0 ? (
+                          <div className="flex items-center justify-center h-full text-white">
+                            <div className="text-center">
+                              <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-yellow-400" />
+                              <p className="text-lg font-semibold mb-2">No Data Available</p>
+                              <p className="text-sm text-gray-300 mb-4">
+                                {disastersLoading ? 'Loading disaster data...' : 'No disasters to display'}
+                              </p>
+                              {disastersError && (
+                                <p className="text-sm text-red-400">Error: {disastersError}</p>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <SimpleLeafletMap
+                            disasters={disasters}
+                            className="w-full h-full rounded-2xl"
+                          />
+                        )}
                       </div>
                     )}
                   </div>
@@ -1063,7 +1078,7 @@ const Home: React.FC = () => {
       </main>
 
       <Footer />
-      <ChatWidget />
+      <ChatWidget currentUserId={isAuthenticated && user ? user.userId : 'anonymous'} />
 
       {/* Scroll to Top Button */}
       {showScrollTop && (

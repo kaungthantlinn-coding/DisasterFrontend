@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
-import { MessageCircle, Headphones, Minimize2, X, Send, ImagePlus } from "lucide-react";
+import { MessageCircle, Headphones, X, Send, ImagePlus } from "lucide-react";
 import { fetchCjUsers } from '../../apis/userManagement';
 import { sendMessageToCj, fetchConversation, fetchSendersToCj } from '../../apis/chat';
 import ImageViewer from "../Common/ImageViewer";
+import { useAuthenticatedApi } from '../../hooks/useAuthenticatedApi';
 import "../../pages/CjChatList.css";
 
 // Add helper to get/set unread count in localStorage
@@ -66,10 +67,23 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch CJ users on component mount
+  // Use authenticated API hook
+  const { isReady, executeWhenReady } = useAuthenticatedApi();
+
+  // Fetch CJ users only when authentication is ready
   useEffect(() => {
-    fetchCjUsers().then(setCjUsers).catch(() => setCjUsers([]));
-  }, []);
+    executeWhenReady(
+      () => fetchCjUsers(),
+      [] // fallback to empty array
+    ).then((result) => {
+      if (result) {
+        setCjUsers(result);
+      }
+    }).catch((error) => {
+      console.warn('Failed to fetch CJ users:', error);
+      setCjUsers([]);
+    });
+  }, [isReady, executeWhenReady]);
 
   // Determine if current user is CJ role
   useEffect(() => {

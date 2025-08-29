@@ -10,7 +10,7 @@ interface UseDisasterDataOptions {
 }
 
 interface UseDisasterDataReturn {
-  disasters: DisasterReportDto[];
+  disasters: RealWorldDisaster[];
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
@@ -31,7 +31,7 @@ export const useDisasterData = (options: UseDisasterDataOptions = {}): UseDisast
     includeSignificantOnly = true,
   } = options;
 
-  const [disasters, setDisasters] = useState<DisasterReportDto[]>([]);
+  const [disasters, setDisasters] = useState<RealWorldDisaster[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);

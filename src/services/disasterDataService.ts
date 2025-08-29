@@ -102,7 +102,7 @@ const convertUSGSToDisaster = (
 // Disaster Data Service
 export class DisasterDataService {
   private static instance: DisasterDataService;
-  private cache: Map<string, { data: DisasterReportDto[]; timestamp: number }> =
+  private cache: Map<string, { data: RealWorldDisaster[]; timestamp: number }> =
     new Map();
   private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes - longer cache to reduce API calls
 
@@ -117,13 +117,13 @@ export class DisasterDataService {
     return Date.now() - timestamp < this.CACHE_DURATION;
   }
 
-  private ongoingRequests: Map<string, Promise<DisasterReportDto[]>> =
+  private ongoingRequests: Map<string, Promise<RealWorldDisaster[]>> =
     new Map();
 
   // Fetch USGS earthquake data
   async fetchUSGSEarthquakes(
     feedType: keyof typeof USGS_FEEDS = "M2_5_DAY"
-  ): Promise<DisasterReportDto[]> {
+  ): Promise<RealWorldDisaster[]> {
     const cacheKey = `usgs_${feedType}`;
     const cached = this.cache.get(cacheKey);
 
@@ -140,8 +140,8 @@ export class DisasterDataService {
   private async performUSGSRequest(
     feedType: keyof typeof USGS_FEEDS,
     cacheKey: string,
-    cached?: { data: DisasterReportDto[]; timestamp: number }
-  ): Promise<DisasterReportDto[]> {
+    cached?: { data: RealWorldDisaster[]; timestamp: number }
+  ): Promise<RealWorldDisaster[]> {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
@@ -163,6 +163,9 @@ export class DisasterDataService {
       const data: USGSEarthquakeResponse = await response.json();
 
       const disasters = data.features.map(convertUSGSToDisaster);
+      
+      console.log(`USGS API: Fetched ${disasters.length} disasters from ${feedType}`);
+      console.log('Sample disaster:', disasters[0]);
 
       // Cache the results
       this.cache.set(cacheKey, {
@@ -194,14 +197,14 @@ export class DisasterDataService {
   }
 
   // Fetch significant earthquakes
-  async fetchSignificantEarthquakes(): Promise<DisasterReportDto[]> {
+  async fetchSignificantEarthquakes(): Promise<RealWorldDisaster[]> {
     try {
       const [significantDay, m45Day] = await Promise.allSettled([
         this.fetchUSGSEarthquakes("SIGNIFICANT_DAY"),
         this.fetchUSGSEarthquakes("M4_5_DAY"),
       ]);
 
-      const disasters: DisasterReportDto[] = [];
+      const disasters: RealWorldDisaster[] = [];
 
       if (significantDay.status === "fulfilled") {
         disasters.push(...significantDay.value);
@@ -224,7 +227,7 @@ export class DisasterDataService {
   }
 
   // Fetch all recent disasters
-  async fetchAllRecentDisasters(): Promise<DisasterReportDto[]> {
+  async fetchAllRecentDisasters(): Promise<RealWorldDisaster[]> {
     try {
       const earthquakes = await this.fetchUSGSEarthquakes("M2_5_DAY");
 

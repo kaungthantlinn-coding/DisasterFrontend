@@ -183,7 +183,6 @@ const ContactMap: React.FC<ContactMapProps> = ({
           }
         }, 100);
       } catch (error) {
-        console.error("Error initializing map:", error);
         setMapError("Failed to load map. Please try refreshing the page.");
         setIsMapReady(false);
       }
