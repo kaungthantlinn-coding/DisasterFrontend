@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, Calendar } from "lucide-react";
+import { ArrowLeft, Calendar } from "lucide-react";
 import { getById } from "../services/disasterReportService"; // adjust path
 import { DisasterReportDto, SeverityLevel } from "../types/DisasterReport";
 import ReportMap from "../components/ReportMap";
@@ -86,7 +86,7 @@ export default function ReportDetail() {
               {report.title}
               <span
                 className={`ml-3 px-2 py-0.5 rounded text-sm font-medium ${
-                  report.status === "Accepted"
+                  report.status === "Verified"
                     ? "bg-yellow-100 text-yellow-800"
                     : "bg-green-100 text-green-800"
                 }`}
