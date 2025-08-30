@@ -1,33 +1,32 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import {
-  Search,
   MapPin,
   Calendar,
-  User,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  X,
+  AlertTriangle,
+  CheckCircle,
   Filter,
-  Grid3X3,
-  List,
-  Map,
-  Activity,
-  Flame,
-  Waves,
-  Mountain,
-  Wind,
-  Truck,
-  RefreshCw,
+  Search,
   BarChart3,
   TrendingUp,
   Heart,
-  Eye,
-  AlertTriangle,
-  CheckCircle,
-} from "lucide-react";
+  RefreshCw,
+  ArrowRight,
+  User,
+  Waves,
+  Flame,
+  Mountain,
+  Wind,
+  Truck,
+  X,
+  Grid3X3,
+  List,
+  ChevronLeft,
+  ChevronRight,
+  Map as MapIcon
+} from 'lucide-react';
 
 // Components
 import Header from "../components/Layout/Header";
@@ -44,6 +43,7 @@ import { useAuthStore } from "../stores/authStore";
 import { useRoles } from "../hooks/useRoles";
 
 const Reports: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { isOnlyUser, isCj } = useRoles();
   const authState = useAuthStore((state) => ({
@@ -473,7 +473,7 @@ const Reports: React.FC = () => {
                         to={`/reports/${report.id}`}
                         className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
                       >
-                        View Details
+{t('home.disasters.reportCard.viewDetails')}
                         <ArrowRight size={16} className="ml-1" />
                       </Link>
                     </div>
@@ -620,7 +620,7 @@ const Reports: React.FC = () => {
                         : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
-                    <Map size={18} className="mr-2" />
+                    <MapIcon size={18} className="mr-2" />
                     Map
                   </button>
                 </div>
@@ -856,7 +856,7 @@ const Reports: React.FC = () => {
                       <div className="h-96 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
                         <div className="text-center">
                           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Map size={32} className="text-blue-600" />
+                            <MapIcon size={32} className="text-blue-600" />
                           </div>
                           <h4 className="text-xl font-semibold text-gray-900 mb-2">
                             Interactive Map
@@ -1042,7 +1042,7 @@ const Reports: React.FC = () => {
                               </span>
                             </div>
                             <div className="flex items-center text-blue-600 font-medium">
-                              <span className="text-sm">View Details</span>
+                              <span className="text-sm">{t('home.disasters.reportCard.viewDetails')}</span>
                               <ArrowRight
                                 size={16}
                                 className="ml-1 group-hover:translate-x-1 transition-transform"
@@ -1134,7 +1134,7 @@ const Reports: React.FC = () => {
                                 </div>
                               </div>
                               <div className="flex items-center text-blue-600 font-medium">
-                                <span>View Details</span>
+                                <span>{t('home.disasters.reportCard.viewDetails')}</span>
                                 <ArrowRight
                                   size={16}
                                   className="ml-1 group-hover:translate-x-1 transition-transform"

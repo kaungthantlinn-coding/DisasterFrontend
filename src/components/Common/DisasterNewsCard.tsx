@@ -10,7 +10,6 @@ import {
   Waves,
   Wind,
   Mountain,
-  Zap,
   RefreshCw,
   ExternalLink,
   ChevronLeft,
@@ -22,7 +21,6 @@ import {
 import { useDisasterNews } from "../../hooks/useDisasterNews";
 import {
   DisasterNewsItem,
-  disasterNewsService,
 } from "../../services/disasterNewsService";
 import DisasterDetailModal from "./DisasterDetailModal";
 interface DisasterNewsCardsProps {
@@ -366,7 +364,7 @@ const DisasterNewsCards: React.FC<DisasterNewsCardsProps> = ({
 
                             <div className="flex items-center justify-between mt-2">
                               <span className="text-xs text-blue-600 group-hover:text-blue-800 font-medium transition-colors duration-200 disaster-link">
-                                View details
+                                {t('home.disasters.reportCard.viewDetails')}
                               </span>
                               <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                 <ExternalLink

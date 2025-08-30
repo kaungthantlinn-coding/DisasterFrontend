@@ -94,7 +94,9 @@
       "monitoring24x7": "24/7 Emergency Watch",
       "verifiedData": "Verified Data",
       "globalNetwork": "Global Network",
-      "liveUpdates": "Live Updates"
+      "liveUpdates": "Live Updates",
+      "redefined": "Disaster Response Redefined",
+      "liveEmergencyData": "Live Emergency Data"
     },
     "heroSlides": {
       "emergencyResponse": {
@@ -148,7 +150,13 @@
       "platformDescription": "Our advanced platform processes millions of data points daily to deliver predictive insights and real-time monitoring for faster, more effective disaster response.",
       "realWorldFloodResponse": "Real World Flood Response & Recovery",
       "floodResponseDescription": "Rapid flood response teams with advanced water management systems, evacuation coordination, and real-time monitoring from National Weather Service and local emergency management agencies",
-      "responseRate": "Response Rate"
+      "responseRate": "Response Rate",
+      "resolvedToday": "Resolved Today",
+      "successfulResponses": "Successful Responses",
+      "globalCoverage": "Global Coverage",
+      "alwaysMonitoring": "Always Monitoring",
+      "savingLivesTitle": "Saving Lives Through Technology",
+      "platformAdvancedDescription": "Our advanced platform processes millions of data points daily to deliver predictive insights and real-time monitoring for faster, more effective disaster response."
     },
     "liveImpact": {
       "title": "Making Real Impact Worldwide",
