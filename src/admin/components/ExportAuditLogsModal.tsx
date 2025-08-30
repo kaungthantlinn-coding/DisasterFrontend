@@ -201,7 +201,7 @@ const ExportAuditLogsModal: React.FC<ExportAuditLogsModalProps> = ({
                   disabled={isLoadingOptions}
                 >
                   <option value="">All Actions</option>
-                  {filterOptions?.actions.map((action) => (
+                  {filterOptions?.actions?.map((action) => (
                     <option key={action} value={action}>
                       {action.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                     </option>
@@ -220,7 +220,7 @@ const ExportAuditLogsModal: React.FC<ExportAuditLogsModalProps> = ({
                   disabled={isLoadingOptions}
                 >
                   <option value="">All Types</option>
-                  {filterOptions?.targetTypes.map((targetType) => (
+                  {filterOptions?.targetTypes?.map((targetType) => (
                     <option key={targetType} value={targetType}>
                       {targetType}
                     </option>

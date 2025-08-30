@@ -11,10 +11,10 @@ import {
   Calendar,
   User,
   AlertCircle,
-  Eye,
-  ExternalLink
+  Eye
 } from 'lucide-react';
 import { useAuditLog, useAuditLogStats, AuditLogEntry, AuditLogFilters } from '../../hooks/useAuditLog';
+import { auditLogService } from '../../apis/auditLogs';
 
 interface AuditLogTableRowProps {
   log: AuditLogEntry;
@@ -122,9 +122,33 @@ const AuditLogsPage: React.FC = () => {
 
   const handleExport = async () => {
     try {
-      // This would typically call an API endpoint to generate and download a CSV/Excel file
-      console.log('Exporting audit logs...');
-      // Implementation would depend on your backend API
+      const exportData = {
+        format: 'csv' as const,
+        filters: {
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+          userId: filters.userId,
+          actions: filters.action ? [filters.action] : undefined,
+          targetTypes: filters.targetType ? [filters.targetType] : undefined,
+          page: 1,
+          pageSize: 10000 // Export all matching records
+        },
+        fields: ['userName', 'action', 'targetType', 'details', 'timestamp', 'ipAddress']
+      };
+
+      const blob = await auditLogService.exportAuditLogs(exportData);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('Export completed successfully');
     } catch (error) {
       console.error('Export failed:', error);
     }

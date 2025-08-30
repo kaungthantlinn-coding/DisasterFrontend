@@ -128,7 +128,11 @@
       "responseTime": "Response Time",
       "volunteers": "Active Volunteers",
       "activeDisasters": "Active Disasters",
-      "criticalEvents": "Critical Events",
+      "activeDisastersDescription": "Currently monitored worldwide",
+      "criticalEvents": "Critical Events", 
+      "criticalEventsDescription": "Requiring immediate attention",
+      "responseTeams": "Response Teams",
+      "responseTeamsDescription": "Active response operations",
       "highSeverity": "High Severity",
       "dataSources": "Data Sources",
       "realTimeIncidents": "Real-time incidents",
@@ -187,6 +191,30 @@
       "resourceManagement": {
         "title": "Resource Management",
         "description": "Track and coordinate emergency resources, supplies, and personnel for optimal disaster response effectiveness."
+      },
+      "emergencyPreparedness": {
+        "title": "Emergency Preparedness",
+        "description": "📺 FEMA Emergency Kit Building Guide - FEMA Training Video"
+      },
+      "communityResponse": {
+        "title": "Community Response",
+        "description": "📺 Community Emergency Response Training - FEMA Training Video"
+      },
+      "instantAlert": {
+        "title": "Instant Alert",
+        "description": "📺 FEMA Emergency Alert System"
+      },
+      "wildfireTracking": {
+        "title": "Wildfire Tracking",
+        "description": "📺 When the Fire Starts - Wildfire Response - FEMA Training Video"
+      },
+      "floodAnalytics": {
+        "title": "Flood Analytics",
+        "description": "📺 When the Clouds Form - Storm Preparedness - FEMA Training Video"
+      },
+      "earthquakeResponse": {
+        "title": "Earthquake Response",
+        "description": "📺 When the Earth Shakes - Earthquake Safety - FEMA Training Video"
       }
     },
     "map": {
