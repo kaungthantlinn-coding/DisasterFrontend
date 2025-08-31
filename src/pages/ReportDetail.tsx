@@ -223,9 +223,12 @@ export default function ReportDetail() {
             >
               Support Request
             </Link>
-            <button className="w-full border border-gray-300 hover:bg-gray-50 py-2 rounded">
-              Contact Reporter
-            </button>
+            <Link
+              to="/donate"
+              className="block w-full border  text-white border-gray-300 py-2 rounded text-center bg-blue-600 hover:bg-blue-700 "
+            >
+              Donate
+            </Link>
           </div>
           <div className="bg-white p-4 rounded shadow mb-4">
             <h3 className="font-semibold mb-2">Want to Help?</h3>
@@ -233,7 +236,7 @@ export default function ReportDetail() {
               Join our community to offer assistance and connect with those in
               need.
             </p>
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
+            <button className="w-full bg-green-600  text-white py-2 rounded">
               Join to Help
             </button>
           </div>

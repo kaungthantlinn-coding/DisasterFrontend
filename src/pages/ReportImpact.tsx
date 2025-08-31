@@ -15,12 +15,15 @@ import {
   createDisasterReport,
   getById,
   update as updateDisasterReport,
+  getAll,
 } from "../services/disasterReportService";
 import { useAuthStore } from "../stores/authStore";
 import ReportMap from "../components/ReportMap";
 import { NotificationAPI } from "../services/Notification";
 import { NotificationType } from "../types/Notification";
 import { Footer, Header } from "@/components/Layout";
+import { DisasterEventService } from "../services/disasterEventService";
+import { DisasterEventDto } from "../types/DisasterEvent";
 
 interface Props {
   authToken: string;
@@ -36,6 +39,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
   const { accessToken, isAuthenticated, user } = useAuthStore();
   const [step, setStep] = useState(1);
   const [disasterTypes, setDisasterTypes] = useState<DisasterTypeDto[]>([]);
+  const [disasterEventNames, setDisasterEventNames] = useState<DisasterEventDto[]>([]);
   const [impactDescription, setImpactDescription] = useState("");
   const [selectedImpacts, setSelectedImpacts] = useState<ImpactTypeDto[]>([]);
   const [selectedDisasterTypeName, setSelectedDisasterTypeName] = useState("");
@@ -165,10 +169,60 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     }
   };
 
+  const fetchDisasterEventNames = async () => {
+    try {
+      const token = getToken();
+      if (!token) {
+        console.error("No token found for fetching disaster event names");
+        return;
+      }
+      
+      // First try to get from the dedicated endpoint
+      try {
+        const events = await DisasterEventService.getAll(token);
+        console.log("Fetched disaster events from service:", events);
+        if (Array.isArray(events) && events.length > 0) {
+          setDisasterEventNames(events);
+          return;
+        }
+      } catch (serviceError) {
+        console.warn("Failed to fetch from disaster event service:", serviceError);
+      }
+      
+      // Fallback: Get event names from existing disaster reports
+      try {
+        const reports = await getAll(token);
+        console.log("Fetched disaster reports for event names:", reports);
+        const eventNames = Array.from(
+          new Set(
+            reports
+              .map(report => report.disasterEventName)
+              .filter((name): name is string => name !== undefined && name !== null && name.trim() !== "")
+          )
+        ).sort();
+        
+        // Convert to DisasterEventDto format
+        const disasterEvents: DisasterEventDto[] = eventNames.map((name, index) => ({
+          id: `event-${index}`,
+          name: name,
+          disasterTypeId: 0, // We don't have this information from reports
+        }));
+        
+        console.log("Extracted events:", disasterEvents);
+        setDisasterEventNames(disasterEvents);
+      } catch (reportsError) {
+        console.warn("Failed to fetch event names from reports:", reportsError);
+      }
+    } catch (err) {
+      console.error("Failed to load disaster event names:", err);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated && getToken()) {
       fetchDisasterTypes();
       fetchImpactTypes();
+      fetchDisasterEventNames();
     } else {
       console.log("User not authenticated, redirecting to login...");
       navigate("/login");
@@ -1024,18 +1078,28 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                       </span>
                     )}
                   </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Cyclone Mocha, 2025 Monsoon Flood"
-                    className="border p-2 rounded-lg w-full"
-                    value={formData.disasterEventName || ""}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        disasterEventName: e.target.value,
-                      }))
-                    }
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="e.g. Cyclone Mocha, 2025 Monsoon Flood"
+                      className="border p-2 rounded-lg w-full"
+                      value={formData.disasterEventName || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          disasterEventName: e.target.value,
+                        }))
+                      }
+                      list="disasterEventSuggestions"
+                    />
+                    {disasterEventNames.length > 0 && (
+                      <datalist id="disasterEventSuggestions">
+                        {disasterEventNames.map((event) => (
+                          <option key={event.id} value={event.name} />
+                        ))}
+                      </datalist>
+                    )}
+                  </div>
                 </div>
               )}
 

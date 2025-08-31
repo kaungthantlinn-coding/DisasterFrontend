@@ -16,7 +16,7 @@ import {
   Plus,
   XCircle, // Added for Rejected Reports icon
 } from "lucide-react";
-import { showInfoToast } from "../utils/notifications";
+
 import { DisasterReportDto, ReportStatus } from "../types/DisasterReport";
 import { getMyReports } from "../services/disasterReportService";
 
@@ -270,78 +270,85 @@ const Dashboard: React.FC = () => {
       }).length || 0,
   };
 
-  // Map reports to ReportCard props
-  const myReports = reportsData.map((report: DisasterReportDto) => {
-    let status: "Verified" | "Pending" | "Rejected";
+  // Map reports to ReportCard props and sort in descending order (newest first)
+  const myReports = reportsData
+    .sort((a, b) => {
+      // Sort by timestamp in descending order (newest first)
+      const dateA = new Date(a.timestamp || 0).getTime();
+      const dateB = new Date(b.timestamp || 0).getTime();
+      return dateB - dateA;
+    })
+    .map((report: DisasterReportDto) => {
+      let status: "Verified" | "Pending" | "Rejected";
 
-    // Debug logging to inspect status
-    console.log(
-      "Processing Report ID:",
-      report.id,
-      "Status:",
-      report.status,
-      "Type:",
-      typeof report.status
-    );
-
-    // Handle status mapping
-    const reportStatus = report.status;
-
-    if (reportStatus == null) {
-      console.warn(
-        `Report ${report.id} has null/undefined status, defaulting to Pending`
+      // Debug logging to inspect status
+      console.log(
+        "Processing Report ID:",
+        report.id,
+        "Status:",
+        report.status,
+        "Type:",
+        typeof report.status
       );
-      status = "Pending";
-    } else if (typeof reportStatus === "number") {
-      switch (reportStatus) {
-        case 1:
-          status = "Verified";
-          break;
-        case 2:
-          status = "Rejected";
-          break;
-        case 0:
-        default:
-          status = "Pending";
-          break;
-      }
-    } else {
-      // Handle string values with case-insensitive comparison
-      const statusString = String(reportStatus).toLowerCase();
-      switch (statusString) {
-        case "accepted":
-        case "verified":
-        case ReportStatus.Accepted.toLowerCase():
-          status = "Verified";
-          break;
-        case "rejected":
-        case ReportStatus.Rejected.toLowerCase():
-          status = "Rejected";
-          break;
-        case "pending":
-        case ReportStatus.Pending.toLowerCase():
-        default:
-          status = "Pending";
-          break;
-      }
-    }
 
-    return {
-      id: report.id,
-      title: report.title || "Untitled Report",
-      description:
-        report.description && report.description.length > 100
-          ? report.description.substring(0, 100) + "..."
-          : report.description || "No description provided",
-      status,
-      date: report.timestamp
-        ? new Date(report.timestamp).toLocaleDateString()
-        : "Unknown date",
-      image:
-        report.photoUrls?.[0] ||
-        "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center",
-    };
-  });
+      // Handle status mapping
+      const reportStatus = report.status;
+
+      if (reportStatus == null) {
+        console.warn(
+          `Report ${report.id} has null/undefined status, defaulting to Pending`
+        );
+        status = "Pending";
+      } else if (typeof reportStatus === "number") {
+        switch (reportStatus) {
+          case 1:
+            status = "Verified";
+            break;
+          case 2:
+            status = "Rejected";
+            break;
+          case 0:
+          default:
+            status = "Pending";
+            break;
+        }
+      } else {
+        // Handle string values with case-insensitive comparison
+        const statusString = String(reportStatus).toLowerCase();
+        switch (statusString) {
+          case "accepted":
+          case "verified":
+          case ReportStatus.Accepted.toLowerCase():
+            status = "Verified";
+            break;
+          case "rejected":
+          case ReportStatus.Rejected.toLowerCase():
+            status = "Rejected";
+            break;
+          case "pending":
+          case ReportStatus.Pending.toLowerCase():
+          default:
+            status = "Pending";
+            break;
+        }
+      }
+
+      return {
+        id: report.id,
+        title: report.title || "Untitled Report",
+        description:
+          report.description && report.description.length > 100
+            ? report.description.substring(0, 100) + "..."
+            : report.description || "No description provided",
+        status,
+        date: report.timestamp
+          ? new Date(report.timestamp).toLocaleDateString()
+          : "Unknown date",
+        image:
+          report.photoUrls?.[0] ||
+          "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=64&h=64&fit=crop&crop=center",
+      };
+    });
 
   return (
     <div className="min-h-screen bg-gray-50">
