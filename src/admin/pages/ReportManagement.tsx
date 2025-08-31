@@ -42,6 +42,7 @@ import type { RealWorldDisaster } from "../../types";
 import Avatar from "../../components/Common/Avatar";
 import { userManagementApi } from "../../apis/userManagement";
 import { extractPhotoUrl } from "../../utils/avatarUtils";
+import ReportMap from "@/components/ReportMap";
 interface FilterState {
   status: string;
   type: string;
@@ -102,9 +103,7 @@ const buildImageUrl = (u: string) => {
   }
 };
 
-const getStatusColor = (
-  status: "pending" | "verified" | "rejected" | "investigating"
-) => {
+const getStatusColor = (status: "pending" | "verified" | "rejected") => {
   switch (status) {
     case "verified":
       return "bg-green-100 text-green-800";
@@ -112,8 +111,7 @@ const getStatusColor = (
       return "bg-yellow-100 text-yellow-800";
     case "rejected":
       return "bg-red-100 text-red-800";
-    case "investigating":
-      return "bg-blue-100 text-blue-800";
+
     default:
       return "bg-gray-100 text-gray-800";
   }
@@ -165,6 +163,7 @@ const ReportManagement: React.FC = () => {
   const [selectedReport, setSelectedReport] =
     useState<DisasterReportDto | null>(null);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [openEditStatusModal, setOpenEditStatusModal] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<{
@@ -234,27 +233,9 @@ const ReportManagement: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  const handleEditReport = (reportId: string) => {
-    setOpenMenuId(null);
-    navigate(`/report/edit/${reportId}`);
-  };
-
-  const handleDeleteReport = async (reportId: string) => {
-    try {
-      await deleteDisasterReport(reportId);
-      await queryClient.invalidateQueries({ queryKey: ["reports"] });
-      await refetch();
-      console.log("Report deleted:", reportId);
-    } catch (err) {
-      console.error("Failed to delete report:", err);
-    } finally {
-      setOpenMenuId(null);
-    }
-  };
-
   const handleStatusChange = async (
     reportId: string,
-    newUiStatus: "pending" | "verified" | "rejected" | "investigating"
+    newUiStatus: "pending" | "verified" | "rejected"
   ) => {
     // Determine API action
     const action =
@@ -320,6 +301,19 @@ const ReportManagement: React.FC = () => {
 
     // Final sync
     await refetch();
+  };
+
+  const handleDeleteReport = async (reportId: string) => {
+    try {
+      await deleteDisasterReport(reportId);
+      await queryClient.invalidateQueries({ queryKey: ["reports"] });
+      await refetch();
+      console.log("Report deleted:", reportId);
+    } catch (err) {
+      console.error("Failed to delete report:", err);
+    } finally {
+      setOpenMenuId(null);
+    }
   };
 
   const filteredReports = reports.filter((report) => {
@@ -874,14 +868,21 @@ const ReportManagement: React.FC = () => {
                                 View Details
                               </button>
                               <button
-                                onClick={() => handleEditReport(report.id)}
+                                onClick={() => {
+                                  setSelectedReport(report);
+                                  setOpenEditStatusModal(true);
+                                  setOpenMenuId(null);
+                                }}
                                 className="w-full flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                               >
                                 <Edit className="w-4 h-4 mr-2 text-amber-600" />
-                                Edit Report
+                                Edit Status
                               </button>
                               <button
-                                onClick={() => { setDeleteTarget(report.id); setOpenMenuId(null); }}
+                                onClick={() => {
+                                  setDeleteTarget(report.id);
+                                  setOpenMenuId(null);
+                                }}
                                 className="w-full flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
@@ -1130,36 +1131,18 @@ const ReportManagement: React.FC = () => {
                         <h4 className="text-md font-semibold text-gray-900 mb-3">
                           Location Map
                         </h4>
-                        <SimpleLeafletMap
-                          height="300px"
-                          className="rounded-lg overflow-hidden border"
-                          disasters={[
-                            {
-                              id: selectedReport.id,
-                              title: selectedReport.title,
-                              description: selectedReport.description,
-                              location: {
-                                coordinates: {
-                                  lat: selectedReport.latitude,
-                                  lng: selectedReport.longitude,
-                                },
-                                place: selectedReport.address || "",
-                              },
-                              disasterType:
-                                (typeSlug(
-                                  selectedReport.disasterTypeName
-                                ) as any) || "other",
-                              severity: toUiSeverity(selectedReport.severity),
-                              time: selectedReport.timestamp
-                                ? new Date(selectedReport.timestamp)
-                                : new Date(),
-                              updatedAt: selectedReport.timestamp
-                                ? new Date(selectedReport.timestamp)
-                                : new Date(),
-                              source: "DisasterReport",
-                            } as RealWorldDisaster,
-                          ]}
-                        />
+                        {selectedReport.latitude !== 0 &&
+                        selectedReport.longitude !== 0 ? (
+                          <ReportMap
+                            lat={selectedReport.latitude}
+                            lng={selectedReport.longitude}
+                            address={selectedReport.address}
+                          />
+                        ) : (
+                          <div className="bg-gray-100 p-4 rounded-lg text-gray-500">
+                            📍 No location available
+                          </div>
+                        )}
                       </div>
                     )}
                 </div>
@@ -1249,7 +1232,9 @@ const ReportManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl w-full max-w-md shadow-lg">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Confirm Delete</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Confirm Delete
+              </h3>
               <button
                 onClick={() => setDeleteTarget(null)}
                 className="text-gray-400 hover:text-gray-600"
@@ -1260,7 +1245,8 @@ const ReportManagement: React.FC = () => {
             </div>
             <div className="px-6 py-5">
               <p className="text-sm text-gray-700">
-                Deleting this report is permanent and cannot be undone. Are you sure you want to proceed?
+                Deleting this report is permanent and cannot be undone. Are you
+                sure you want to proceed?
               </p>
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
@@ -1280,6 +1266,100 @@ const ReportManagement: React.FC = () => {
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
               >
                 Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {openEditStatusModal && selectedReport && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Edit Report Status
+                </h2>
+                <button
+                  onClick={() => setOpenEditStatusModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {selectedReport.title}
+                </h3>
+                <p className="text-sm text-gray-500">
+                  Current status:{" "}
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                      toUiStatus(selectedReport.status)
+                    )}`}
+                  >
+                    {toUiStatus(selectedReport.status).charAt(0).toUpperCase() +
+                      toUiStatus(selectedReport.status).slice(1)}
+                  </span>
+                </p>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select New Status
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() =>
+                        handleStatusChange(selectedReport.id, "pending")
+                      }
+                      className={`p-3 border rounded-lg text-center transition-colors ${
+                        toUiStatus(selectedReport.status) === "pending"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <Clock className="w-5 h-5 mx-auto mb-1 text-yellow-500" />
+                      <span className="text-sm font-medium">Pending</span>
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleStatusChange(selectedReport.id, "verified")
+                      }
+                      className={`p-3 border rounded-lg text-center transition-colors ${
+                        toUiStatus(selectedReport.status) === "verified"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <CheckCircle className="w-5 h-5 mx-auto mb-1 text-green-500" />
+                      <span className="text-sm font-medium">Verified</span>
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleStatusChange(selectedReport.id, "rejected")
+                      }
+                      className={`p-3 border rounded-lg text-center transition-colors ${
+                        toUiStatus(selectedReport.status) === "rejected"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <XCircle className="w-5 h-5 mx-auto mb-1 text-red-500" />
+                      <span className="text-sm font-medium">Rejected</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end">
+              <button
+                onClick={() => setOpenEditStatusModal(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Ok
               </button>
             </div>
           </div>

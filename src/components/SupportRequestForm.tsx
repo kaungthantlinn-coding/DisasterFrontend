@@ -1,20 +1,11 @@
-import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from "react-router-dom";
 import {
   User,
   Mail,
-  Phone,
-  MapPin,
-  MessageSquare,
-  AlertTriangle,
-  Clock,
   Send,
   CheckCircle,
   X,
-  FileText,
   Heart,
-  Shield,
-  Zap,
   Building,
   Truck,
   Home,
@@ -22,164 +13,227 @@ import {
   Stethoscope,
   GraduationCap,
   Wrench,
-  ChevronLeft,
-  ChevronRight,
   Check,
-  Calendar
-} from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+} from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
+import { SupportRequestService } from "../services/supportRequestService";
+import { SupportRequestCreateDto } from "../types/supportRequest";
+import { useCallback, useEffect, useState } from "react";
 
 interface SupportRequestFormData {
   // Personal Information
   fullName: string;
   email: string;
-  phone: string;
-  
+
   // Request Details
-  disasterType: string;
-  urgencyLevel: 'immediate' | 'within_24h' | 'within_week' | 'non_urgent' | '';
+  urgencyLevel: "immediate" | "within_24h" | "within_week" | "non_urgent" | "";
   description: string;
-  
-  // Location and Date
-  location: string;
-  dateReported: string;
-  
+
   // Assistance Types
   assistanceTypes: string[];
-  
+  otherAssistanceType: string;
+
   // Status
-  status: 'pending' | 'in_progress' | 'completed';
+  status: "pending" | "in_progress" | "completed";
 }
 
-const disasterTypes = [
-  { id: 'flood', label: 'Flood', icon: AlertTriangle, color: 'from-blue-500 to-blue-600' },
-  { id: 'earthquake', label: 'Earthquake', icon: Zap, color: 'from-red-500 to-red-600' },
-  { id: 'fire', label: 'Fire', icon: AlertTriangle, color: 'from-orange-500 to-orange-600' },
-  { id: 'hurricane', label: 'Hurricane/Typhoon', icon: Shield, color: 'from-purple-500 to-purple-600' },
-  { id: 'landslide', label: 'Landslide', icon: AlertTriangle, color: 'from-yellow-500 to-yellow-600' },
-  { id: 'other', label: 'Other Disaster', icon: MessageSquare, color: 'from-gray-500 to-gray-600' }
-];
-
-const assistanceOptions = [
-  { id: 'emergency_rescue', label: 'Emergency Rescue', icon: AlertTriangle },
-  { id: 'medical_assistance', label: 'Medical Assistance', icon: Stethoscope },
-  { id: 'food_water', label: 'Food & Water', icon: Utensils },
-  { id: 'temporary_shelter', label: 'Temporary Shelter', icon: Home },
-  { id: 'transportation', label: 'Transportation', icon: Truck },
-  { id: 'psychological_support', label: 'Psychological Support', icon: Heart },
-  { id: 'education_support', label: 'Education Support', icon: GraduationCap },
-  { id: 'cleanup_restoration', label: 'Cleanup & Restoration', icon: Wrench },
-  { id: 'financial_aid', label: 'Financial Aid', icon: Building },
-  { id: 'other', label: 'Other', icon: MessageSquare }
-];
-
 const urgencyLevels = [
-  { id: 'immediate', label: 'Immediate', description: 'Life-threatening emergency', color: 'from-red-500 to-red-600', icon: Zap },
-  { id: 'within_24h', label: 'Within 24 Hours', description: 'Urgent assistance needed', color: 'from-orange-500 to-orange-600', icon: Clock },
-  { id: 'within_week', label: 'Within a Week', description: 'Important but not urgent', color: 'from-yellow-500 to-yellow-600', icon: Clock },
-  { id: 'non_urgent', label: 'Non-Urgent', description: 'General inquiry or support', color: 'from-green-500 to-green-600', icon: MessageSquare }
+  {
+    id: "immediate",
+    label: "Immediate",
+    description: "Life-threatening emergency",
+    color: "from-red-500 to-red-600",
+  },
+  {
+    id: "within_24h",
+    label: "Within 24 Hours",
+    description: "Urgent assistance needed",
+    color: "from-orange-500 to-orange-600",
+  },
+  {
+    id: "within_week",
+    label: "Within a Week",
+    description: "Important but not urgent",
+    color: "from-yellow-500 to-yellow-600",
+  },
+  {
+    id: "non_urgent",
+    label: "Non-Urgent",
+    description: "General inquiry or support",
+    color: "from-green-500 to-green-600",
+  },
 ];
 
 interface SupportRequestFormProps {
   onSubmitSuccess?: () => void;
 }
 
-const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess }) => {
-  const { user, isAuthenticated } = useAuth();
+const SupportRequestForm: React.FC<SupportRequestFormProps> = ({
+  onSubmitSuccess,
+}) => {
+  const { id } = useParams<{ id: string }>(); // Route param (ReportId) ယူမယ်
+  const { user } = useAuth();
   const navigate = useNavigate();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+  const [assistanceTypes, setAssistanceTypes] = useState<string[]>([]);
+  const [loadingAssistanceTypes, setLoadingAssistanceTypes] = useState(true);
+  const [assistanceTypesError, setAssistanceTypesError] = useState<
+    string | null
+  >(null);
+
   const [formData, setFormData] = useState<SupportRequestFormData>({
-    fullName: user?.name || '',
-    email: user?.email || '',
-    phone: '',
-    disasterType: '',
-    urgencyLevel: '',
-    description: '',
-    location: '',
-    dateReported: new Date().toISOString().split('T')[0],
+    fullName: user?.name || "",
+    email: user?.email || "",
+    urgencyLevel: "",
+    description: "",
     assistanceTypes: [],
-    status: 'pending'
+    otherAssistanceType: "",
+    status: "pending",
   });
 
-  const validateStep = useCallback((step: number): boolean => {
-    const newErrors: Record<string, string> = {};
+  // 🔹 Assistance types ကို load
+  useEffect(() => {
+    const fetchAssistanceTypes = async () => {
+      try {
+        setLoadingAssistanceTypes(true);
+        const types = await SupportRequestService.getAllSupportType();
+        setAssistanceTypes(types);
+        setAssistanceTypesError(null);
+      } catch (error) {
+        console.error("Failed to fetch assistance types:", error);
+        setAssistanceTypesError(
+          "Failed to load assistance types. Please try again later."
+        );
+      } finally {
+        setLoadingAssistanceTypes(false);
+      }
+    };
 
-    switch (step) {
-      case 1:
-        if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
-        if (!formData.email.trim()) newErrors.email = 'Email is required';
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Please enter a valid email';
-        if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-        break;
-      case 2:
-        if (!formData.disasterType) newErrors.disasterType = 'Please select a disaster type';
-        if (!formData.urgencyLevel) newErrors.urgencyLevel = 'Please select urgency level';
-        if (!formData.description.trim()) newErrors.description = 'Description is required';
-        else if (formData.description.length < 20) newErrors.description = 'Description must be at least 20 characters';
-        if (!formData.location.trim()) newErrors.location = 'Location is required';
-        if (formData.assistanceTypes.length === 0) newErrors.assistanceTypes = 'Please select at least one assistance type';
-        break;
-    }
+    fetchAssistanceTypes();
+  }, []);
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [formData]);
+  // 🔹 Step Validation
+  const validateStep = useCallback(
+    (step: number): boolean => {
+      const newErrors: Record<string, string> = {};
 
+      switch (step) {
+        case 1:
+          if (!formData.fullName.trim())
+            newErrors.fullName = "Full name is required";
+          if (!formData.email.trim()) newErrors.email = "Email is required";
+          else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+            newErrors.email = "Please enter a valid email";
+          break;
+        case 2:
+          if (!formData.urgencyLevel)
+            newErrors.urgencyLevel = "Please select urgency level";
+          if (!formData.description.trim())
+            newErrors.description = "Description is required";
+          else if (formData.description.length < 20)
+            newErrors.description =
+              "Description must be at least 20 characters";
+
+          if (formData.assistanceTypes.length === 0)
+            newErrors.assistanceTypes =
+              "Please select at least one assistance type";
+
+          if (
+            formData.assistanceTypes.includes("other") &&
+            !formData.otherAssistanceType.trim()
+          ) {
+            newErrors.otherAssistanceType =
+              "Please specify the type of assistance needed";
+          }
+          break;
+      }
+
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
+    },
+    [formData]
+  );
+
+  // 🔹 Navigation Between Steps
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
   const handlePrevious = () => {
-    setCurrentStep(prev => prev - 1);
+    setCurrentStep((prev) => prev - 1);
   };
 
+  // 🔹 Submit Handler
   const handleSubmit = useCallback(async () => {
     if (!validateStep(2)) return;
 
     setIsSubmitting(true);
-    
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      const supportRequestDto: SupportRequestCreateDto = {
+        ReportId: id ?? "", // ✅ Route param ကနေ ReportId ထည့်
+        Description: formData.description,
+        Urgency:
+          formData.urgencyLevel === "immediate"
+            ? 1
+            : formData.urgencyLevel === "within_24h"
+            ? 2
+            : formData.urgencyLevel === "within_week"
+            ? 3
+            : 4,
+        SupportTypeNames: [...formData.assistanceTypes],
+      };
+
+      // If "other" assistance type is chosen
+      if (
+        formData.assistanceTypes.includes("other") &&
+        formData.otherAssistanceType.trim()
+      ) {
+        supportRequestDto.SupportTypeNames = [
+          ...formData.assistanceTypes.filter((type) => type !== "other"),
+          formData.otherAssistanceType.trim(),
+        ];
+      }
+
+      await SupportRequestService.create(supportRequestDto);
+
       setSubmitSuccess(true);
       onSubmitSuccess?.();
-      
-      // Reset form after successful submission
+
       setTimeout(() => {
         if (onSubmitSuccess) {
           onSubmitSuccess();
         } else {
-          navigate('/dashboard');
+          navigate(`/reports/${id}`);
         }
       }, 3000);
-      
     } catch (error) {
-      setErrors({ submit: 'Failed to submit support request. Please try again.' });
+      console.error("Failed to submit support request:", error);
+      setErrors({
+        submit: "Failed to submit support request. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateStep, navigate, onSubmitSuccess]);
+  }, [validateStep, navigate, onSubmitSuccess, formData, id]);
 
+  // 🔹 Handle Assistance Types
   const handleAssistanceTypeChange = (assistanceId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       assistanceTypes: prev.assistanceTypes.includes(assistanceId)
-        ? prev.assistanceTypes.filter(id => id !== assistanceId)
-        : [...prev.assistanceTypes, assistanceId]
+        ? prev.assistanceTypes.filter((id) => id !== assistanceId)
+        : [...prev.assistanceTypes, assistanceId],
     }));
   };
 
-  const stepTitles = [
-    'Personal Information',
-    'Request Details & Assistance'
-  ];
+  const stepTitles = ["Personal Information", "Request Details"];
 
   if (submitSuccess) {
     return (
@@ -188,9 +242,12 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <CheckCircle size={40} className="text-green-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Request Submitted Successfully!</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Request Submitted Successfully!
+          </h2>
           <p className="text-gray-600 mb-6">
-            Thank you for your support request. Our team will review it and get back to you within 24 hours.
+            Thank you for your support request. Our team will review it and get
+            back to you within 24 hours.
           </p>
           <div className="text-sm text-gray-500">
             <p>Reference ID: SR-{Date.now().toString().slice(-6)}</p>
@@ -212,7 +269,7 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
             Get the help you need from our disaster response team
           </p>
         </div>
-        
+
         {/* Progress Steps */}
         <div className="flex items-center justify-center mb-16">
           <div className="flex items-center space-x-8">
@@ -220,29 +277,39 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
               const stepNumber = index + 1;
               const isActive = currentStep === stepNumber;
               const isCompleted = currentStep > stepNumber;
-              
+
               return (
                 <div key={stepNumber} className="flex items-center">
                   <div className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                      isCompleted
-                        ? 'bg-blue-600 text-white shadow-lg'
-                        : isActive
-                        ? 'bg-blue-600 text-white shadow-lg scale-110'
-                        : 'bg-gray-200 text-gray-500'
-                    }`}>
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                        isCompleted
+                          ? "bg-blue-600 text-white shadow-lg"
+                          : isActive
+                          ? "bg-blue-600 text-white shadow-lg scale-110"
+                          : "bg-gray-200 text-gray-500"
+                      }`}
+                    >
                       {isCompleted ? <CheckCircle size={20} /> : stepNumber}
                     </div>
-                    <span className={`mt-3 text-sm font-medium text-center ${
-                      isActive ? 'text-blue-600' : isCompleted ? 'text-blue-600' : 'text-gray-400'
-                    }`}>
+                    <span
+                      className={`mt-3 text-sm font-medium text-center ${
+                        isActive
+                          ? "text-blue-600"
+                          : isCompleted
+                          ? "text-blue-600"
+                          : "text-gray-400"
+                      }`}
+                    >
                       {title}
                     </span>
                   </div>
                   {index < 1 && (
-                    <div className={`w-16 h-0.5 mx-6 transition-colors duration-300 ${
-                      isCompleted ? 'bg-blue-600' : 'bg-gray-200'
-                    }`} />
+                    <div
+                      className={`w-16 h-0.5 mx-6 transition-colors duration-300 ${
+                        isCompleted ? "bg-blue-600" : "bg-gray-200"
+                      }`}
+                    />
                   )}
                 </div>
               );
@@ -255,25 +322,37 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
           {/* Step 1: Personal Information */}
           {currentStep === 1 && (
             <div className="space-y-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Personal Information</h2>
-              
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                Personal Information
+              </h2>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name *
                   </label>
                   <div className="relative">
-                    <User size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <User
+                      size={20}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
                     <input
                       type="text"
                       value={formData.fullName}
-                      onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          fullName: e.target.value,
+                        }))
+                      }
                       className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       placeholder="Enter your full name"
                     />
                   </div>
                   {errors.fullName && (
-                    <p className="text-sm text-red-600 mt-1">{errors.fullName}</p>
+                    <p className="text-sm text-red-600 mt-1">
+                      {errors.fullName}
+                    </p>
                   )}
                 </div>
 
@@ -282,36 +361,25 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
                     Email Address *
                   </label>
                   <div className="relative">
-                    <Mail size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <Mail
+                      size={20}
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    />
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
                       className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       placeholder="your.email@example.com"
                     />
                   </div>
                   {errors.email && (
                     <p className="text-sm text-red-600 mt-1">{errors.email}</p>
-                  )}
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number *
-                  </label>
-                  <div className="relative">
-                    <Phone size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      placeholder="+95-9-123456789"
-                    />
-                  </div>
-                  {errors.phone && (
-                    <p className="text-sm text-red-600 mt-1">{errors.phone}</p>
                   )}
                 </div>
               </div>
@@ -321,45 +389,9 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
           {/* Step 2: Request Details & Assistance */}
           {currentStep === 2 && (
             <div className="space-y-8">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Request Details & Assistance</h2>
-              
-              {/* Disaster Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Disaster Type *
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {disasterTypes.map((type) => {
-                    const Icon = type.icon;
-                    return (
-                      <label key={type.id} className="cursor-pointer">
-                        <input
-                          type="radio"
-                          name="disasterType"
-                          value={type.id}
-                          checked={formData.disasterType === type.id}
-                          onChange={(e) => setFormData(prev => ({ ...prev, disasterType: e.target.value }))}
-                          className="sr-only"
-                        />
-                        <div className={`p-4 rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
-                          formData.disasterType === type.id
-                            ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}>
-                          <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${type.color} flex items-center justify-center mb-3`}>
-                            <Icon size={24} className="text-white" />
-                          </div>
-                          <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-                {errors.disasterType && (
-                  <p className="text-sm text-red-600 mt-2">{errors.disasterType}</p>
-                )}
-              </div>
-
+              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                Request Details
+              </h2>
               {/* Urgency Level */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
@@ -367,7 +399,6 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {urgencyLevels.map((level) => {
-                    const Icon = level.icon;
                     return (
                       <label key={level.id} className="cursor-pointer">
                         <input
@@ -375,21 +406,32 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
                           name="urgencyLevel"
                           value={level.id}
                           checked={formData.urgencyLevel === level.id}
-                          onChange={(e) => setFormData(prev => ({ ...prev, urgencyLevel: e.target.value as any }))}
+                          onChange={(e) =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              urgencyLevel: e.target.value as any,
+                            }))
+                          }
                           className="sr-only"
                         />
-                        <div className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                          formData.urgencyLevel === level.id
-                            ? 'border-blue-500 bg-blue-50 shadow-md'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}>
+                        <div
+                          className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                            formData.urgencyLevel === level.id
+                              ? "border-blue-500 bg-blue-50 shadow-md"
+                              : "border-gray-200 hover:border-gray-300 bg-white"
+                          }`}
+                        >
                           <div className="flex items-center space-x-3">
-                            <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${level.color} flex items-center justify-center`}>
-                              <Icon size={20} className="text-white" />
-                            </div>
+                            <div
+                              className={`w-10 h-10 rounded-lg bg-gradient-to-br ${level.color} flex items-center justify-center`}
+                            ></div>
                             <div>
-                              <h3 className="font-semibold text-gray-900">{level.label}</h3>
-                              <p className="text-sm text-gray-600">{level.description}</p>
+                              <h3 className="font-semibold text-gray-900">
+                                {level.label}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                {level.description}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -398,81 +440,102 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
                   })}
                 </div>
                 {errors.urgencyLevel && (
-                  <p className="text-sm text-red-600 mt-2">{errors.urgencyLevel}</p>
+                  <p className="text-sm text-red-600 mt-2">
+                    {errors.urgencyLevel}
+                  </p>
                 )}
               </div>
-
-              {/* Location and Date */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Location *
-                  </label>
-                  <div className="relative">
-                    <MapPin size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      placeholder="Yangon, Myanmar"
-                    />
-                  </div>
-                  {errors.location && (
-                    <p className="text-sm text-red-600 mt-1">{errors.location}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date Reported *
-                  </label>
-                  <div className="relative">
-                    <Clock size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="date"
-                      value={formData.dateReported}
-                      onChange={(e) => setFormData(prev => ({ ...prev, dateReported: e.target.value }))}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Assistance Types */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-4">
                   Type of Assistance Needed * (Select all that apply)
                 </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {assistanceOptions.map((option) => {
-                    const Icon = option.icon;
-                    const isSelected = formData.assistanceTypes.includes(option.id);
-                    return (
-                      <label key={option.id} className="cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => handleAssistanceTypeChange(option.id)}
-                          className="sr-only"
-                        />
-                        <div className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
-                          isSelected
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}>
-                          <Icon size={18} className={isSelected ? 'text-blue-600' : 'text-gray-400'} />
-                          <span className="text-sm font-medium">{option.label}</span>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
+
+                {/* Loading state */}
+                {loadingAssistanceTypes && (
+                  <div className="flex justify-center items-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <span className="ml-2 text-gray-600">
+                      Loading assistance types...
+                    </span>
+                  </div>
+                )}
+
+                {/* Error state */}
+                {assistanceTypesError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                    <p className="text-red-700">{assistanceTypesError}</p>
+                  </div>
+                )}
+
+                {/* Assistance types list */}
+                {!loadingAssistanceTypes && !assistanceTypesError && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[...assistanceTypes, "Other"].map((type) => {
+                      const isOther = type.toLowerCase() === "other";
+                      const isSelected = isOther
+                        ? formData.assistanceTypes.includes("other")
+                        : formData.assistanceTypes.includes(type);
+
+                      return (
+                        <label key={type} className="cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() =>
+                              handleAssistanceTypeChange(
+                                isOther ? "other" : type
+                              )
+                            }
+                            className="sr-only"
+                          />
+                          <div
+                            className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
+                              isSelected
+                                ? "border-blue-500 bg-blue-50 text-blue-700"
+                                : "border-gray-200 hover:border-gray-300 bg-white"
+                            }`}
+                          >
+                            <span className="text-sm font-medium">{type}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {errors.assistanceTypes && (
-                  <p className="text-sm text-red-600 mt-2">{errors.assistanceTypes}</p>
+                  <p className="text-sm text-red-600 mt-2">
+                    {errors.assistanceTypes}
+                  </p>
+                )}
+
+                {/* Other Assistance Type Text Box */}
+                {formData.assistanceTypes.includes("other") && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Please specify the type of assistance needed *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.otherAssistanceType}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          otherAssistanceType: e.target.value,
+                        }))
+                      }
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      placeholder="Enter the type of assistance you need"
+                    />
+                    {errors.otherAssistanceType && (
+                      <p className="text-sm text-red-600 mt-1">
+                        {errors.otherAssistanceType}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
-
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -480,7 +543,12 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
                   rows={6}
                   maxLength={1000}
@@ -497,8 +565,6 @@ const SupportRequestForm: React.FC<SupportRequestFormProps> = ({ onSubmitSuccess
               </div>
             </div>
           )}
-
-
 
           {/* Navigation Buttons */}
           <div className="flex items-center justify-between pt-8 border-t border-gray-200">
