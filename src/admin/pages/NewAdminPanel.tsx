@@ -14,6 +14,7 @@ import AuditLogsPage from './AuditLogsPage';
 import AdminSupportRequestManagement from './AdminSupportRequestManagement';
 import OrganizationManagement from './OrganizationManagement';
 import ReportReview from './ReportReview';
+import AdminDonationView from './AdminDonationView';
 
 const NewAdminPanel: React.FC = () => {
   const location = useLocation();
@@ -49,7 +50,9 @@ const NewAdminPanel: React.FC = () => {
       return <Analytics />;
     } else if (path.includes('/admin/settings')) {
       return <SystemSettings />;
-    } else {
+    }else if (path.includes('/admin/donation-verification')) {
+      return <SystemSettings />;
+    }else {
       return <ModernDashboard />;
     }
   };
@@ -62,6 +65,7 @@ const NewAdminPanel: React.FC = () => {
         <Route path="/users" element={<UserManagement />} />
         <Route path="/organizations" element={<OrganizationManagement />} />
         <Route path="/reports" element={<ReportManagement />} />
+         <Route path="/donation-verification" element={<AdminDonationView />} />
         {/* Deep-link review route (nested under /admin) */}
         <Route path="reports/review/:id" element={<ReportReview />} />
         <Route path="/support-requests" element={<AdminSupportRequestManagement />} />

@@ -31,6 +31,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
   const { id: editId } = useParams<{ id: string }>();
   const editMode = Boolean(editId);
   const [prefillDone, setPrefillDone] = useState(false);
+  const [reportDataFetched, setReportDataFetched] = useState(false);
   const { accessToken, isAuthenticated, user } = useAuthStore();
   const [step, setStep] = useState(1);
   const [disasterTypes, setDisasterTypes] = useState<DisasterTypeDto[]>([]);
@@ -38,7 +39,6 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
   const [selectedImpacts, setSelectedImpacts] = useState<ImpactTypeDto[]>([]);
   const [selectedDisasterTypeName, setSelectedDisasterTypeName] = useState("");
   const [showOtherInput, setShowOtherInput] = useState(false);
-  const [newDisasterTypeName, setNewDisasterTypeName] = useState("");
   const [impactTypes, setImpactTypes] = useState<ImpactTypeDto[]>([]);
   const [showImpactOtherInput, setShowImpactOtherInput] = useState(false);
   const [newImpactTypeName, setNewImpactTypeName] = useState("");
@@ -81,13 +81,13 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     coordinatePrecision: 0.001,
     impactDetails: [],
     photos: [],
+    photoUrls: [],
   });
 
   const resetForm = () => {
     setStep(1);
     setSelectedDisasterTypeName("");
     setShowOtherInput(false);
-    setNewDisasterTypeName("");
     setSelectedImpacts([]);
     setShowImpactOtherInput(false);
     setNewImpactTypeName("");
@@ -109,7 +109,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       coordinatePrecision: 0.001,
       impactDetails: [],
       photos: [],
+      photoUrls: [],
     });
+    setPrefillDone(false);
+    setReportDataFetched(false);
   };
 
   const fetchDisasterTypes = async () => {
@@ -189,59 +192,79 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           description: report.description || "",
           timestamp: toLocalInput(report.timestamp),
           severity: report.severity || SeverityLevel.Low,
-          disasterCategory: report.DisasterCategory,
+          disasterCategory:
+            report.disasterCategory !== undefined &&
+            report.disasterCategory !== null
+              ? typeof report.disasterCategory === "string"
+                ? report.disasterCategory === "Natural"
+                  ? DisasterCategory.Natural
+                  : DisasterCategory.NonNatural
+                : typeof report.disasterCategory === "number"
+                ? report.disasterCategory === 0
+                  ? DisasterCategory.Natural
+                  : DisasterCategory.NonNatural
+                : report.disasterCategory
+              : undefined,
           disasterTypeId: report.disasterTypeId || undefined,
           newDisasterTypeName: "",
           disasterEventName: report.disasterEventName || "",
           latitude: report.latitude ?? 0,
           longitude: report.longitude ?? 0,
           address: report.address || "",
-          coordinatePrecision: report.coordinatePrecision || 0.001,
+          coordinatePrecision: report.coordinatePrecision ?? 0.001,
           photos: report.photoUrls?.map((url: string) => ({ url })) || [],
-          impactDetails: report.impactDetails?.map((detail) => ({
-            impactTypeIds: detail.impactTypeIds || [],
-            description: detail.description || "",
-            severity: detail.severity || SeverityLevel.Low,
-          })) || [],
+          impactDetails:
+            report.impactDetails?.map((detail) => ({
+              impactTypeIds: detail.impactTypeIds || [],
+              description: detail.description || "",
+              severity: detail.severity || SeverityLevel.Low,
+            })) || [],
         }));
 
         // Set disaster type name
         setSelectedDisasterTypeName(report.disasterTypeName || "");
 
-        // Process impact details
-        const collectedImpacts: ImpactTypeDto[] = [];
-        const impactSeverityMap: Record<number, SeverityLevel> = {};
-        if (report.impactDetails && Array.isArray(report.impactDetails)) {
-          report.impactDetails.forEach((detail, index) => {
-            if (detail.impactTypeIds && Array.isArray(detail.impactTypeIds)) {
-              detail.impactTypeIds.forEach((impactId: number) => {
-                const found = impactTypes.find((it) => it.id === impactId);
-                if (found) collectedImpacts.push(found);
-              });
-            }
-            impactSeverityMap[index] = detail.severity || SeverityLevel.Low;
+        // Process impact details once impactTypes are loaded
+        if (impactTypes.length > 0) {
+          const collectedImpacts: ImpactTypeDto[] = [];
+          const impactSeverityMap: Record<number, SeverityLevel> = {};
+          if (report.impactDetails && Array.isArray(report.impactDetails)) {
+            report.impactDetails.forEach((detail, index) => {
+              if (detail.impactTypeIds && Array.isArray(detail.impactTypeIds)) {
+                detail.impactTypeIds.forEach((impactId: number) => {
+                  const found = impactTypes.find((it) => it.id === impactId);
+                  if (found) collectedImpacts.push(found);
+                });
+              }
+              impactSeverityMap[index] = detail.severity || SeverityLevel.Low;
+            });
+            setImpactDescription(report.impactDetails[0]?.description || "");
+          }
+
+          // Remove duplicates from collected impacts
+          const uniqueImpacts = Array.from(
+            new Map(collectedImpacts.map((i) => [i.id, i])).values()
+          );
+          setSelectedImpacts(uniqueImpacts);
+
+          // Set impact severities
+          // Set impact severities
+          setImpactSeverities(impactSeverityMap);
+
+          console.log("Prefilled data:", {
+            formData: { ...formData },
+            selectedDisasterTypeName,
+            selectedImpacts: uniqueImpacts,
+            impactSeverities,
+            photos: report.photoUrls,
           });
-          setImpactDescription(report.impactDetails[0]?.description || "");
+
+          setReportDataFetched(true);
+          // Only set prefillDone to true if impactTypes are already loaded
+          if (impactTypes.length > 0) {
+            setPrefillDone(true);
+          }
         }
-
-        // Remove duplicates from collected impacts
-        const uniqueImpacts = Array.from(
-          new Map(collectedImpacts.map((i) => [i.id, i])).values()
-        );
-        setSelectedImpacts(uniqueImpacts);
-
-        // Set impact severities
-        setImpactSeverities(impactSeverityMap);
-
-        console.log("Prefilled data:", {
-          formData: { ...formData },
-          selectedDisasterTypeName,
-          selectedImpacts: uniqueImpacts,
-          impactSeverities,
-          photos: report.photoUrls,
-        });
-
-        setPrefillDone(true);
       } catch (e) {
         console.error("Failed to prefill report for edit:", e);
         setErrors((prev) => ({
@@ -250,10 +273,57 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         }));
       }
     })();
-  }, [editMode, editId, prefillDone, impactTypes, formData]);
+  }, [editMode, editId, prefillDone, impactTypes]);
+
+  useEffect(() => {
+    if (
+      !editMode ||
+      !editId ||
+      !reportDataFetched ||
+      prefillDone ||
+      impactTypes.length === 0
+    )
+      return;
+
+    // Process impact details
+    const collectedImpacts: ImpactTypeDto[] = [];
+    const impactSeverityMap: Record<number, SeverityLevel> = {};
+
+    if (formData.impactDetails && formData.impactDetails.length > 0) {
+      formData.impactDetails.forEach((detail, index) => {
+        if (detail.impactTypeIds && Array.isArray(detail.impactTypeIds)) {
+          detail.impactTypeIds.forEach((impactId: number) => {
+            const found = impactTypes.find((it) => it.id === impactId);
+            if (found) collectedImpacts.push(found);
+          });
+        }
+        impactSeverityMap[index] = detail.severity || SeverityLevel.Low;
+      });
+
+      setImpactDescription(formData.impactDetails[0]?.description || "");
+    }
+
+    // Remove duplicates from collected impacts
+    const uniqueImpacts = Array.from(
+      new Map(collectedImpacts.map((i) => [i.id, i])).values()
+    );
+    setSelectedImpacts(uniqueImpacts);
+
+    // Set impact severities
+    setImpactSeverities(impactSeverityMap);
+
+    setPrefillDone(true);
+  }, [
+    editMode,
+    editId,
+    reportDataFetched,
+    prefillDone,
+    impactTypes,
+    formData.impactDetails,
+  ]);
 
   const handleCategorySelect = (category: DisasterCategory) => {
-    console.log("Selected category:", category);
+    console.log("Selected category:", category, typeof category);
     const defaultType = disasterTypes.find((dt) => dt.category === category);
     setFormData((f) => ({
       ...f,
@@ -276,7 +346,12 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
   };
 
   const createNewDisasterType = async () => {
-    if (!newDisasterTypeName.trim() || formData.disasterCategory === undefined) return;
+    if (
+      !formData.newDisasterTypeName?.trim() ||
+      formData.disasterCategory === undefined ||
+      formData.disasterCategory === null
+    )
+      return;
     try {
       const token = getToken();
       if (!token) {
@@ -284,17 +359,23 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         return;
       }
       const dto = {
-        name: newDisasterTypeName,
+        name: formData.newDisasterTypeName,
         category: formData.disasterCategory,
       };
-      const created = await DisasterTypeService.create(dto, token);
+      const created: DisasterTypeDto = await DisasterTypeService.create(
+        dto,
+        token
+      );
       await fetchDisasterTypes();
       if (created?.id) handleTypeSelect(created.id);
-      setNewDisasterTypeName("");
+      setFormData((prev) => ({ ...prev, newDisasterTypeName: "" }));
       setShowOtherInput(false);
     } catch (err) {
       console.error("Failed to create new type:", err);
-      alert("Failed to create new disaster type");
+      setErrors((prev) => ({
+        ...prev,
+        newDisasterType: "Failed to create new disaster type",
+      }));
     }
   };
 
@@ -306,7 +387,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         console.error("No token found");
         return;
       }
-      const created = await ImpactTypeService.create({ name: newImpactTypeName }, token);
+      const created: ImpactTypeDto = await ImpactTypeService.create(
+        { name: newImpactTypeName },
+        token
+      );
       await fetchImpactTypes();
       if (created?.id) {
         setSelectedImpacts((prev) => [...prev, created]);
@@ -315,7 +399,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       setShowImpactOtherInput(false);
     } catch (err) {
       console.error("Failed to create new impact type:", err);
-      alert("Failed to create new impact type");
+      setErrors((prev) => ({
+        ...prev,
+        newImpactType: "Failed to create new impact type",
+      }));
     }
   };
 
@@ -344,7 +431,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       (file) => file.size <= 10 * 1024 * 1024
     );
     if (filteredFiles.length < filesToAdd.length) {
-      alert("Some files were skipped because they exceed 10MB size limit.");
+      setErrors((prev) => ({
+        ...prev,
+        photos: "Some files were skipped because they exceed 10MB size limit.",
+      }));
     }
     setFormData((prev) => ({
       ...prev,
@@ -380,7 +470,13 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     const newErrors: Record<string, string> = {};
     console.log(`🔍 Validating step ${step}...`);
     if (step === 1) {
-      if (!formData.disasterCategory) {
+      if (!formData.title) {
+        newErrors.title = "Please insert a disaster title";
+      }
+      if (
+        formData.disasterCategory === undefined ||
+        formData.disasterCategory === null
+      ) {
         newErrors.disasterCategory = "Please select a disaster category";
       }
       if (!formData.disasterTypeId && !showOtherInput) {
@@ -392,6 +488,9 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       if (!formData.timestamp) {
         newErrors.timestamp = "Please select date and time";
       }
+      if (!formData.description) {
+        newErrors.description = "Please insert description";
+      }
     }
     if (step === 2) {
       if (!formData.latitude || !formData.longitude || !formData.address) {
@@ -400,26 +499,39 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       if (selectedImpacts.length === 0) {
         newErrors.impact = "Please select at least one impact type";
       }
+      if (showImpactOtherInput && !newImpactTypeName.trim()) {
+        newErrors.newImpactType = "Please enter a new impact type";
+      }
+      if (selectedImpacts.length > 0 && !impactDescription) {
+        newErrors.impactDescription = "Please insert impact's description";
+      }
       if (impactSeverities[0] === undefined) {
         newErrors.impactSeverity = "Please select an impact severity level";
       }
     }
-    setErrors(newErrors);
+    setErrors((prev) => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     const step1Valid = validateStep(1);
     const step2Valid = validateStep(2);
-    if (!step1Valid || !step2Valid) {
-      alert("Please check all required fields in all steps before submitting.");
+    if (!step1Valid) {
+      setStep(1);
+      return;
+    }
+    if (!step2Valid) {
+      setStep(2);
       return;
     }
     try {
       setIsLoading(true);
       const token = getToken();
       if (!token) {
-        alert("Please login to submit a report");
+        setErrors((prev) => ({
+          ...prev,
+          submit: "Please login to submit a report",
+        }));
         setIsLoading(false);
         return;
       }
@@ -438,7 +550,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         formData.description || impactDescription || "Disaster impact report"
       );
       submissionFormData.append("Timestamp", formData.timestamp);
-      submissionFormData.append("Severity", formData.severity);
+      submissionFormData.append("Severity", formData.severity.toString());
       if (formData.disasterCategory !== undefined) {
         submissionFormData.append(
           "DisasterCategory",
@@ -446,7 +558,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         );
       }
       if (formData.disasterTypeId !== undefined) {
-        submissionFormData.append("DisasterTypeId", formData.disasterTypeId.toString());
+        submissionFormData.append(
+          "DisasterTypeId",
+          formData.disasterTypeId.toString()
+        );
       }
       submissionFormData.append(
         "NewDisasterTypeName",
@@ -459,7 +574,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       submissionFormData.append("Latitude", formData.latitude.toString());
       submissionFormData.append("Longitude", formData.longitude.toString());
       submissionFormData.append("Address", formData.address);
-      submissionFormData.append("CoordinatePrecision", formData.coordinatePrecision?.toString() || "0.001");
+      submissionFormData.append(
+        "CoordinatePrecision",
+        formData.coordinatePrecision?.toString() || "0.001"
+      );
       impactDetails.forEach((impact, i) => {
         submissionFormData.append(
           `ImpactDetails[${i}].Description`,
@@ -467,7 +585,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         );
         submissionFormData.append(
           `ImpactDetails[${i}].Severity`,
-          impact.severity
+          impact.severity.toString()
         );
         impact.impactTypeIds.forEach((id, j) => {
           submissionFormData.append(
@@ -481,7 +599,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           submissionFormData.append("Photos", photo);
         }
       });
-      const createdReport: DisasterReportDto = await createDisasterReport(
+      const createdReport: DisasterReportCreateDto = await createDisasterReport(
         submissionFormData,
         token
       );
@@ -514,7 +632,6 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       setErrors({
         submit: errorMessage,
       });
-      alert(`Error submitting report: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -524,15 +641,22 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     if (!editMode || !editId) return;
     const step1Valid = validateStep(1);
     const step2Valid = validateStep(2);
-    if (!step1Valid || !step2Valid) {
-      alert("Please check all required fields in all steps before saving.");
+    if (!step1Valid) {
+      setStep(1);
+      return;
+    }
+    if (!step2Valid) {
+      setStep(2);
       return;
     }
     try {
       setIsLoading(true);
       const token = getToken();
       if (!token) {
-        alert("Please login to update a report");
+        setErrors((prev) => ({
+          ...prev,
+          submit: "Please login to update a report",
+        }));
         setIsLoading(false);
         return;
       }
@@ -551,7 +675,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         formData.description || impactDescription || "Disaster impact report"
       );
       submissionFormData.append("Timestamp", formData.timestamp);
-      submissionFormData.append("Severity", formData.severity);
+      submissionFormData.append("Severity", formData.severity.toString());
       if (formData.disasterCategory !== undefined) {
         submissionFormData.append(
           "DisasterCategory",
@@ -559,7 +683,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         );
       }
       if (formData.disasterTypeId !== undefined) {
-        submissionFormData.append("DisasterTypeId", formData.disasterTypeId.toString());
+        submissionFormData.append(
+          "DisasterTypeId",
+          formData.disasterTypeId.toString()
+        );
       }
       submissionFormData.append(
         "NewDisasterTypeName",
@@ -572,7 +699,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       submissionFormData.append("Latitude", formData.latitude.toString());
       submissionFormData.append("Longitude", formData.longitude.toString());
       submissionFormData.append("Address", formData.address);
-      submissionFormData.append("CoordinatePrecision", formData.coordinatePrecision?.toString() || "0.001");
+      submissionFormData.append(
+        "CoordinatePrecision",
+        formData.coordinatePrecision?.toString() || "0.001"
+      );
       impactDetails.forEach((impact, i) => {
         submissionFormData.append(
           `ImpactDetails[${i}].Description`,
@@ -580,7 +710,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         );
         submissionFormData.append(
           `ImpactDetails[${i}].Severity`,
-          impact.severity
+          impact.severity.toString()
         );
         impact.impactTypeIds.forEach((id, j) => {
           submissionFormData.append(
@@ -625,7 +755,6 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         err.message ||
         "Failed to update report. Please try again.";
       setErrors({ submit: errorMessage });
-      alert(`Error updating report: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -668,10 +797,13 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
               <CheckCircle className="w-10 h-10 text-green-600" />
             </div>
             <h3 className="text-xl font-bold text-gray-900">
-              {editMode ? "Report Updated Successfully" : "Report Submitted Successfully"}
+              {editMode
+                ? "Report Updated Successfully"
+                : "Report Submitted Successfully"}
             </h3>
             <p className="mt-2 text-sm text-gray-600">
-              Your disaster report has been {editMode ? "updated" : "submitted"}. Our team will review it shortly.
+              Your disaster report has been {editMode ? "updated" : "submitted"}
+              . Our team will review it shortly.
             </p>
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
@@ -717,7 +849,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           <h3 className="text-lg font-semibold mb-4">Disaster Information</h3>
           <div>
             <label className="block mb-2 font-medium text-gray-700 mb-2">
-              Title
+              Title{" "}
+              {errors.title && (
+                <span className="text-red-500 text-sm">- {errors.title}</span>
+              )}
             </label>
             <textarea
               value={formData.title}
@@ -729,7 +864,12 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
             />
           </div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Disaster Category *
+            Disaster Category *{" "}
+            {errors.disasterCategory && (
+              <span className="text-red-500 text-sm">
+                - {errors.disasterCategory}
+              </span>
+            )}
           </label>
 
           <div className="flex gap-4 mb-4">
@@ -762,14 +902,16 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
               </button>
             ))}
           </div>
-          {errors.disasterCategory && (
-            <p className="text-sm text-red-500 mt-2">{errors.disasterCategory}</p>
-          )}
 
           {formData.disasterCategory !== undefined && (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-4">
-                Specific Type *
+                Specific Type *{" "}
+                {errors.disasterType && (
+                  <span className="text-red-500 text-sm">
+                    - {errors.disasterType}
+                  </span>
+                )}
               </label>
               {disasterTypes.length > 0 ? (
                 disasterTypes.filter(
@@ -797,7 +939,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                       type="button"
                       onClick={() => {
                         setShowOtherInput(true);
-                        setFormData((prev) => ({ ...prev, disasterTypeId: undefined }));
+                        setFormData((prev) => ({
+                          ...prev,
+                          disasterTypeId: undefined,
+                        }));
                       }}
                       className={`p-3 border rounded-xl text-sm transition-all duration-200
                         ${
@@ -820,27 +965,37 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                 </p>
               )}
               {showOtherInput && (
-                <div className="mt-3 flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter new disaster type"
-                    className="border p-2 rounded-lg flex-1"
-                    value={newDisasterTypeName}
-                    onChange={(e) => setNewDisasterTypeName(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg"
-                    onClick={createNewDisasterType}
-                  >
-                    Create
-                  </button>
+                <div className="mt-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    New Disaster Type{" "}
+                    {errors.newDisasterType && (
+                      <span className="text-red-500 text-sm">
+                        - {errors.newDisasterType}
+                      </span>
+                    )}
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter new disaster type"
+                      className="border p-2 rounded-lg flex-1"
+                      value={formData.newDisasterTypeName}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          newDisasterTypeName: e.target.value,
+                        }))
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                      onClick={createNewDisasterType}
+                    >
+                      Create
+                    </button>
+                  </div>
                 </div>
-              )}
-              {errors.disasterTypes && (
-                <p className="text-sm text-red-500 mt-2">
-                  {errors.disasterTypes}
-                </p>
               )}
             </div>
           )}
@@ -848,7 +1003,12 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           {(formData.disasterTypeId !== undefined || showOtherInput) && (
             <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Disaster Event Name
+                Disaster Event Name{" "}
+                {errors.disasterEventName && (
+                  <span className="text-red-500 text-sm">
+                    - {errors.disasterEventName}
+                  </span>
+                )}
               </label>
               <input
                 type="text"
@@ -867,7 +1027,12 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-4">
-              Severity Level *
+              Severity Level *{" "}
+              {errors.severity && (
+                <span className="text-red-500 text-sm">
+                  - {errors.severity}
+                </span>
+              )}
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
@@ -915,9 +1080,6 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                 </button>
               ))}
             </div>
-            {errors.severity && (
-              <p className="text-sm text-red-500 mt-2">{errors.severity}</p>
-            )}
           </div>
 
           <div className="mb-6">
@@ -925,7 +1087,12 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
               htmlFor="dateTime"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              When did this occur? *
+              When did this occur? *{" "}
+              {errors.timestamp && (
+                <span className="text-red-500 text-sm">
+                  - {errors.timestamp}
+                </span>
+              )}
             </label>
             <input
               type="datetime-local"
@@ -936,14 +1103,16 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                 setFormData((f) => ({ ...f, timestamp: e.target.value }))
               }
             />
-            {errors.timestamp && (
-              <p className="text-sm text-red-500 mt-2">{errors.timestamp}</p>
-            )}
           </div>
 
           <div>
             <label className="block mb-2 font-medium text-gray-700 mb-2">
-              Detailed Description
+              Detailed Description{" "}
+              {errors.description && (
+                <span className="text-red-500 text-sm">
+                  - {errors.description}
+                </span>
+              )}
             </label>
             <textarea
               value={formData.description}
@@ -967,7 +1136,6 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
             <button
               onClick={() => {
                 if (validateStep(1)) handleNext();
-                else alert("Please complete all required fields in this step.");
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg"
             >
@@ -981,11 +1149,25 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         <div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-4">
-              Location *
+              Location *{" "}
+              {errors.location && (
+                <span className="text-red-500 text-sm">
+                  - {errors.location}
+                </span>
+              )}
             </label>
             <div className="border border-gray-200 rounded-xl relative">
               <LocationPicker
                 onLocationSelect={handleLocationSelect}
+                selectedLocation={
+                  formData.latitude && formData.longitude
+                    ? {
+                        lat: formData.latitude,
+                        lng: formData.longitude,
+                        address: formData.address || "",
+                      }
+                    : null
+                }
                 height="450px"
               />
             </div>
@@ -997,12 +1179,14 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                 </span>
               </div>
             )}
-            {errors.location && (
-              <p className="text-sm text-red-500 mt-2">{errors.location}</p>
-            )}
           </div>
 
-          <label className="block mb-2 font-medium">Type of Impact *</label>
+          <label className="block mb-2 font-medium">
+            Type of Impact *{" "}
+            {errors.impact && (
+              <span className="text-red-500 text-sm">- {errors.impact}</span>
+            )}
+          </label>
           <div className="grid grid-cols-2 gap-2 mb-4">
             {Array.isArray(impactTypes) && impactTypes.length > 0 ? (
               <>
@@ -1036,35 +1220,47 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                   + Other
                 </button>
                 {showImpactOtherInput && (
-                  <div className="mt-3 flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Enter new impact type"
-                      className="border p-2 rounded-lg flex-1"
-                      value={newImpactTypeName}
-                      onChange={(e) => setNewImpactTypeName(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg"
-                      onClick={createNewImpactType}
-                    >
-                      Create
-                    </button>
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      New Impact Type{" "}
+                      {errors.newImpactType && (
+                        <span className="text-red-500 text-sm">
+                          - {errors.newImpactType}
+                        </span>
+                      )}
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Enter new impact type"
+                        className="border p-2 rounded-lg flex-1"
+                        value={newImpactTypeName}
+                        onChange={(e) => setNewImpactTypeName(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg"
+                        onClick={createNewImpactType}
+                      >
+                        Create
+                      </button>
+                    </div>
                   </div>
                 )}
               </>
             ) : (
               <p className="text-sm text-gray-500">No impact types found.</p>
             )}
-            {errors.impact && (
-              <p className="text-sm text-red-500 mt-2">{errors.impact}</p>
-            )}
           </div>
 
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-4">
-              Impact Severity Level *
+              Impact Severity Level *{" "}
+              {errors.impactSeverity && (
+                <span className="text-red-500 text-sm">
+                  - {errors.impactSeverity}
+                </span>
+              )}
             </label>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
@@ -1112,14 +1308,14 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                 </button>
               ))}
             </div>
-            {errors.impactSeverity && (
-              <p className="text-sm text-red-500 mt-2">
-                {errors.impactSeverity}
-              </p>
-            )}
           </div>
           <label className="block mb-2 font-medium">
-            Detailed Impact Description
+            Detailed Impact Description{" "}
+            {errors.impactDescription && (
+              <span className="text-red-500 text-sm">
+                - {errors.impactDescription}
+              </span>
+            )}
           </label>
           <textarea
             className="w-full border p-2 rounded-lg mb-4"
@@ -1130,7 +1326,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
 
           <div className="mt-6">
             <label className="block text-sm font-medium text-gray-700 mb-4">
-              Photos (Optional - Max 10 photos, 10MB each)
+              Photos (Optional - Max 10 photos, 10MB each){" "}
+              {errors.photos && (
+                <span className="text-red-500 text-sm">- {errors.photos}</span>
+              )}
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
               <input
@@ -1193,8 +1392,6 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
               <button
                 onClick={() => {
                   if (validateStep(2)) handleNext();
-                  else
-                    alert("Please complete all required fields in this step.");
                 }}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg"
               >

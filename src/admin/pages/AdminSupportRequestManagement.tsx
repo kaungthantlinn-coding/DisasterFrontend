@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Search,
   Eye,
@@ -17,16 +17,18 @@ import {
   RefreshCw,
   ChevronDown,
   ChevronRight,
-  Save,
   X,
-  CheckCircle2,
   Loader2,
   ArrowUpRight,
   ArrowDownRight,
-  Minus
-} from 'lucide-react';
-import { SupportRequestsAPI, SupportRequest } from '../../apis/supportRequests';
-import { showErrorToast, showSuccessToast } from '../../utils/notifications';
+  Minus,
+} from "lucide-react";
+
+import { showErrorToast, showSuccessToast } from "../../utils/notifications";
+
+import { SupportRequest } from "../../types/supportRequest";
+import { SupportRequestService } from "../../services/supportRequestService";
+import { useAuthStore } from "../../stores/authStore";
 
 // Types
 
@@ -34,8 +36,6 @@ interface SupportRequestMetrics {
   totalRequests: number;
   pendingRequests: number;
   verifiedRequests: number;
-  inProgressRequests: number;
-  resolvedRequests: number;
   rejectedRequests: number;
 }
 
@@ -44,68 +44,63 @@ interface AdminStatCardProps {
   title: string;
   value: string | number;
   change?: string;
-  changeType?: 'increase' | 'decrease' | 'neutral';
+  changeType?: "increase" | "decrease" | "neutral";
   bgGradient: string;
   iconBg: string;
 }
 
 interface SupportRequestCardProps {
   request: SupportRequest;
-  onStatusChange: (id: string, status: SupportRequest['status']) => void;
-  onAddRemarks: (id: string, remarks: string) => void;
+  onStatusChange: (
+    id: number,
+    status: "verified" | "rejected"
+  ) => Promise<void>;
   onViewDetails: (request: SupportRequest) => void;
+  onDelete: (id: number) => Promise<void>;
+  canDelete: boolean;
   isUpdating: boolean;
-  updatingIds: Set<string>;
+  updatingIds: Set<number>;
+  defaultExpanded?: boolean;
 }
 
 interface SupportRequestModalProps {
   request: SupportRequest | null;
   isOpen: boolean;
   onClose: () => void;
-  onStatusChange: (id: string, status: SupportRequest['status']) => void;
-  onAddRemarks: (id: string, remarks: string) => void;
+  onStatusChange: (
+    id: number,
+    status: "verified" | "rejected"
+  ) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
+  isUpdating?: boolean;
+  updatingIds?: Set<number>;
 }
 
-// Helper function to calculate metrics from requests
-const calculateMetrics = (requests: SupportRequest[]): SupportRequestMetrics => {
-  return {
-    totalRequests: requests.length,
-    pendingRequests: requests.filter(r => r.status === 'pending').length,
-    verifiedRequests: requests.filter(r => r.status === 'verified').length,
-    inProgressRequests: requests.filter(r => r.status === 'in_progress').length,
-    resolvedRequests: requests.filter(r => r.status === 'resolved').length,
-    rejectedRequests: requests.filter(r => r.status === 'rejected').length
-  };
-};
-
 // Components
-const AdminStatCard: React.FC<AdminStatCardProps> = ({ 
-  icon, 
-  title, 
-  value, 
-  change, 
-  changeType = 'neutral', 
-  bgGradient, 
-  iconBg 
+const AdminStatCard: React.FC<AdminStatCardProps> = ({
+  icon,
+  title,
+  value,
+  change,
+  changeType = "neutral",
+  bgGradient,
+  iconBg,
 }) => {
-  const getChangeColor = () => {
-    switch (changeType) {
-      case 'increase': return 'text-green-600';
-      case 'decrease': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
-
   const getChangeIcon = () => {
     switch (changeType) {
-      case 'increase': return <ArrowUpRight className="w-3 h-3" />;
-      case 'decrease': return <ArrowDownRight className="w-3 h-3" />;
-      default: return <Minus className="w-3 h-3" />;
+      case "increase":
+        return <ArrowUpRight className="w-3 h-3" />;
+      case "decrease":
+        return <ArrowDownRight className="w-3 h-3" />;
+      default:
+        return <Minus className="w-3 h-3" />;
     }
   };
 
   return (
-    <div className={`relative overflow-hidden rounded-2xl ${bgGradient} p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}>
+    <div
+      className={`relative overflow-hidden rounded-2xl ${bgGradient} p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}
+    >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-white/80 text-sm font-medium mb-2">{title}</p>
@@ -117,7 +112,9 @@ const AdminStatCard: React.FC<AdminStatCardProps> = ({
             </div>
           )}
         </div>
-        <div className={`p-3 ${iconBg} rounded-xl bg-white/20 backdrop-blur-sm`}>
+        <div
+          className={`p-3 ${iconBg} rounded-xl bg-white/20 backdrop-blur-sm`}
+        >
           {icon}
         </div>
       </div>
@@ -125,36 +122,71 @@ const AdminStatCard: React.FC<AdminStatCardProps> = ({
   );
 };
 
-const SupportRequestCard: React.FC<SupportRequestCardProps> = ({ 
-  request, 
-  onStatusChange, 
-  onAddRemarks, 
+const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
+  request,
+  onStatusChange,
   onViewDetails,
+  onDelete,
+  canDelete,
   isUpdating,
-  updatingIds
+  updatingIds,
+  defaultExpanded = false,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [showRemarks, setShowRemarks] = useState(false);
-  const [remarks, setRemarks] = useState(request.adminRemarks || '');
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  const getStatusColor = (status: SupportRequest['status']) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'verified': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'in_progress': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'resolved': return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  const getStatusColor = (status: any) => {
+    const statusStr =
+      typeof status === "number"
+        ? status === 0
+          ? "pending"
+          : status === 1
+          ? "verified"
+          : "rejected"
+        : String(status).toLowerCase();
+
+    switch (statusStr) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "accepted":
+      case "verified":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "rejected":
+        return "bg-red-100 text-red-800 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
-  const getUrgencyColor = (urgency: SupportRequest['urgencyLevel']) => {
-    switch (urgency) {
-      case 'immediate': return 'bg-red-100 text-red-800 border-red-200';
-      case 'within_24h': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'within_week': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'non_urgent': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+  const isPending = () => {
+    const status = request.status;
+    return typeof status === "number"
+      ? status === 0
+      : String(status).toLowerCase() === "pending";
+  };
+
+  const getUrgencyColor = (urgency: any) => {
+    const urgencyStr =
+      typeof urgency === "number"
+        ? urgency === 1
+          ? "immediate"
+          : urgency === 2
+          ? "within_24h"
+          : urgency === 3
+          ? "within_week"
+          : "non_urgent"
+        : String(urgency).toLowerCase();
+
+    switch (urgencyStr) {
+      case "immediate":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "within_24h":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "within_week":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "non_urgent":
+        return "bg-green-100 text-green-800 border-green-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -164,26 +196,72 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <h3 className="text-lg font-semibold text-slate-900">{request.fullName}</h3>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(request.status)}`}>
-              {request.status.charAt(0).toUpperCase() + request.status.slice(1).replace('_', ' ')}
+            <h3 className="text-lg font-semibold text-slate-900">
+              {request.fullName}
+            </h3>
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                request.status
+              )}`}
+            >
+              {(() => {
+                const status = request.status;
+                if (typeof status === "number") {
+                  return status === 0
+                    ? "Pending"
+                    : status === 1
+                    ? "Verified"
+                    : "Rejected";
+                }
+                return (
+                  String(status || "pending")
+                    .charAt(0)
+                    .toUpperCase() +
+                  String(status || "pending")
+                    .slice(1)
+                    .replace("_", " ")
+                );
+              })()}
             </span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getUrgencyColor(request.urgencyLevel)}`}>
-              {request.urgencyLevel.replace('_', ' ')}
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium border ${getUrgencyColor(
+                request.urgencyLevel
+              )}`}
+            >
+              {(() => {
+                const urgency = request.urgencyLevel;
+                if (typeof urgency === "number") {
+                  switch (urgency) {
+                    case 1:
+                      return "Immediate";
+                    case 2:
+                      return "Within 24h";
+                    case 3:
+                      return "Within Week";
+                    case 4:
+                      return "Non-urgent";
+                    default:
+                      return "Unknown";
+                  }
+                }
+                return String(urgency || "non_urgent").replace("_", " ");
+              })()}
             </span>
           </div>
           <div className="flex items-center gap-4 text-sm text-slate-600">
-            <div className="flex items-center gap-1">
-              <AlertTriangle className="w-4 h-4" />
-              <span>{request.disasterType}</span>
-            </div>
             <div className="flex items-center gap-1">
               <MapPin className="w-4 h-4" />
               <span>{request.location}</span>
             </div>
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
-              <span>{new Date(request.createdAt).toLocaleDateString()}</span>
+              <span>
+                {request.createdAt && (
+                  <span className="text-xs text-gray-500">
+                    {new Date(request.createdAt).toLocaleDateString()}
+                  </span>
+                )}
+              </span>
             </div>
           </div>
         </div>
@@ -192,7 +270,11 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"
           >
-            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
           </button>
           <button
             onClick={() => onViewDetails(request)}
@@ -209,10 +291,6 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
           {/* Contact Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Phone className="w-4 h-4" />
-              <span>{request.phone}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-slate-600">
               <Mail className="w-4 h-4" />
               <span>{request.email}</span>
             </div>
@@ -220,144 +298,155 @@ const SupportRequestCard: React.FC<SupportRequestCardProps> = ({
 
           {/* Assistance Types */}
           <div>
-            <p className="text-sm font-medium text-slate-700 mb-2">Assistance Types:</p>
+            <p className="text-sm font-medium text-slate-700 mb-2">
+              Assistance Types:
+            </p>
             <div className="flex flex-wrap gap-2">
-              {request.assistanceTypes.map((type, index) => (
-                <span key={index} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium">
-                  {type}
+              {Array.isArray(request.assistanceTypes) ? (
+                request.assistanceTypes.map((type, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium"
+                  >
+                    {type}
+                  </span>
+                ))
+              ) : request.assistanceTypes ? (
+                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium">
+                  {request.assistanceTypes}
                 </span>
-              ))}
-
+              ) : (
+                <span className="text-xs text-slate-500">
+                  No assistance types
+                </span>
+              )}
             </div>
           </div>
-
           {/* Description */}
           <div>
-            <p className="text-sm font-medium text-slate-700 mb-2">Description:</p>
-            <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">{request.description}</p>
+            <p className="text-sm font-medium text-slate-700 mb-2">
+              Description:
+            </p>
+            <p className="text-sm text-slate-600 bg-slate-50 p-3 rounded-lg">
+              {request.description}
+            </p>
           </div>
-
-          {/* Admin Remarks */}
-          {request.adminRemarks && (
-            <div>
-              <p className="text-sm font-medium text-slate-700 mb-2">Admin Remarks:</p>
-              <p className="text-sm text-slate-600 bg-green-50 p-3 rounded-lg border border-green-200">{request.adminRemarks}</p>
-            </div>
-          )}
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-            <div className="flex items-center gap-2">
-              {/* Status Actions */}
-              {request.status === 'pending' && (
-                <>
-                  <button
-                    onClick={() => onStatusChange(request.id, 'verified')}
-                    disabled={isUpdating || updatingIds.has(request.id)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
-                  >
-                    {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-                    Verify
-                  </button>
-                  <button
-                    onClick={() => onStatusChange(request.id, 'rejected')}
-                    disabled={isUpdating || updatingIds.has(request.id)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-all disabled:opacity-50"
-                  >
-                    {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
-                    Reject
-                  </button>
-                </>
-              )}
-              {request.status === 'verified' && (
-                <button
-                  onClick={() => onStatusChange(request.id, 'in_progress')}
-                  disabled={isUpdating || updatingIds.has(request.id)}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-all disabled:opacity-50"
-                >
-                  {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <Clock className="w-3 h-3" />}
-                  Mark In Progress
-                </button>
-              )}
-              {request.status === 'in_progress' && (
-                <button
-                  onClick={() => onStatusChange(request.id, 'resolved')}
-                  disabled={isUpdating || updatingIds.has(request.id)}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
-                >
-                  {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-                  Mark Resolved
-                </button>
-              )}
-            </div>
-
-            {/* Remarks Button */}
-            <button
-              onClick={() => setShowRemarks(!showRemarks)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-slate-600 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-all"
-            >
-              <MessageSquare className="w-3 h-3" />
-              Add Remarks
-            </button>
-          </div>
-
-          {/* Remarks Input */}
-          {showRemarks && (
-            <div className="space-y-2">
-              <textarea
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Add your remarks here..."
-                className="w-full p-3 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                rows={3}
-              />
-              <div className="flex items-center gap-2">
-                <button
-                    onClick={() => {
-                      onAddRemarks(request.id, remarks);
-                      setShowRemarks(false);
-                      setRemarks('');
-                    }}
-                    disabled={isUpdating || updatingIds.has(request.id) || !remarks.trim()}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50"
-                  >
-                    {updatingIds.has(request.id) ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                    Save
-                  </button>
+          <div className="flex items-center gap-2 pt-4 border-t border-slate-100">
+            {isPending() && (
+              <>
                 <button
                   onClick={() => {
-                    setShowRemarks(false);
-                    setRemarks(request.adminRemarks || '');
+                    console.log("Debug - request.id:", request.id);
+                    console.log("Debug - request.id type:", typeof request.id);
+                    console.log(
+                      "Debug - Number(request.id):",
+                      Number(request.id)
+                    );
+                    console.log("Debug - Full request object:", request);
+                    onStatusChange(Number(request.id), "verified");
                   }}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-slate-600 text-white text-sm font-medium rounded-lg hover:bg-slate-700 transition-all"
+                  disabled={isUpdating || updatingIds.has(Number(request.id))}
+                  className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
                 >
-                  <X className="w-3 h-3" />
-                  Cancel
+                  {updatingIds.has(Number(request.id)) ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )}
+                  Accept
                 </button>
-              </div>
-            </div>
-          )}
+                <button
+                  onClick={() => {
+                    console.log("Debug - request.id:", request.id);
+                    console.log("Debug - request.id type:", typeof request.id);
+                    console.log(
+                      "Debug - Number(request.id):",
+                      Number(request.id)
+                    );
+                    onStatusChange(Number(request.id), "rejected");
+                  }}
+                  disabled={isUpdating || updatingIds.has(Number(request.id))}
+                  className="flex items-center gap-1 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-all disabled:opacity-50"
+                >
+                  {updatingIds.has(Number(request.id)) ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <XCircle className="w-4 h-4" />
+                  )}
+                  Reject
+                </button>
+              </>
+            )}
+            {canDelete && (
+              <button
+                onClick={() => {
+                  onDelete(Number(request.id));
+                }}
+                disabled={isUpdating || updatingIds.has(Number(request.id))}
+                className="flex items-center gap-1 px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-all disabled:opacity-50"
+              >
+                {updatingIds.has(Number(request.id)) ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                )}
+                Delete
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-const SupportRequestModal: React.FC<SupportRequestModalProps> = ({ 
-  request, 
-  isOpen, 
-  onClose, 
-  onStatusChange, 
-  onAddRemarks 
+const SupportRequestModal: React.FC<SupportRequestModalProps> = ({
+  request,
+  isOpen,
+  onClose,
+  onStatusChange,
+  onDelete,
+  isUpdating = false,
+  updatingIds = new Set(),
 }) => {
+  const { user } = useAuthStore();
+
   if (!isOpen || !request) return null;
+
+  const canDelete = (): boolean => {
+    console.log("🔍 Modal canDelete check - User:", user);
+    console.log("🔍 Modal canDelete check - Request userId:", request.userId);
+    if (!user) return false;
+    const isAdmin =
+      user.roles.includes("Admin") || user.roles.includes("admin");
+    console.log("🔍 Modal canDelete check - Is Admin:", isAdmin);
+    const isOwner = request.userId === user.userId;
+    console.log("🔍 Modal canDelete check - Is Owner:", isOwner);
+    return isAdmin || isOwner;
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6 border-b border-slate-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900">Support Request Details</h2>
+            <h2 className="text-2xl font-bold text-slate-900">
+              Support Request Details
+            </h2>
             <button
               onClick={onClose}
               className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all"
@@ -370,10 +459,12 @@ const SupportRequestModal: React.FC<SupportRequestModalProps> = ({
           <SupportRequestCard
             request={request}
             onStatusChange={onStatusChange}
-            onAddRemarks={onAddRemarks}
             onViewDetails={() => {}}
-            isUpdating={false}
-            updatingIds={new Set()}
+            onDelete={onDelete}
+            canDelete={canDelete()}
+            isUpdating={isUpdating}
+            updatingIds={updatingIds}
+            defaultExpanded={true}
           />
         </div>
       </div>
@@ -382,80 +473,125 @@ const SupportRequestModal: React.FC<SupportRequestModalProps> = ({
 };
 
 const AdminSupportRequestManagement: React.FC = () => {
+  const { user, accessToken } = useAuthStore();
   const [requests, setRequests] = useState<SupportRequest[]>([]);
   const [metrics, setMetrics] = useState<SupportRequestMetrics>({
     totalRequests: 0,
     pendingRequests: 0,
     verifiedRequests: 0,
-    inProgressRequests: 0,
-    resolvedRequests: 0,
-    rejectedRequests: 0
+    rejectedRequests: 0,
   });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [urgencyFilter, setUrgencyFilter] = useState<string>('all');
-  const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [urgencyFilter, setUrgencyFilter] = useState<string>("all");
+  const [selectedRequest, setSelectedRequest] = useState<SupportRequest | null>(
+    null
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
+  const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set());
 
-  // Load support requests on component mount
   useEffect(() => {
     loadSupportRequests();
   }, []);
 
-  // Load support requests from API
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      const hasFilters =
+        searchTerm.trim() !== "" ||
+        statusFilter !== "all" ||
+        urgencyFilter !== "all";
+      if (hasFilters) {
+        searchSupportRequests();
+      } else {
+        loadSupportRequests();
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm, statusFilter, urgencyFilter]);
+
   const loadSupportRequests = async () => {
     try {
       setIsLoading(true);
-      const data = await SupportRequestsAPI.getAllRequests();
+      const data = await SupportRequestService.getAllRequests();
       setRequests(data);
-      setMetrics(calculateMetrics(data));
+      const metricsData = await SupportRequestService.getMetrics();
+      setMetrics(metricsData);
     } catch (error: any) {
-      showErrorToast(error.message || 'Failed to load support requests');
+      showErrorToast(error.message || "Failed to load support requests");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Filter requests based on search and filters
-  const filteredRequests = requests.filter(request => {
-    const matchesSearch = 
-      request.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.disasterType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
-    const matchesUrgency = urgencyFilter === 'all' || request.urgencyLevel === urgencyFilter;
-    
-    return matchesSearch && matchesStatus && matchesUrgency;
-  });
+  const filteredRequests = requests;
 
-  // Handle status change
-  const handleStatusChange = async (id: string, newStatus: SupportRequest['status'], adminRemarks?: string) => {
+  const canDeleteRequest = (request: SupportRequest): boolean => {
+    console.log("🔍 Delete permission check called for request:", request.id);
+    console.log("🔍 Current user:", user);
+
+    if (!user) {
+      console.log("🔍 No user found");
+      return false;
+    }
+
+    const isAdmin =
+      (user.roles && user.roles.includes("Admin")) ||
+      (user.roles && user.roles.includes("admin"));
+    console.log("🔍 Admin check result:", { userRoles: user.roles, isAdmin });
+
+    if (isAdmin) {
+      console.log("🔍 User is admin - allowing delete");
+      return true;
+    }
+
+    const canDeleteOwn = request.userId === user.userId;
+    console.log("🔍 Own request check:", {
+      requestUserId: request.userId,
+      currentUserId: user.userId,
+      canDeleteOwn,
+    });
+
+    return canDeleteOwn;
+  };
+
+  const handleStatusChange = async (
+    id: number,
+    newStatus: "verified" | "rejected"
+  ) => {
     try {
       setIsUpdating(true);
-      setUpdatingIds(prev => new Set(prev).add(id));
-      const updatedRequest = await SupportRequestsAPI.updateRequestStatus(id, newStatus, adminRemarks);
-      
-      // Update local state
-      setRequests(prev => 
-        prev.map(req => 
-          req.id === id ? updatedRequest : req
-        )
+      setUpdatingIds((prev) => new Set([...prev, id]));
+      const updatedRequest = await SupportRequestService.updateRequestStatus(
+        id,
+        newStatus
       );
-      
-      // Recalculate metrics
-      const updatedRequests = requests.map(req => req.id === id ? updatedRequest : req);
-      setMetrics(calculateMetrics(updatedRequests));
-      
-      showSuccessToast('Support request status updated successfully');
+      console.log("Updated request from API:", updatedRequest);
+      console.log("New status sent:", newStatus);
+
+      const normalizedRequest = {
+        ...updatedRequest,
+        status: newStatus,
+      };
+
+      setRequests((prev) =>
+        prev.map((req) => (req.id === id ? normalizedRequest : req))
+      );
+
+      const metricsData = await SupportRequestService.getMetrics();
+      setMetrics(metricsData);
+
+      showSuccessToast("Support request status updated successfully");
     } catch (error: any) {
-      showErrorToast(error.message || 'Failed to update support request status');
+      console.error("Status change error:", error);
+      showErrorToast(
+        error.message || "Failed to update support request status"
+      );
     } finally {
       setIsUpdating(false);
-      setUpdatingIds(prev => {
+      setUpdatingIds((prev) => {
         const newSet = new Set(prev);
         newSet.delete(id);
         return newSet;
@@ -463,49 +599,96 @@ const AdminSupportRequestManagement: React.FC = () => {
     }
   };
 
-  // Handle add remarks
-  const handleAddRemarks = async (id: string, remarks: string) => {
+  const searchSupportRequests = async () => {
     try {
-      setIsUpdating(true);
-      setUpdatingIds(prev => new Set(prev).add(id));
-      const currentRequest = requests.find(req => req.id === id);
-      if (!currentRequest) return;
-      
-      const updatedRequest = await SupportRequestsAPI.updateRequestStatus(
-        id, 
-        currentRequest.status, 
-        remarks
-      );
-      
-      // Update local state
-      setRequests(prev => 
-        prev.map(req => 
-          req.id === id ? updatedRequest : req
-        )
-      );
-      
-      showSuccessToast('Admin remarks updated successfully');
-    } catch (error: any) {
-      showErrorToast(error.message || 'Failed to update admin remarks');
-    } finally {
-      setIsUpdating(false);
-      setUpdatingIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
+      setIsLoading(true);
+      const urgencyValue =
+        urgencyFilter !== "all" ? parseInt(urgencyFilter) : undefined;
+      const statusValue = statusFilter !== "all" ? statusFilter : undefined;
+      const keywordValue = searchTerm.trim() || undefined;
+
+      console.log("🔍 Search parameters:", {
+        keyword: keywordValue,
+        urgency: urgencyValue,
+        status: statusValue,
+        originalFilters: { searchTerm, statusFilter, urgencyFilter },
       });
+
+      const data = await SupportRequestService.searchRequests(
+        keywordValue,
+        urgencyValue,
+        statusValue
+      );
+      console.log("🔍 Search results:", data);
+      setRequests(data);
+
+      const metricsData = await SupportRequestService.getMetrics();
+      setMetrics(metricsData);
+    } catch (error: any) {
+      console.error("🔍 Search error:", error);
+      showErrorToast(error.message || "Failed to search support requests");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Handle refresh
   const handleRefresh = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setUrgencyFilter("all");
     loadSupportRequests();
   };
 
-  // Handle view details
   const handleViewDetails = (request: SupportRequest) => {
     setSelectedRequest(request);
     setIsModalOpen(true);
+  };
+
+  const handleDeleteRequest = async (id: number) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this support request? This action cannot be undone."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setIsUpdating(true);
+      setUpdatingIds((prev) => new Set([...prev, id]));
+      console.log("🗑️ Admin deleting support request:", id);
+      await SupportRequestService.deleteRequest(id, accessToken || undefined);
+
+      setRequests((prev) => prev.filter((req) => req.id !== id));
+
+      if (selectedRequest?.id === id) {
+        setIsModalOpen(false);
+        setSelectedRequest(null);
+      }
+
+      const metricsData = await SupportRequestService.getMetrics();
+      setMetrics(metricsData);
+
+      showSuccessToast("Support request deleted successfully");
+    } catch (error: any) {
+      console.error("🗑️ Delete error:", error);
+      console.error("🗑️ Error details:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to delete support request";
+      showErrorToast(errorMessage);
+    } finally {
+      setIsUpdating(false);
+      setUpdatingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+    }
   };
 
   return (
@@ -520,18 +703,24 @@ const AdminSupportRequestManagement: React.FC = () => {
                   <MessageSquare className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Support Request Management</h1>
-                  <p className="text-sm text-slate-500 font-medium">Manage and respond to assistance requests</p>
+                  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    Support Request Management
+                  </h1>
+                  <p className="text-sm text-slate-500 font-medium">
+                    Manage and respond to assistance requests
+                  </p>
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 onClick={handleRefresh}
                 disabled={isLoading}
                 className="p-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200 disabled:opacity-50"
               >
-                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`}
+                />
               </button>
               <button className="flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-200 font-medium shadow-sm">
                 <Download className="w-4 h-4" />
@@ -546,8 +735,10 @@ const AdminSupportRequestManagement: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         {/* Metrics Dashboard */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-6">Dashboard Metrics</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight mb-6">
+            Dashboard Metrics
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <AdminStatCard
               icon={<FileText className="w-5 h-5" />}
               title="Total Requests"
@@ -568,27 +759,9 @@ const AdminSupportRequestManagement: React.FC = () => {
             />
             <AdminStatCard
               icon={<CheckCircle className="w-5 h-5" />}
-              title="Verified Requests"
+              title="Accepted Requests"
               value={metrics.verifiedRequests}
               change="+8% from last week"
-              changeType="increase"
-              bgGradient="bg-gradient-to-br from-blue-500 to-blue-600"
-              iconBg="bg-blue-400"
-            />
-            <AdminStatCard
-              icon={<Settings className="w-5 h-5" />}
-              title="In Progress"
-              value={metrics.inProgressRequests}
-              change="+5 this week"
-              changeType="increase"
-              bgGradient="bg-gradient-to-br from-purple-500 to-purple-600"
-              iconBg="bg-purple-400"
-            />
-            <AdminStatCard
-              icon={<CheckCircle2 className="w-5 h-5" />}
-              title="Resolved Requests"
-              value={metrics.resolvedRequests}
-              change="+15% this month"
               changeType="increase"
               bgGradient="bg-gradient-to-br from-green-500 to-green-600"
               iconBg="bg-green-400"
@@ -608,7 +781,6 @@ const AdminSupportRequestManagement: React.FC = () => {
         {/* Filters and Search */}
         <div className="bg-white rounded-2xl border border-slate-200/60 p-6 mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
             <div className="flex-1">
               <div className="relative">
                 <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
@@ -621,8 +793,6 @@ const AdminSupportRequestManagement: React.FC = () => {
                 />
               </div>
             </div>
-            
-            {/* Status Filter */}
             <div className="lg:w-48">
               <select
                 value={statusFilter}
@@ -632,13 +802,9 @@ const AdminSupportRequestManagement: React.FC = () => {
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="verified">Verified</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-            
-            {/* Urgency Filter */}
             <div className="lg:w-48">
               <select
                 value={urgencyFilter}
@@ -646,11 +812,21 @@ const AdminSupportRequestManagement: React.FC = () => {
                 className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200"
               >
                 <option value="all">All Urgency</option>
-                <option value="immediate">Immediate</option>
-                <option value="within_24h">Within 24h</option>
-                <option value="within_week">Within Week</option>
-                <option value="non_urgent">Non-urgent</option>
+                <option value="1">Immediate</option>
+                <option value="2">Within 24h</option>
+                <option value="3">Within Week</option>
+                <option value="4">Non-urgent</option>
               </select>
+            </div>
+            <div>
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 focus:ring-2 focus:ring-slate-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Clear All
+              </button>
             </div>
           </div>
         </div>
@@ -659,33 +835,42 @@ const AdminSupportRequestManagement: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200/60 p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">Support Requests</h3>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+                Support Requests
+              </h3>
               <p className="text-sm text-slate-600 font-medium mt-1">
                 Showing {filteredRequests.length} of {requests.length} requests
               </p>
             </div>
           </div>
-          
+
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
-              <span className="ml-3 text-slate-600">Loading support requests...</span>
+              <span className="ml-3 text-slate-600">
+                Loading support requests...
+              </span>
             </div>
           ) : filteredRequests.length === 0 ? (
             <div className="text-center py-12">
               <MessageSquare className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-              <p className="text-slate-600 font-medium">No support requests found</p>
-              <p className="text-sm text-slate-400 mt-1">Try adjusting your search or filters</p>
+              <p className="text-slate-600 font-medium">
+                No support requests found
+              </p>
+              <p className="text-sm text-slate-400 mt-1">
+                Try adjusting your search or filters
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
               {filteredRequests.map((request) => (
                 <SupportRequestCard
-                  key={request.id}
+                  key={`${request.id}-${request.status}`}
                   request={request}
                   onStatusChange={handleStatusChange}
-                  onAddRemarks={handleAddRemarks}
                   onViewDetails={handleViewDetails}
+                  onDelete={handleDeleteRequest}
+                  canDelete={canDeleteRequest(request)}
                   isUpdating={isUpdating}
                   updatingIds={updatingIds}
                 />
@@ -704,7 +889,9 @@ const AdminSupportRequestManagement: React.FC = () => {
           setSelectedRequest(null);
         }}
         onStatusChange={handleStatusChange}
-        onAddRemarks={handleAddRemarks}
+        onDelete={handleDeleteRequest}
+        isUpdating={isUpdating}
+        updatingIds={updatingIds}
       />
     </div>
   );
