@@ -14,7 +14,6 @@ import {
   Grid3X3,
   List,
   Map,
-  Activity,
   Flame,
   Waves,
   Mountain,
@@ -24,7 +23,6 @@ import {
   BarChart3,
   TrendingUp,
   Heart,
-  Eye,
   AlertTriangle,
   CheckCircle,
 } from "lucide-react";
