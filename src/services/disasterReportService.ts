@@ -47,6 +47,7 @@ export const getById = async (
     `${API_BASE}/${id}`,
     getAuthHeaders(token)
   );
+  console.log("response of getById:", response);
   return response.data;
 };
 

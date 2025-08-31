@@ -29,7 +29,10 @@ import { useAuth } from "./hooks/useAuth";
 import ErrorBoundary from "./components/ErrorBoundary";
 import TokenExpirationMonitor from "./components/TokenExpirationMonitor";
 import GlobalLoader from "./components/Common/GlobalLoader";
+import Organization from "./pages/Organization";
 import "./i18n/index"; // Initialize i18n for admin panel
+import SupportRequestPage from "./pages/SupportRequestPage";
+import SupportRequestUpdateForm from "./components/SupportRequestUpdateForm";
 
 // Create query client for admin
 const adminQueryClient = new QueryClient({
@@ -212,6 +215,8 @@ export const router = createBrowserRouter(
         { path: "get-involved", element: <GetInvolved /> },
         { path: "contact", element: <Contact /> },
         { path: "donate", element: <Donate /> },
+        { path: "view-organizations", element: <Organization /> },
+        { path: "donate/:organizationId", element: <Donate /> },
         { path: "partnership", element: <Partnership /> },
         { path: "debug/avatar", element: <AvatarDebug /> },
         {
@@ -237,6 +242,16 @@ export const router = createBrowserRouter(
             <ReportImpact authToken={localStorage.getItem("authToken") ?? ""} />
           ),
           loader: () => authLoader({ excludeRoles: ["user"] }),
+        },
+        {
+          path: "support/:id",
+          element: <SupportRequestPage />,
+          loader: () => authLoader(),
+        },
+        {
+          path: "support/update/:id",
+          element: <SupportRequestUpdateForm />,
+          loader: () => authLoader(),
         },
         {
           path: "verify-reports",
