@@ -27,7 +27,7 @@ interface Props {
   onSuccess?: () => void;
 }
 
-const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
+const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }): JSX.Element => {
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id: string }>();
   const editMode = Boolean(editId);
@@ -67,7 +67,22 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     return token;
   };
 
-  const [formData, setFormData] = useState<DisasterReportCreateDto>({\n    title: \"\",\n    description: \"\",\n    timestamp: \"\",\n    severity: SeverityLevel.Low,\n    disasterCategory: undefined,\n    disasterTypeId: undefined,\n    newDisasterTypeName: \"\",\n    disasterEventName: \"\",\n    latitude: 0,\n    longitude: 0,\n    address: \"\",\n    coordinatePrecision: 0.001,\n    impactDetails: [],\n    photoUrls: [],\n  });
+  const [formData, setFormData] = useState<DisasterReportCreateDto>({
+    title: "",
+    description: "",
+    timestamp: "",
+    severity: SeverityLevel.Low,
+    disasterCategory: undefined,
+    disasterTypeId: undefined,
+    newDisasterTypeName: "",
+    disasterEventName: "",
+    latitude: 0,
+    longitude: 0,
+    address: "",
+    coordinatePrecision: 0.001,
+    impactDetails: [],
+    photoUrls: [],
+  });
 
   const resetForm = () => {
     setStep(1);
@@ -346,12 +361,18 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         name: formData.newDisasterTypeName,
         category: formData.disasterCategory,
       };
-      const created: DisasterTypeDto = await DisasterTypeService.create(
+      await DisasterTypeService.create(
         dto,
         token
       );
       await fetchDisasterTypes();
-      if (created?.id) handleTypeSelect(created.id);
+      // Find the newly created type in the updated list
+      const newType = disasterTypes.find(
+        (dt) => 
+          dt.name === formData.newDisasterTypeName && 
+          dt.category === formData.disasterCategory
+      );
+      if (newType) handleTypeSelect(newType.id);
       setFormData((prev) => ({ ...prev, newDisasterTypeName: "" }));
       setShowOtherInput(false);
     } catch (err) {
@@ -371,13 +392,17 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         console.error("No token found");
         return;
       }
-      const created: ImpactTypeDto = await ImpactTypeService.create(
+      await ImpactTypeService.create(
         { name: newImpactTypeName },
         token
       );
       await fetchImpactTypes();
-      if (created?.id) {
-        setSelectedImpacts((prev) => [...prev, created]);
+      // Find the newly created impact type in the updated list
+      const newImpact = impactTypes.find(
+        (it) => it.name === newImpactTypeName
+      );
+      if (newImpact) {
+        setSelectedImpacts((prev) => [...prev, newImpact]);
       }
       setNewImpactTypeName("");
       setShowImpactOtherInput(false);
@@ -584,11 +609,13 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       const photoInputs = document.querySelectorAll('input[type="file"]')[0];
       if (photoInputs && (photoInputs as HTMLInputElement).files) {
         const files = (photoInputs as HTMLInputElement).files;
-        for (let i = 0; i < files.length; i++) {
-          submissionFormData.append("Photos", files[i]);
+        if (files) {
+          for (let i = 0; i < files.length; i++) {
+            submissionFormData.append("Photos", files[i]);
+          }
         }
       }
-      const createdReport: DisasterReportCreateDto = await createDisasterReport(
+      const createdReport: DisasterReportDto = await createDisasterReport(
         submissionFormData,
         token
       );
@@ -712,8 +739,10 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       const photoInputs = document.querySelectorAll('input[type="file"]')[0];
       if (photoInputs && (photoInputs as HTMLInputElement).files) {
         const files = (photoInputs as HTMLInputElement).files;
-        for (let i = 0; i < files.length; i++) {
-          submissionFormData.append("Photos", files[i]);
+        if (files) {
+          for (let i = 0; i < files.length; i++) {
+            submissionFormData.append("Photos", files[i]);
+          }
         }
       }
       await updateDisasterReport(editId, submissionFormData, token);
