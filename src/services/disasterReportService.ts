@@ -47,6 +47,7 @@ export const getById = async (
     `${API_BASE}/${id}`,
     getAuthHeaders(token)
   );
+  console.log("response of getById:", response);
   return response.data;
 };
 
@@ -54,7 +55,7 @@ export const getById = async (
 export const createDisasterReport = async (
   dto: FormData,
   token?: string
-): Promise<DisasterReportCreateDto> => {
+): Promise<DisasterReportDto> => {
   console.log("🔍 === SERVICE LAYER DEBUG ===");
   console.log("📦 FormData received in service:");
   for (let [key, value] of dto.entries()) {
@@ -80,7 +81,7 @@ export const update = async (
   id: string,
   dto: FormData,
   token?: string
-): Promise<DisasterReportUpdateDto> => {
+): Promise<DisasterReportDto> => {
   const config = getAuthHeaders(token);
   const response = await axios.put<DisasterReportDto>(
     `${API_BASE}/${id}`,

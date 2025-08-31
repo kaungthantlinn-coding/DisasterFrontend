@@ -34,18 +34,37 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
-  // Reverse geocoding function (mock implementation)
+  // Reverse geocoding function with better error handling
+  // Note: Nominatim has usage policies (https://operations.osmfoundation.org/policies/nominatim/)
+  // For production, consider using a commercial service or setting up your own Nominatim instance
   const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
     try {
-      // In a real application, you would use a geocoding service like:
-      // - Google Maps Geocoding API
-      // - Nominatim (OpenStreetMap)
-      // - Mapbox Geocoding API
-      
-      // Mock implementation for demonstration
+      // Nominatim requires proper headers and has usage limitations
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'DisasterReportApp/1.0 (https://yourdomain.com)',
+            'Referer': window.location.origin
+          }
+        }
       );
+      
+      // Handle different response statuses
+      if (response.status === 403) {
+        console.warn('Nominatim geocoding forbidden - likely due to usage limits');
+        return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      }
+      
+      if (response.status === 429) {
+        console.warn('Nominatim geocoding rate limited');
+        return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Geocoding failed with status ${response.status}`);
+      }
+      
       const data = await response.json();
       
       if (data && data.display_name) {
@@ -54,6 +73,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
       }
     } catch (error) {
+      console.warn('Geocoding failed:', error);
+      // Fallback to coordinates only
       return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
   };
@@ -111,8 +132,18 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         const marker = L.marker([lat, lng]).addTo(map);
         markerRef.current = marker;
 
-        // Get address through reverse geocoding
-        const address = await reverseGeocode(lat, lng);
+        // Check if this is the same location as selectedLocation
+        let address: string;
+        if (selectedLocation && 
+            Math.abs(selectedLocation.lat - lat) < 0.000001 && 
+            Math.abs(selectedLocation.lng - lng) < 0.000001 && 
+            selectedLocation.address) {
+          // Use the existing address if it's the same location
+          address = selectedLocation.address;
+        } else {
+          // Get address through reverse geocoding
+          address = await reverseGeocode(lat, lng);
+        }
 
         // Call the callback with location data
         onLocationSelect(lat, lng, address);
@@ -156,8 +187,15 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
       // Center map on selected location
       mapInstanceRef.current.setView([selectedLocation.lat, selectedLocation.lng], 12);
+      
+      // Call onLocationSelect with the provided address or fallback to coordinates
+      onLocationSelect(
+        selectedLocation.lat, 
+        selectedLocation.lng, 
+        selectedLocation.address || `${selectedLocation.lat.toFixed(6)}, ${selectedLocation.lng.toFixed(6)}`
+      );
     }
-  }, [selectedLocation]);
+  }, [selectedLocation, onLocationSelect]);
 
 
 

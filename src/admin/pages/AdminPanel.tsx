@@ -30,6 +30,7 @@ import {
   ArrowDownRight,
   Minus
 } from 'lucide-react';
+import AdminDonationView from './AdminDonationView';
 import { useAuth } from '../../hooks/useAuth';
 import { userManagementApi } from '../../apis/userManagement';
 import { ReportsAPI } from '../../apis/reports';
@@ -291,6 +292,13 @@ const AdminPanel: React.FC = () => {
       current: location.pathname === '/admin/analytics',
       badge: null
     },
+     {
+      name: 'Donation Verification', // NEW: Added donation verification
+      href: '/admin/donation-verification',
+      icon: Building2,
+      current: location.pathname === '/admin/donation-verification',
+      badge: null
+    },
     {
       name: 'Organizations',
       href: '/admin/organizations',
@@ -298,6 +306,7 @@ const AdminPanel: React.FC = () => {
       current: location.pathname === '/admin/organizations',
       badge: null
     },
+    
     {
       name: 'Support',
       href: '/admin/support-requests',
@@ -433,6 +442,14 @@ const AdminPanel: React.FC = () => {
             description="Add, edit, or remove user accounts and manage permissions with advanced role-based access control."
             link="/admin/users"
             color="from-blue-500 to-blue-600"
+          />
+           <QuickActionCard
+            icon={<Shield className="w-6 h-6" />}
+            title="Donation Verification"
+            description="Review and verify pending donations from users with transaction proof validation."
+            link="/admin/donation-verification"
+            color="from-amber-500 to-amber-600"
+
           />
           <QuickActionCard
             icon={<FileText className="w-6 h-6" />}
@@ -764,6 +781,7 @@ const AdminPanel: React.FC = () => {
               <Route path="/users" element={<UserManagement />} />
               <Route path="/reports" element={<ReportManagement />} />
               <Route path="/analytics" element={<Analytics />} />
+               <Route path="/donation-verification" element={<AdminDonationView />} />
               <Route path="/organizations" element={<OrganizationManagement />} />
               <Route path="/support-requests" element={<AdminSupportRequestManagement />} />
               <Route path="/settings" element={<SystemSettings />} />

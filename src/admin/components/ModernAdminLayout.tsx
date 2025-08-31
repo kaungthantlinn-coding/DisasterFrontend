@@ -102,6 +102,12 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       badge: undefined
     },
     {
+      icon: <Building2 className="w-5 h-5" />,
+      label: 'Donation Verification',
+      path: '/admin/donation-verification',
+      badge: undefined
+    },
+    {
       icon: <FileText className="w-5 h-5" />,
       label: 'Reports',
       path: '/admin/reports',

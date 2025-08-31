@@ -17,8 +17,9 @@ export interface DisasterReportCreateDto {
   coordinatePrecision?: number;
 
   impactDetails: ImpactDetailCreateDto[];
+  photoUrls: string[];
 
-  photos: (File | PhotoDto)[]; // or string[] if uploaded separately
+  //photos: (File | PhotoDto)[]; // or string[] if uploaded separately
 }
 
 export interface DisasterReportDto {
@@ -29,9 +30,12 @@ export interface DisasterReportDto {
   severity: SeverityLevel;
   status: ReportStatus;
   disasterTypeName: string;
+  disasterCategory: DisasterCategory;
+  disasterEventName: string;
   disasterTypeId: number;
   userId: string;
   userName?: string;
+  userEmail?: string;
   impactDetails: ImpactDetailDto[];
   photoUrls: string[];
   latitude: number;
@@ -75,3 +79,4 @@ export enum ReportStatus {
   Accepted = "Verified",
   Rejected = "Rejected",
 }
+
