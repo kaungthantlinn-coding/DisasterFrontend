@@ -79,3 +79,4 @@ export enum ReportStatus {
   Accepted = "Verified",
   Rejected = "Rejected",
 }
+
