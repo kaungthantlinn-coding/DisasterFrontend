@@ -67,23 +67,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     return token;
   };
 
-  const [formData, setFormData] = useState<DisasterReportCreateDto>({
-    title: "",
-    description: "",
-    timestamp: "",
-    severity: SeverityLevel.Low,
-    disasterCategory: undefined,
-    disasterTypeId: undefined,
-    newDisasterTypeName: "",
-    disasterEventName: "",
-    latitude: 0,
-    longitude: 0,
-    address: "",
-    coordinatePrecision: 0.001,
-    impactDetails: [],
-    photos: [],
-    photoUrls: [],
-  });
+  const [formData, setFormData] = useState<DisasterReportCreateDto>({\n    title: \"\",\n    description: \"\",\n    timestamp: \"\",\n    severity: SeverityLevel.Low,\n    disasterCategory: undefined,\n    disasterTypeId: undefined,\n    newDisasterTypeName: \"\",\n    disasterEventName: \"\",\n    latitude: 0,\n    longitude: 0,\n    address: \"\",\n    coordinatePrecision: 0.001,\n    impactDetails: [],\n    photoUrls: [],\n  });
 
   const resetForm = () => {
     setStep(1);
@@ -109,7 +93,6 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       address: "",
       coordinatePrecision: 0.001,
       impactDetails: [],
-      photos: [],
       photoUrls: [],
     });
     setPrefillDone(false);
@@ -425,7 +408,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     console.log("📸 Photo upload started");
     const filesArray = Array.from(e.target.files);
     const maxPhotosAllowed = 10;
-    const currentCount = formData.photos.length;
+    const currentCount = formData.photoUrls.length;
     const availableSlots = maxPhotosAllowed - currentCount;
     const filesToAdd = filesArray.slice(0, availableSlots);
     const filteredFiles = filesToAdd.filter(
@@ -437,20 +420,22 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         photos: "Some files were skipped because they exceed 10MB size limit.",
       }));
     }
+    // Convert files to URLs for preview
+    const newPhotoUrls = filteredFiles.map((file) => URL.createObjectURL(file));
     setFormData((prev) => ({
       ...prev,
-      photos: [...prev.photos, ...filteredFiles],
+      photoUrls: [...prev.photoUrls, ...newPhotoUrls],
     }));
     e.target.value = "";
   };
 
   const removePhoto = (index: number) => {
     setFormData((prev) => {
-      const newPhotos = [...prev.photos];
-      newPhotos.splice(index, 1);
+      const newPhotoUrls = [...prev.photoUrls];
+      newPhotoUrls.splice(index, 1);
       return {
         ...prev,
-        photos: newPhotos,
+        photoUrls: newPhotoUrls,
       };
     });
   };
@@ -595,11 +580,14 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           );
         });
       });
-      formData.photos.forEach((photo, index) => {
-        if (photo instanceof File) {
-          submissionFormData.append("Photos", photo);
+      // Handle photo uploads
+      const photoInputs = document.querySelectorAll('input[type="file"]')[0];
+      if (photoInputs && (photoInputs as HTMLInputElement).files) {
+        const files = (photoInputs as HTMLInputElement).files;
+        for (let i = 0; i < files.length; i++) {
+          submissionFormData.append("Photos", files[i]);
         }
-      });
+      }
       const createdReport: DisasterReportCreateDto = await createDisasterReport(
         submissionFormData,
         token
@@ -720,11 +708,14 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           );
         });
       });
-      formData.photos.forEach((photo, index) => {
-        if (photo instanceof File) {
-          submissionFormData.append("Photos", photo);
+      // Handle photo uploads
+      const photoInputs = document.querySelectorAll('input[type="file"]')[0];
+      if (photoInputs && (photoInputs as HTMLInputElement).files) {
+        const files = (photoInputs as HTMLInputElement).files;
+        for (let i = 0; i < files.length; i++) {
+          submissionFormData.append("Photos", files[i]);
         }
-      });
+      }
       await updateDisasterReport(editId, submissionFormData, token);
       try {
         await NotificationAPI.createNotification(
@@ -1376,16 +1367,12 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                     </p>
                   </label>
                 </div>
-                {formData.photos.length > 0 && (
+                {formData.photoUrls.length > 0 && (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
-                    {formData.photos.map((photo, index) => (
+                    {formData.photoUrls.map((photoUrl, index) => (
                       <div key={index} className="relative group">
                         <img
-                          src={
-                            photo instanceof File
-                              ? URL.createObjectURL(photo)
-                              : photo.url
-                          }
+                          src={photoUrl}
                           alt={`Upload ${index + 1}`}
                           className="w-full h-24 object-cover rounded-xl"
                         />
@@ -1546,18 +1533,14 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                         Photos
                       </label>
                       <p className="text-sm text-gray-600 mb-2">
-                        {formData.photos.length} photos
+                        {formData.photoUrls.length} photos
                       </p>
-                      {formData.photos.length > 0 && (
+                      {formData.photoUrls.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                          {formData.photos.map((photo, index) => (
+                          {formData.photoUrls.map((photoUrl, index) => (
                             <div key={index} className="relative">
                               <img
-                                src={
-                                  photo instanceof File
-                                    ? URL.createObjectURL(photo)
-                                    : photo.url
-                                }
+                                src={photoUrl}
                                 alt={`Preview ${index + 1}`}
                                 className="w-full h-20 object-cover rounded-lg"
                               />
