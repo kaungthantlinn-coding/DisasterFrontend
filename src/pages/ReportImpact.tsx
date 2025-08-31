@@ -30,7 +30,7 @@ interface Props {
   onSuccess?: () => void;
 }
 
-const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
+const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }): JSX.Element => {
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id: string }>();
   const editMode = Boolean(editId);
@@ -447,8 +447,12 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         token
       );
       await fetchImpactTypes();
-      if (created?.id) {
-        setSelectedImpacts((prev) => [...prev, created]);
+      // Find the newly created impact type in the updated list
+      const newImpact = impactTypes.find(
+        (it) => it.name === newImpactTypeName
+      );
+      if (newImpact) {
+        setSelectedImpacts((prev) => [...prev, newImpact]);
       }
       setNewImpactTypeName("");
       setShowImpactOtherInput(false);
@@ -479,7 +483,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     console.log("📸 Photo upload started");
     const filesArray = Array.from(e.target.files);
     const maxPhotosAllowed = 10;
-    const currentCount = formData.photos.length;
+    const currentCount = formData.photoUrls.length;
     const availableSlots = maxPhotosAllowed - currentCount;
     const filesToAdd = filesArray.slice(0, availableSlots);
     const filteredFiles = filesToAdd.filter(
@@ -491,20 +495,22 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         photos: "Some files were skipped because they exceed 10MB size limit.",
       }));
     }
+    // Convert files to URLs for preview
+    const newPhotoUrls = filteredFiles.map((file) => URL.createObjectURL(file));
     setFormData((prev) => ({
       ...prev,
-      photos: [...prev.photos, ...filteredFiles],
+      photoUrls: [...prev.photoUrls, ...newPhotoUrls],
     }));
     e.target.value = "";
   };
 
   const removePhoto = (index: number) => {
     setFormData((prev) => {
-      const newPhotos = [...prev.photos];
-      newPhotos.splice(index, 1);
+      const newPhotoUrls = [...prev.photoUrls];
+      newPhotoUrls.splice(index, 1);
       return {
         ...prev,
-        photos: newPhotos,
+        photoUrls: newPhotoUrls,
       };
     });
   };
@@ -649,9 +655,14 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           );
         });
       });
-      formData.photos.forEach((photo, index) => {
-        if (photo instanceof File) {
-          submissionFormData.append("Photos", photo);
+      // Handle photo uploads
+      const photoInputs = document.querySelectorAll('input[type="file"]')[0];
+      if (photoInputs && (photoInputs as HTMLInputElement).files) {
+        const files = (photoInputs as HTMLInputElement).files;
+        if (files) {
+          for (let i = 0; i < files.length; i++) {
+            submissionFormData.append("Photos", files[i]);
+          }
         }
       });
       const createdReport: DisasterReportCreateDto = await createDisasterReport(
@@ -774,11 +785,16 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           );
         });
       });
-      formData.photos.forEach((photo, index) => {
-        if (photo instanceof File) {
-          submissionFormData.append("Photos", photo);
+      // Handle photo uploads
+      const photoInputs = document.querySelectorAll('input[type="file"]')[0];
+      if (photoInputs && (photoInputs as HTMLInputElement).files) {
+        const files = (photoInputs as HTMLInputElement).files;
+        if (files) {
+          for (let i = 0; i < files.length; i++) {
+            submissionFormData.append("Photos", files[i]);
+          }
         }
-      });
+      }
       await updateDisasterReport(editId, submissionFormData, token);
       try {
         await NotificationAPI.createNotification(

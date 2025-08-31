@@ -342,7 +342,6 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
       urgencyLevel: value,
     }));
   };
-
   // 🔹 Submit Handler
   const handleSubmit = useCallback(async () => {
     if (!validateStep(2)) return;
@@ -433,6 +432,12 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
   const handleAssistanceTypeChange = (assistanceId: string) => {
     setIsFormTouched(true);
     setFormData((prev) => ({
+      ...prev,
+      assistanceTypes: prev.assistanceTypes.includes(assistanceId)
+        ? prev.assistanceTypes.filter((id) => id !== assistanceId)
+        : [...prev.assistanceTypes, assistanceId],
+    }));
+  };
       ...prev,
       assistanceTypes: prev.assistanceTypes.includes(assistanceId)
         ? prev.assistanceTypes.filter((id) => id !== assistanceId)
@@ -809,11 +814,6 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
                           description: e.target.value,
                         }));
                       }}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
-                      rows={6}
-                      maxLength={1000}
-                      placeholder="Urgent help needed for flood victims in downtown area. Multiple families trapped."
-                    />
                     <div className="flex justify-between items-center mt-1">
                       {errors.description && (
                         <p className="text-sm text-red-600">
