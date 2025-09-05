@@ -6,6 +6,28 @@ export interface User {
   photoUrl?: string;
   roles: string[];
   isBlacklisted?: boolean;
+  reputationStatus?: UserReputationStatus;
+  reportStats?: UserReportStats;
+}
+
+// User reputation and report tracking
+export interface UserReputationStatus {
+  status: 'normal' | 'suspicious' | 'warning' | 'blacklisted';
+  riskScore: number;
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+  lastStatusChange?: string;
+  statusChangeReason?: string;
+  canAppeal?: boolean;
+}
+
+export interface UserReportStats {
+  totalReports: number;
+  verifiedReports: number;
+  rejectedReports: number;
+  pendingReports: number;
+  rejectRatio: number; // Percentage of rejected reports
+  lastReportDate?: string;
+  averageReportQuality?: number;
 }
 
 // Authentication request types

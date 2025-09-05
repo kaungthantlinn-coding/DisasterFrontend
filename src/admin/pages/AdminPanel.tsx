@@ -30,7 +30,7 @@ import {
   ArrowDownRight,
   Minus
 } from 'lucide-react';
-import AdminDonationView from './AdminDonationView';
+
 import { useAuth } from '../../hooks/useAuth';
 import { userManagementApi } from '../../apis/userManagement';
 import { ReportsAPI } from '../../apis/reports';
@@ -42,7 +42,7 @@ import SystemSettings from './systemsettings';
 import ReportManagement from './ReportManagement';
 import AuditLogsPage from './AuditLogsPage';
 import AdminSupportRequestManagement from './AdminSupportRequestManagement';
-import OrganizationManagement from './OrganizationManagement';
+
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -249,13 +249,13 @@ const AdminPanel: React.FC = () => {
         totalReports: 156,
         pendingReports: 23,
         verifiedReports: 133,
-        totalOrganizations: 45,
+        
         systemHealth: 98.5,
         responseTime: 245,
         trends: {
           users: [45, 52, 48, 61, 55, 67, 73],
           reports: [12, 19, 15, 23, 18, 25, 31],
-          organizations: [2, 3, 2, 4, 3, 5, 6]
+          
         }
       };
     },
@@ -292,20 +292,8 @@ const AdminPanel: React.FC = () => {
       current: location.pathname === '/admin/analytics',
       badge: null
     },
-     {
-      name: 'Donation Verification', // NEW: Added donation verification
-      href: '/admin/donation-verification',
-      icon: Building2,
-      current: location.pathname === '/admin/donation-verification',
-      badge: null
-    },
-    {
-      name: 'Organizations',
-      href: '/admin/organizations',
-      icon: Building2,
-      current: location.pathname === '/admin/organizations',
-      badge: null
-    },
+     
+    
     
     {
       name: 'Support',
@@ -468,9 +456,7 @@ const AdminPanel: React.FC = () => {
           />
           <QuickActionCard
             icon={<Building2 className="w-6 h-6" />}
-            title="Organizations"
-            description="Manage partner organizations, their access levels, and collaboration settings."
-            link="/admin/organizations"
+            
             color="from-orange-500 to-orange-600"
           />
           <QuickActionCard
@@ -506,7 +492,7 @@ const AdminPanel: React.FC = () => {
               { action: 'New user registered', user: 'John Doe', time: '2m ago', type: 'user', status: 'success' },
               { action: 'Report verified', user: 'Admin', time: '5m ago', type: 'report', status: 'success' },
               { action: 'System backup completed', user: 'System', time: '1h ago', type: 'system', status: 'success' },
-              { action: 'New organization added', user: 'Jane Smith', time: '2h ago', type: 'org', status: 'success' },
+              
               { action: 'Failed login attempt', user: 'Unknown', time: '3h ago', type: 'security', status: 'warning' },
             ].map((activity, index) => (
               <div key={index} className="flex items-center space-x-3 p-3 hover:bg-slate-50 rounded-lg transition-colors">
@@ -781,8 +767,6 @@ const AdminPanel: React.FC = () => {
               <Route path="/users" element={<UserManagement />} />
               <Route path="/reports" element={<ReportManagement />} />
               <Route path="/analytics" element={<Analytics />} />
-               <Route path="/donation-verification" element={<AdminDonationView />} />
-              <Route path="/organizations" element={<OrganizationManagement />} />
               <Route path="/support-requests" element={<AdminSupportRequestManagement />} />
               <Route path="/settings" element={<SystemSettings />} />
               <Route path="/audit-logs" element={<AuditLogsPage />} />

@@ -49,7 +49,7 @@ import SystemSettings from './systemsettings';
 import ReportManagement from './ReportManagement';
 import AuditLogsPage from './AuditLogsPage';
 import AdminSupportRequestManagement from './AdminSupportRequestManagement';
-import OrganizationManagement from './OrganizationManagement';
+
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -251,7 +251,6 @@ const AdminPanel: React.FC = () => {
         totalReports: 156,
         pendingReports: 23,
         verifiedReports: 133,
-        totalOrganizations: 45,
         systemHealth: 98.5,
         responseTime: 245
       };
@@ -321,12 +320,7 @@ const AdminPanel: React.FC = () => {
       icon: BarChart3,
       current: location.pathname === '/admin/analytics',
     },
-    {
-      name: 'Organizations',
-      href: '/admin/organizations',
-      icon: Building2,
-      current: location.pathname === '/admin/organizations',
-    },
+    
     {
       name: 'Support Requests',
       href: '/admin/support-requests',
@@ -463,13 +457,7 @@ const AdminPanel: React.FC = () => {
             link="/admin/analytics"
             color="from-purple-500 to-purple-600"
           />
-          <QuickActionCard
-            icon={<Building2 className="w-6 h-6" />}
-            title="Organizations"
-            description="Manage partner organizations and their access"
-            link="/admin/organizations"
-            color="from-orange-500 to-orange-600"
-          />
+          
           <QuickActionCard
             icon={<Shield className="w-6 h-6" />}
             title="Support Requests"
@@ -500,7 +488,7 @@ const AdminPanel: React.FC = () => {
             { action: 'New user registered', user: 'John Doe', time: '2 minutes ago', type: 'user' },
             { action: 'Report verified', user: 'Admin', time: '5 minutes ago', type: 'report' },
             { action: 'System backup completed', user: 'System', time: '1 hour ago', type: 'system' },
-            { action: 'New organization added', user: 'Jane Smith', time: '2 hours ago', type: 'org' },
+            
           ].map((activity, index) => (
             <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
               <div className={`p-2 rounded-lg ${
@@ -726,7 +714,6 @@ const AdminPanel: React.FC = () => {
               <Route path="/users" element={<UserManagement />} />
               <Route path="/reports" element={<ReportManagement />} />
               <Route path="/analytics" element={<Analytics />} />
-              <Route path="/organizations" element={<OrganizationManagement />} />
               <Route path="/support-requests" element={<AdminSupportRequestManagement />} />
               <Route path="/settings" element={<SystemSettings />} />
               <Route path="/audit-logs" element={<AuditLogsPage />} />

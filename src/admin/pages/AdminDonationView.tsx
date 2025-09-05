@@ -1,17 +1,31 @@
 import { useEffect, useState } from "react";
-import { AdminDonationService } from "../../services/AdminDonationService";
-import { DonationDto, PendingDonationDto } from "../../types/Donation";
+
 import { useAuthStore } from "../../stores/authStore";
 import toast from "react-hot-toast";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, BarChart, Bar
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  BarChart,
+  Bar,
 } from "recharts";
+
+import { DonationDto, PendingDonationDto } from "@/types/Donation";
+import SmartImage from "../components/SmartImage";
+import { AdminDonationService } from "@/services/AdminDonationService";
 
 const BACKEND_URL = "http://localhost:5057";
 
 export default function AdminDonationView() {
-  const [activeTab, setActiveTab] = useState<"pending" | "verified" | "dashboard">("pending");
+  const [activeTab, setActiveTab] = useState<"pending" | "verified">("pending");
 
   // Pending
   const [pending, setPending] = useState<PendingDonationDto[]>([]);
@@ -22,9 +36,21 @@ export default function AdminDonationView() {
   const [verified, setVerified] = useState<DonationDto[]>([]);
   const [loadingVerified, setLoadingVerified] = useState(false);
 
-  // Dashboard
-  const [summary, setSummary] = useState<any>(null);
-  const [loadingSummary, setLoadingSummary] = useState(false);
+  // Filters
+  const [pendingFilters, setPendingFilters] = useState({
+    search: "",
+    donationType: "",
+    dateFrom: "",
+    dateTo: "",
+    hasPhoto: "",
+  });
+
+  const [verifiedFilters, setVerifiedFilters] = useState({
+    search: "",
+    donationType: "",
+    dateFrom: "",
+    dateTo: "",
+  });
 
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -37,7 +63,8 @@ export default function AdminDonationView() {
       setLoadingPending(true);
       const data = await AdminDonationService.getPending();
       setPending(data);
-    } catch {
+    } catch (error) {
+      console.error("Failed to load pending donations:", error);
       toast.error("Failed to load pending donations");
     } finally {
       setLoadingPending(false);
@@ -56,22 +83,9 @@ export default function AdminDonationView() {
     }
   };
 
-  const fetchSummary = async () => {
-    try {
-      setLoadingSummary(true);
-      const data = await AdminDonationService.getDashboardSummary();
-      setSummary(data);
-    } catch {
-      toast.error("Failed to load dashboard data");
-    } finally {
-      setLoadingSummary(false);
-    }
-  };
-
   useEffect(() => {
     if (activeTab === "pending") fetchPending();
     if (activeTab === "verified") fetchVerified();
-    if (activeTab === "dashboard") fetchSummary();
   }, [activeTab]);
 
   // ===== Handlers =====
@@ -98,11 +112,29 @@ export default function AdminDonationView() {
     setTimeout(() => setPreviewPhotoUrl(null), 300);
   };
 
-  const getFullUrl = (url: string | null) => (url ? `${BACKEND_URL}${url}` : "");
+  const getFullUrl = (url: string | null) => {
+    if (!url) return "";
+
+    // If it's already a full URL, return as is
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+
+    // Handle different possible URL formats from backend
+    let cleanUrl = url;
+
+    // If URL doesn't start with /, add it
+    if (!cleanUrl.startsWith("/")) {
+      cleanUrl = `/${cleanUrl}`;
+    }
+
+    // Return the direct path (this should work now that backend is configured)
+    return `${BACKEND_URL}${cleanUrl}`;
+  };
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US').format(amount) + " MMK";
+    return new Intl.NumberFormat("en-US").format(amount) + " MMK";
   };
 
   // ====== UI ======
@@ -113,7 +145,9 @@ export default function AdminDonationView() {
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
             Donation Management
           </h2>
-          <p className="text-gray-600">Manage and monitor all donation activities</p>
+          <p className="text-gray-600">
+            Manage and monitor all donation activities
+          </p>
         </div>
 
         {/* Tabs */}
@@ -121,13 +155,12 @@ export default function AdminDonationView() {
           {[
             { key: "pending", label: "⏳ Pending", color: "bg-amber-500" },
             { key: "verified", label: "✅ Verified", color: "bg-emerald-500" },
-            { key: "dashboard", label: "📊 Dashboard", color: "bg-blue-500" }
           ].map((tab) => (
             <button
               key={tab.key}
               className={`px-5 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
-                activeTab === tab.key 
-                  ? `${tab.color} text-white shadow-lg` 
+                activeTab === tab.key
+                  ? `${tab.color} text-white shadow-lg`
                   : "bg-white text-gray-700 shadow-md hover:shadow-lg"
               }`}
               onClick={() => setActiveTab(tab.key as any)}
@@ -139,238 +172,500 @@ export default function AdminDonationView() {
 
         {/* Pending Tab */}
         {activeTab === "pending" && (
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">Pending Donations</h3>
-              <button 
-                onClick={fetchPending}
-                className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
-              >
-                ↻ Refresh
-              </button>
-            </div>
-            
-            {loadingPending ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              </div>
-            ) : pending.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🎉</div>
-                <p className="text-gray-500 text-xl">No pending donations</p>
-                <p className="text-gray-400">All donations have been processed</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {pending.map((d) => (
-                  <div key={d.id} className="border border-gray-200 rounded-xl p-5 transition-all hover:shadow-md">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h4 className="font-bold text-lg text-gray-800">{d.donorName}</h4>
-                        <p className="text-2xl font-bold text-blue-600 my-2">{formatCurrency(d?.amount ?? 0)}</p>
-                        <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-                          {d.donationType}
-                        </span>
-                        <p className="text-sm text-gray-500 mt-2">
-                          {new Date(d.receivedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                      
-                      <div className="flex flex-col items-center gap-3">
-                        {d.transactionPhotoUrl && (
-                          <div 
-                            className="w-20 h-20 rounded-lg overflow-hidden cursor-pointer shadow-md transition hover:shadow-lg"
-                            // onClick={() => openModal(getFullUrl(d.transactionPhotoUrl))}
-                            onClick={() => openModal(getFullUrl(d.transactionPhotoUrl ?? ''))}
-
-                          >
-                            <img
-                              src={getFullUrl(d.transactionPhotoUrl)}
-                              className="w-full h-full object-cover"
-                              alt="Transaction proof"
-                            />
-                          </div>
-                        )}
-                        <button
-                          className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition disabled:opacity-50"
-                          onClick={() => handleVerify(d.id)}
-                          disabled={verifyingId === d.id}
-                        >
-                          {verifyingId === d.id ? (
-                            <span className="flex items-center">
-                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                              Verifying...
-                            </span>
-                          ) : "Verify"}
-                        </button>
-                      </div>
-                    </div>
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-amber-100 text-sm font-medium">
+                      Pending
+                    </p>
+                    <p className="text-3xl font-bold">{pending.length}</p>
                   </div>
-                ))}
+                  <div className="bg-white/20 rounded-full p-3">
+                    <svg
+                      className="w-6 h-6"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
-            )}
+
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium">
+                      Total Amount
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {formatCurrency(
+                        pending.reduce((sum, d) => sum + (d.amount || 0), 0)
+                      )}
+                    </p>
+                  </div>
+                  <div className="bg-white/20 rounded-full p-3">
+                    <svg
+                      className="w-6 h-6"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm-7-8a7 7 0 1114 0 7 7 0 01-14 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-100 text-sm font-medium">
+                      With Photos
+                    </p>
+                    <p className="text-3xl font-bold">
+                      {pending.filter((d) => d.transactionPhotoUrl).length}
+                    </p>
+                  </div>
+                  <div className="bg-white/20 rounded-full p-3">
+                    <svg
+                      className="w-6 h-6"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-800">
+                      Pending Donations
+                    </h3>
+                    <p className="text-gray-600 text-sm mt-1">
+                      Review and verify donation submissions
+                    </p>
+                  </div>
+                  <button
+                    onClick={fetchPending}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md"
+                  >
+                    <svg
+                      className="w-4 h-4 inline mr-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              {loadingPending ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              ) : pending.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <p className="text-gray-500 text-xl font-semibold">
+                    No pending donations
+                  </p>
+                  <p className="text-gray-400 mt-2">
+                    All donations have been processed
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Donor
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Proof
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {pending.map((d, index) => (
+                        <tr
+                          key={d.id}
+                          className={`hover:bg-gray-50 transition-colors ${
+                            index % 2 === 0 ? "bg-white" : "bg-gray-25"
+                          }`}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900">
+                                {d.donorName}
+                              </div>
+                              {d.description && (
+                                <div className="text-sm text-gray-500 max-w-xs truncate">
+                                  {d.description}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-lg font-bold text-blue-600">
+                              {formatCurrency(d?.amount ?? 0)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                              {d.donationType}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(d.receivedAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {d.transactionPhotoUrl ? (
+                              <div
+                                className="w-12 h-12 rounded-lg overflow-hidden cursor-pointer shadow-md hover:shadow-lg transition-shadow border-2 border-gray-200"
+                                onClick={() =>
+                                  openModal(
+                                    getFullUrl(d.transactionPhotoUrl ?? "")
+                                  )
+                                }
+                              >
+                                <SmartImage
+                                  src={getFullUrl(d.transactionPhotoUrl)}
+                                  className="w-full h-full object-cover"
+                                  alt="Transaction proof"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                                <svg
+                                  className="w-6 h-6 text-gray-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                              onClick={() => handleVerify(d.id)}
+                              disabled={verifyingId === d.id}
+                            >
+                              {verifyingId === d.id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                                  Verifying...
+                                </>
+                              ) : (
+                                <>
+                                  <svg
+                                    className="w-4 h-4 mr-2"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                  Verify
+                                </>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* Verified Tab */}
         {activeTab === "verified" && (
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">Verified Donations</h3>
-              <button 
-                onClick={fetchVerified}
-                className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
-              >
-                ↻ Refresh
-              </button>
-            </div>
-            
-            {loadingVerified ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-100 text-sm font-medium">
+                      Verified
+                    </p>
+                    <p className="text-3xl font-bold">{verified.length}</p>
+                  </div>
+                  <div className="bg-white/20 rounded-full p-3">
+                    <svg
+                      className="w-6 h-6"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
-            ) : verified.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">✨</div>
-                <p className="text-gray-500 text-xl">No verified donations yet</p>
-                <p className="text-gray-400">Verified donations will appear here</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto rounded-xl shadow-inner">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-100 text-left">
-                      <th className="p-4 font-semibold text-gray-700 rounded-tl-xl">Donor</th>
-                      <th className="p-4 font-semibold text-gray-700">Amount</th>
-                      <th className="p-4 font-semibold text-gray-700">Type</th>
-                      <th className="p-4 font-semibold text-gray-700 rounded-tr-xl">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {verified.map((d, index) => (
-                      <tr 
-                        key={d.id} 
-                        className={`border-b border-gray-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}
-                      >
-                        <td className="p-4 font-medium text-gray-800">{d.donorName}</td>
-                        <td className="p-4 font-bold text-blue-600">{formatCurrency(d?.amount ?? 0)}</td>
-                        <td className="p-4">
-                          <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                            {d.donationType}
-                          </span>
-                        </td>
-                        <td className="p-4 text-gray-600">{new Date(d.receivedAt).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
 
-        {/* Dashboard Tab */}
-        {activeTab === "dashboard" && (
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">Donation Dashboard</h3>
-              <button 
-                onClick={fetchSummary}
-                className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
-              >
-                ↻ Refresh
-              </button>
-            </div>
-            
-            {loadingSummary ? (
-              <div className="flex justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-              </div>
-            ) : summary ? (
-              <div>
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
-                    <h4 className="text-lg font-semibold mb-2">Total Donations</h4>
-                    <p className="text-3xl font-bold">{summary.totalDonations}</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg">
-                    <h4 className="text-lg font-semibold mb-2">Total Amount</h4>
-                    <p className="text-3xl font-bold">{formatCurrency(summary.totalAmount)}</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
-                    <h4 className="text-lg font-semibold mb-2">Average Donation</h4>
-                    <p className="text-3xl font-bold">
-                      {formatCurrency(summary.totalAmount / summary.totalDonations)}
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium">
+                      Total Amount
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {formatCurrency(
+                        verified.reduce((sum, d) => sum + (d.amount || 0), 0)
+                      )}
                     </p>
                   </div>
-                </div>
-                
-                {/* Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Pie Chart */}
-                  <div className="bg-gray-50 rounded-2xl p-6 shadow-inner">
-                    <h4 className="text-xl font-bold text-gray-800 mb-4 text-center">Donations by Type</h4>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={summary.byType}
-                            dataKey="Amount"
-                            nameKey="Type"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                            labelLine={false}
-                          >
-                            {summary.byType.map((_, idx) => (
-                              <Cell
-                                key={idx}
-                                fill={["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"][idx % 5]}
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip 
-                            formatter={(value) => [formatCurrency(value), 'Amount']}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                  
-                  {/* Line Chart */}
-                  <div className="bg-gray-50 rounded-2xl p-6 shadow-inner">
-                    <h4 className="text-xl font-bold text-gray-800 mb-4 text-center">Monthly Donations</h4>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={summary.monthlyStats}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                          <XAxis dataKey="Month" />
-                          <YAxis tickFormatter={(value) => `${value/1000}k`} />
-                          <Tooltip 
-                            formatter={(value) => [formatCurrency(value), 'Amount']}
-                          />
-                          <Bar
-                            dataKey="Amount"
-                            fill="#3b82f6"
-                            radius={[4, 4, 0, 0]}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                  <div className="bg-white/20 rounded-full p-3">
+                    <svg
+                      className="w-6 h-6"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm-7-8a7 7 0 1114 0 7 7 0 01-14 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">📊</div>
-                <p className="text-gray-500 text-xl">No dashboard data available</p>
-                <p className="text-gray-400">Data will appear here once donations are processed</p>
+
+              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-indigo-100 text-sm font-medium">
+                      This Month
+                    </p>
+                    <p className="text-3xl font-bold">
+                      {
+                        verified.filter((d) => {
+                          const donationDate = new Date(d.receivedAt);
+                          const currentDate = new Date();
+                          return (
+                            donationDate.getMonth() ===
+                              currentDate.getMonth() &&
+                            donationDate.getFullYear() ===
+                              currentDate.getFullYear()
+                          );
+                        }).length
+                      }
+                    </p>
+                  </div>
+                  <div className="bg-white/20 rounded-full p-3">
+                    <svg
+                      className="w-6 h-6"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
               </div>
-            )}
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-800">
+                      Verified Donations
+                    </h3>
+                    <p className="text-gray-600 text-sm mt-1">
+                      Successfully processed donations
+                    </p>
+                  </div>
+                  <button
+                    onClick={fetchVerified}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-md"
+                  >
+                    <svg
+                      className="w-4 h-4 inline mr-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              {loadingVerified ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+                </div>
+              ) : verified.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="text-6xl mb-4">✨</div>
+                  <p className="text-gray-500 text-xl font-semibold">
+                    No verified donations yet
+                  </p>
+                  <p className="text-gray-400 mt-2">
+                    Verified donations will appear here
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Donor
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Type
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {verified.map((d, index) => (
+                        <tr
+                          key={d.id}
+                          className={`hover:bg-gray-50 transition-colors ${
+                            index % 2 === 0 ? "bg-white" : "bg-gray-25"
+                          }`}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div>
+                              <div className="text-sm font-semibold text-gray-900">
+                                {d.donorName}
+                              </div>
+                              {d.description && (
+                                <div className="text-sm text-gray-500 max-w-xs truncate">
+                                  {d.description}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-lg font-bold text-emerald-600">
+                              {formatCurrency(d?.amount ?? 0)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                              {d.donationType}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(d.receivedAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                              <svg
+                                className="w-3 h-3 mr-1"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              Verified
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -384,7 +679,7 @@ export default function AdminDonationView() {
           <div className="bg-white rounded-xl max-w-3xl w-full mx-4 overflow-hidden transform transition-transform duration-300 scale-100">
             <div className="flex justify-between items-center p-4 border-b">
               <h5 className="font-bold text-lg">Transaction Proof</h5>
-              <button 
+              <button
                 onClick={closeModal}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
@@ -392,10 +687,10 @@ export default function AdminDonationView() {
               </button>
             </div>
             <div className="p-4 max-h-[75vh] overflow-auto">
-              <img 
-                src={previewPhotoUrl || ''} 
-                className="w-full object-contain rounded-lg" 
-                alt="Transaction proof" 
+              <img
+                src={previewPhotoUrl || ""}
+                className="w-full object-contain rounded-lg"
+                alt="Transaction proof"
               />
             </div>
           </div>

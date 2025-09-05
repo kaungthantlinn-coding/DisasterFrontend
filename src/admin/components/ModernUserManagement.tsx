@@ -28,9 +28,14 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  BarChart3
+  BarChart3,
+  AlertTriangle,
+  Award,
+  TrendingUp,
+  Activity
 } from 'lucide-react';
 import { userManagementApi } from '../../apis/userManagement';
+import { reputationUtils } from '../../apis/userReputation';
 import Avatar from '../../components/Common/Avatar';
 import { extractPhotoUrl } from '../../utils/avatarUtils';
 import UserManagementCharts from './UserManagementCharts';
@@ -48,6 +53,11 @@ interface User {
   lastActive: string;
   photoUrl?: string;
   roleNames?: string[];
+  reputationStatus?: 'normal' | 'suspicious' | 'warning' | 'blacklisted';
+  riskScore?: number;
+  tier?: 'bronze' | 'silver' | 'gold' | 'platinum';
+  rejectRatio?: number;
+  rejectedReports?: number;
 }
 
 type SortField = 'name' | 'email' | 'role' | 'status' | 'joinDate' | 'reportsCount';
@@ -205,6 +215,46 @@ const UserCard: React.FC<{ user: User; onAction: (action: string, user: User) =>
             <span className="ml-1">{user.status}</span>
           </span>
         </div>
+
+        {/* Reputation Status Row */}
+        {user.reputationStatus && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              {(() => {
+                const statusInfo = reputationUtils.getStatusInfo(user.reputationStatus);
+                return (
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusInfo.bgColor} ${statusInfo.color}`}>
+                    <span className="mr-1">{statusInfo.emoji}</span>
+                    {statusInfo.label}
+                  </span>
+                );
+              })()}
+              {user.tier && (
+                (() => {
+                  const tierInfo = reputationUtils.getTierInfo(user.tier);
+                  return (
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${tierInfo.bgColor} ${tierInfo.color}`}>
+                      <span className="mr-1">{tierInfo.emoji}</span>
+                      {tierInfo.label}
+                    </span>
+                  );
+                })()
+              )}
+            </div>
+            {user.riskScore !== undefined && (
+              <div className="text-right">
+                <div className="text-xs text-slate-500">Risk</div>
+                <div className={`text-sm font-semibold ${
+                  user.riskScore >= 70 ? 'text-red-600' : 
+                  user.riskScore >= 50 ? 'text-orange-600' : 
+                  user.riskScore >= 30 ? 'text-yellow-600' : 'text-emerald-600'
+                }`}>
+                  {user.riskScore}%
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex items-center text-slate-600">

@@ -94,7 +94,9 @@
       "monitoring24x7": "24/7 Emergency Watch",
       "verifiedData": "Verified Data",
       "globalNetwork": "Global Network",
-      "liveUpdates": "Live Updates"
+      "liveUpdates": "Live Updates",
+      "redefined": "Disaster Response Redefined",
+      "liveEmergencyData": "Live Emergency Data"
     },
     "heroSlides": {
       "emergencyResponse": {
@@ -128,7 +130,11 @@
       "responseTime": "Response Time",
       "volunteers": "Active Volunteers",
       "activeDisasters": "Active Disasters",
+      "activeDisastersDescription": "Currently monitored worldwide",
       "criticalEvents": "Critical Events",
+      "criticalEventsDescription": "Requiring immediate attention",
+      "responseTeams": "Response Teams",
+      "responseTeamsDescription": "Active response operations",
       "highSeverity": "High Severity",
       "dataSources": "Data Sources",
       "realTimeIncidents": "Real-time incidents",
@@ -144,7 +150,13 @@
       "platformDescription": "Our advanced platform processes millions of data points daily to deliver predictive insights and real-time monitoring for faster, more effective disaster response.",
       "realWorldFloodResponse": "Real World Flood Response & Recovery",
       "floodResponseDescription": "Rapid flood response teams with advanced water management systems, evacuation coordination, and real-time monitoring from National Weather Service and local emergency management agencies",
-      "responseRate": "Response Rate"
+      "responseRate": "Response Rate",
+      "resolvedToday": "Resolved Today",
+      "successfulResponses": "Successful Responses",
+      "globalCoverage": "Global Coverage",
+      "alwaysMonitoring": "Always Monitoring",
+      "savingLivesTitle": "Saving Lives Through Technology",
+      "platformAdvancedDescription": "Our advanced platform processes millions of data points daily to deliver predictive insights and real-time monitoring for faster, more effective disaster response."
     },
     "liveImpact": {
       "title": "Making Real Impact Worldwide",
@@ -187,6 +199,30 @@
       "resourceManagement": {
         "title": "Resource Management",
         "description": "Track and coordinate emergency resources, supplies, and personnel for optimal disaster response effectiveness."
+      },
+      "emergencyPreparedness": {
+        "title": "Emergency Preparedness",
+        "description": "📺 FEMA Emergency Kit Building Guide - FEMA Training Video"
+      },
+      "communityResponse": {
+        "title": "Community Response",
+        "description": "📺 Community Emergency Response Training - FEMA Training Video"
+      },
+      "instantAlert": {
+        "title": "Instant Alert",
+        "description": "📺 FEMA Emergency Alert System"
+      },
+      "wildfireTracking": {
+        "title": "Wildfire Tracking",
+        "description": "📺 When the Fire Starts - Wildfire Response - FEMA Training Video"
+      },
+      "floodAnalytics": {
+        "title": "Flood Analytics",
+        "description": "📺 When the Clouds Form - Storm Preparedness - FEMA Training Video"
+      },
+      "earthquakeResponse": {
+        "title": "Earthquake Response",
+        "description": "📺 When the Earth Shakes - Earthquake Safety - FEMA Training Video"
       }
     },
     "map": {
@@ -912,10 +948,10 @@
     "twoFactorAuthDesc": "Add an extra layer of security to your account",
     "loginHistory": "Login History",
     "loginHistoryDesc": "View recent login activity and device information",
-                    "deleteAccount": "Delete Account",
-                "deleteAccountDesc": "Permanently delete your account and all associated data",
-                "role": "Role",
-                "roleDesc": "Your current role in the disaster management system"
+    "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "Permanently delete your account and all associated data",
+    "role": "Role",
+    "roleDesc": "Your current role in the disaster management system"
   },
   "about": {
     "hero": {

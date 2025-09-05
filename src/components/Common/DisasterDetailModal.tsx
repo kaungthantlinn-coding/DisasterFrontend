@@ -11,7 +11,6 @@ import {
   Waves,
   Wind,
   Mountain,
-  Calendar,
   Info,
   TrendingUp,
 } from "lucide-react";
@@ -32,6 +31,33 @@ const DisasterDetailModal: React.FC<DisasterDetailModalProps> = ({
   item,
 }) => {
   if (!isOpen || !item) return null;
+
+  // Convert severity to proper display format
+  const formatSeverity = (severity?: string): string => {
+    if (!severity) return "LOW";
+    
+    const normalizedSeverity = severity.toLowerCase().trim();
+    switch (normalizedSeverity) {
+      case "low":
+      case "0":
+        return "LOW";
+      case "medium":
+      case "1":
+        return "MEDIUM";
+      case "high":
+      case "2":
+        return "HIGH";
+      case "critical":
+      case "3":
+        return "CRITICAL";
+      default:
+        // If it's already properly formatted, return as is
+        if (["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(severity.toUpperCase())) {
+          return severity.toUpperCase();
+        }
+        return "LOW";
+    }
+  };
 
   // Get appropriate icon for disaster type
   const getDisasterIcon = (type: DisasterNewsItem["type"]) => {
@@ -133,7 +159,7 @@ const DisasterDetailModal: React.FC<DisasterDetailModalProps> = ({
                         item.severity
                       )}`}
                     >
-                      {item.severity?.toUpperCase() || "UNKNOWN"} SEVERITY
+                      {formatSeverity(item.severity)} SEVERITY
                     </span>
                   </div>
                 </div>

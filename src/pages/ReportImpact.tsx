@@ -9,7 +9,7 @@ import { DisasterCategory, DisasterTypeDto } from "../types/DisasterType";
 import { DisasterTypeService } from "../services/disasterTypeService";
 import { ImpactTypeDto } from "../types/ImpactType";
 import { ImpactTypeService } from "../services/ImpactTypeService";
-import { Camera, MapPin, X, CheckCircle } from "lucide-react";
+import { Camera, MapPin, X, CheckCircle, User, Mail, Send } from "lucide-react";
 import { LocationPicker } from "../components/Map";
 import {
   createDisasterReport,
@@ -21,6 +21,32 @@ import ReportMap from "../components/ReportMap";
 import { NotificationAPI } from "../services/Notification";
 import { NotificationType } from "../types/Notification";
 import { Footer, Header } from "@/components/Layout";
+import { DisasterEventSelector } from "@/components/Common";
+
+interface ReportImpactFormData {
+  // Personal Information
+  fullName: string;
+  email: string;
+
+  // Disaster Details
+  title: string;
+  disasterCategory: DisasterCategory | undefined;
+  disasterTypeId: number | undefined;
+  newDisasterTypeName: string;
+  disasterEventName: string;
+  severity: SeverityLevel;
+  timestamp: string;
+  description: string;
+
+  // Location & Impact
+  latitude: number;
+  longitude: number;
+  address: string;
+  impactTypes: ImpactTypeDto[];
+  impactDescription: string;
+  impactSeverity: SeverityLevel;
+  photos: File[];
+}
 
 interface Props {
   authToken: string;
@@ -213,7 +239,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           longitude: report.longitude ?? 0,
           address: report.address || "",
           coordinatePrecision: report.coordinatePrecision ?? 0.001,
-          photos: report.photoUrls?.map((url: string) => ({ url })) || [],
+          photos: [],
           impactDetails:
             report.impactDetails?.map((detail) => ({
               impactTypeIds: detail.impactTypeIds || [],
@@ -257,7 +283,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
             selectedDisasterTypeName,
             selectedImpacts: uniqueImpacts,
             impactSeverities,
-            photos: report.photoUrls,
+            photoUrls: report.photoUrls,
           });
 
           setReportDataFetched(true);
@@ -363,12 +389,8 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         name: formData.newDisasterTypeName,
         category: formData.disasterCategory,
       };
-      const created: DisasterTypeDto = await DisasterTypeService.create(
-        dto,
-        token
-      );
+      await DisasterTypeService.create(dto, token);
       await fetchDisasterTypes();
-      if (created?.id) handleTypeSelect(created.id);
       setFormData((prev) => ({ ...prev, newDisasterTypeName: "" }));
       setShowOtherInput(false);
     } catch (err) {
@@ -388,14 +410,8 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         console.error("No token found");
         return;
       }
-      const created: ImpactTypeDto = await ImpactTypeService.create(
-        { name: newImpactTypeName },
-        token
-      );
+      await ImpactTypeService.create({ name: newImpactTypeName }, token);
       await fetchImpactTypes();
-      if (created?.id) {
-        setSelectedImpacts((prev) => [...prev, created]);
-      }
       setNewImpactTypeName("");
       setShowImpactOtherInput(false);
     } catch (err) {
@@ -600,7 +616,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           submissionFormData.append("Photos", photo);
         }
       });
-      const createdReport: DisasterReportCreateDto = await createDisasterReport(
+      const createdReport = await createDisasterReport(
         submissionFormData,
         token
       );
@@ -613,7 +629,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
             }"`,
             type: NotificationType.ReportSubmitted,
             userId: user?.userId || "",
-            disasterReportId: createdReport.id,
+            disasterReportId: (createdReport as any)?.id || "",
           },
           token
         );
@@ -623,7 +639,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           notifyErr
         );
       }
-      setSuccess({ open: true, id: createdReport.id });
+      setSuccess({ open: true, id: (createdReport as any)?.id || "" });
       if (onSuccess) onSuccess();
     } catch (err: any) {
       const errorMessage =
@@ -790,59 +806,126 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <main className="navbar-spacing">
-        <div className="max-w-2xl mx-auto p-6 bg-white rounded-2xl shadow-lg">
-          {success.open && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
-                <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle className="w-10 h-10 text-green-600" />
+    <div className="py-8">
+      <Header/>
+      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+        <main>
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl lg:text-5xl font-black text-gray-900 mb-4">
+            {editMode ? "Update Disaster Report" : "Report Disaster Impact"}
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            {editMode
+              ? "Update your disaster report with the latest information"
+              : "Help us respond effectively by providing accurate disaster information"
+            }
+          </p>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="flex items-center justify-center mb-16">
+          <div className="flex items-center space-x-8">
+            {[
+              { number: 1, title: "Personal Info" },
+              { number: 2, title: "Disaster Details" },
+              { number: 3, title: "Review & Submit" },
+            ].map((stepInfo, index) => {
+              const stepNumber = stepInfo.number;
+              const isActive = step === stepNumber;
+              const isCompleted = step > stepNumber;
+
+              return (
+                <div key={stepNumber} className="flex items-center">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                        isCompleted
+                          ? "bg-blue-600 text-white shadow-lg"
+                          : isActive
+                          ? "bg-blue-600 text-white shadow-lg scale-110"
+                          : "bg-gray-200 text-gray-500"
+                      }`}
+                    >
+                      {isCompleted ? <CheckCircle size={20} /> : stepNumber}
+                    </div>
+                    <span
+                      className={`mt-3 text-sm font-medium text-center ${
+                        isActive
+                          ? "text-blue-600"
+                          : isCompleted
+                          ? "text-blue-600"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      {stepInfo.title}
+                    </span>
+                  </div>
+                  {index < 2 && (
+                    <div
+                      className={`w-16 h-0.5 mx-6 transition-colors duration-300 ${
+                        isCompleted ? "bg-blue-600" : "bg-gray-200"
+                      }`}
+                    />
+                  )}
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {editMode
-                    ? "Report Updated Successfully"
-                    : "Report Submitted Successfully"}
-                </h3>
-                <p className="mt-2 text-sm text-gray-600">
-                  Your disaster report has been{" "}
-                  {editMode ? "updated" : "submitted"}. Our team will review it
-                  shortly.
-                </p>
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    onClick={() => navigate("/dashboard")}
-                    className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-800 hover:bg-gray-50"
-                    type="button"
-                  >
-                    Go to Dashboard
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (success.id) navigate(`/reports/${success.id}`);
-                    }}
-                    className="px-4 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-                    type="button"
-                  >
-                    View Report
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSuccess({ open: false, id: undefined });
-                      resetForm();
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                    className="sm:col-span-2 px-4 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700"
-                    type="button"
-                  >
-                    Create Another Report
-                  </button>
-                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Success Modal */}
+        {success.open && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
+              <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                {editMode
+                  ? "Report Updated Successfully"
+                  : "Report Submitted Successfully"}
+              </h3>
+              <p className="mt-2 text-sm text-gray-600">
+                Your disaster report has been{" "}
+                {editMode ? "updated" : "submitted"}. Our team will review it
+                shortly.
+              </p>
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-800 hover:bg-gray-50"
+                  type="button"
+                >
+                  Go to Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    if (success.id) navigate(`/reports/${success.id}`);
+                  }}
+                  className="px-4 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                  type="button"
+                >
+                  View Report
+                </button>
+                <button
+                  onClick={() => {
+                    setSuccess({ open: false, id: undefined });
+                    resetForm();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="sm:col-span-2 px-4 py-2.5 rounded-lg bg-green-600 text-white hover:bg-green-700"
+                  type="button"
+                >
+                  Create Another Report
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
+        {/* Form Container */}
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 lg:p-12">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold">
               {editMode ? "Edit Disaster Report" : "Report a Disaster Impact"}
@@ -1015,28 +1098,16 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
               )}
 
               {(formData.disasterTypeId !== undefined || showOtherInput) && (
-                <div className="mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Disaster Event Name{" "}
-                    {errors.disasterEventName && (
-                      <span className="text-red-500 text-sm">
-                        - {errors.disasterEventName}
-                      </span>
-                    )}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Cyclone Mocha, 2025 Monsoon Flood"
-                    className="border p-2 rounded-lg w-full"
-                    value={formData.disasterEventName || ""}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        disasterEventName: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
+                <DisasterEventSelector
+                  value={formData.disasterEventName || ""}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      disasterEventName: value,
+                    }))
+                  }
+                  error={errors.disasterEventName}
+                />
               )}
 
               <div className="mb-6">
@@ -1618,9 +1689,11 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
             </div>
           )}
         </div>
-      </main>
+        </main>
+        </div>
       <Footer />
     </div>
+    
   );
 };
 

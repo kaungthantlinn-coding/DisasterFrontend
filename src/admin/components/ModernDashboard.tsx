@@ -39,7 +39,7 @@ interface QuickActionProps {
 
 interface RecentActivityItem {
   id: string;
-  type: 'user' | 'report' | 'system' | 'organization';
+  type: 'user' | 'report' | 'system';
   title: string;
   description: string;
   timestamp: string;
@@ -152,8 +152,6 @@ const ActivityItem: React.FC<{ item: RecentActivityItem }> = ({ item }) => {
         return <Users className="w-4 h-4" />;
       case 'report':
         return <FileText className="w-4 h-4" />;
-      case 'organization':
-        return <Building2 className="w-4 h-4" />;
       default:
         return <Activity className="w-4 h-4" />;
     }
@@ -221,14 +219,7 @@ const ModernDashboard: React.FC = () => {
       timestamp: '1 hour ago',
       status: 'success'
     },
-    {
-      id: '4',
-      type: 'organization',
-      title: 'New organization verified',
-      description: 'Red Cross Myanmar approved',
-      timestamp: '2 hours ago',
-      status: 'success'
-    }
+    
   ];
 
   return (
@@ -273,13 +264,7 @@ const ModernDashboard: React.FC = () => {
           color="green"
           isLoading={reportsLoading}
         />
-        <StatCard
-          title="Organizations"
-          value="47"
-          change={{ value: '+3%', type: 'increase' }}
-          icon={<Building2 className="w-6 h-6" />}
-          color="purple"
-        />
+        
         <StatCard
           title="Support Tickets"
           value="23"

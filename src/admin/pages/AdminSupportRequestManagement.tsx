@@ -97,6 +97,9 @@ const AdminStatCard: React.FC<AdminStatCardProps> = ({
     }
   };
 
+  // Handle NaN values by converting them to "0"
+  const displayValue = isNaN(Number(value)) ? "0" : value;
+
   return (
     <div
       className={`relative overflow-hidden rounded-2xl ${bgGradient} p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}
@@ -104,7 +107,7 @@ const AdminStatCard: React.FC<AdminStatCardProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-white/80 text-sm font-medium mb-2">{title}</p>
-          <p className="text-3xl font-bold tracking-tight mb-1">{value}</p>
+          <p className="text-3xl font-bold tracking-tight mb-1">{displayValue}</p>
           {change && (
             <div className="flex items-center text-white/90 text-xs font-medium">
               {getChangeIcon()}
@@ -568,16 +571,17 @@ const AdminSupportRequestManagement: React.FC = () => {
         id,
         newStatus
       );
-      console.log("Updated request from API:", updatedRequest);
-      console.log("New status sent:", newStatus);
-
-      const normalizedRequest = {
-        ...updatedRequest,
-        status: newStatus,
-      };
 
       setRequests((prev) =>
-        prev.map((req) => (req.id === id ? normalizedRequest : req))
+        prev.map((req) =>
+          req.id === id
+            ? {
+                ...req, // Preserve existing fields
+                ...updatedRequest, // Apply updated fields
+                status: newStatus, // Ensure status is updated
+              }
+            : req
+        )
       );
 
       const metricsData = await SupportRequestService.getMetrics();
@@ -865,7 +869,7 @@ const AdminSupportRequestManagement: React.FC = () => {
             <div className="space-y-4">
               {filteredRequests.map((request) => (
                 <SupportRequestCard
-                  key={`${request.id}-${request.status}`}
+                  key={request.id}
                   request={request}
                   onStatusChange={handleStatusChange}
                   onViewDetails={handleViewDetails}

@@ -4,6 +4,7 @@ import RoleEditModal from '../../components/modals/RoleEditModal';
 import UserHistoryModal from '../../components/modals/UserHistoryModal';
 import ExportUsersModal from '../../components/modals/ExportUsersModal';
 import UserManagementCharts from '../components/UserManagementCharts';
+import { reputationUtils } from '../../apis/userReputation';
 import {
   Users,
   Search,
@@ -30,7 +31,9 @@ import {
   Mail,
   Phone,
   Download,
-  BarChart3
+  BarChart3,
+  AlertTriangle,
+  Award
 } from 'lucide-react';
 import { useUserManagement } from '../../hooks/useUserManagement';
 import { useConfirmationModal } from '../../hooks/useConfirmationModal';
@@ -61,6 +64,11 @@ interface User {
   lastActive: string;
   photoUrl?: string;
   roleNames?: string[]; // Add roleNames to preserve full role data
+  reputationStatus?: 'normal' | 'suspicious' | 'warning' | 'blacklisted';
+  riskScore?: number;
+  tier?: 'bronze' | 'silver' | 'gold' | 'platinum';
+  rejectRatio?: number;
+  rejectedReports?: number;
 }
 
 // Enhanced sorting and filtering types for professional table management
@@ -72,11 +80,8 @@ interface SortConfig {
   direction: SortDirection;
 }
 
-
-
 // Helper function to map API user to local user
 const mapApiUserToLocal = (apiUser: any): User => {
-  // Determine primary role (case-insensitive check)
   const roleNames = apiUser.roleNames || [];
   const hasRole = (roleName: string) =>
     roleNames.some((role: string) => role.toLowerCase() === roleName.toLowerCase());
@@ -84,11 +89,35 @@ const mapApiUserToLocal = (apiUser: any): User => {
   const primaryRole = hasRole('admin') ? 'admin' :
                      hasRole('cj') ? 'cj' : 'user';
 
-  // Determine status - handle both UserListItemDto and UserDetailsDto
   const status = apiUser.isBlacklisted ? 'suspended' :
                  apiUser.status ? apiUser.status : 'active';
 
-  // Use the centralized photo URL extraction utility
+  // Calculate reputation data only for CJ users
+  let reputationStatus, riskScore, tier, rejectRatio;
+  
+  if (primaryRole === 'cj') {
+    rejectRatio = apiUser.rejectRatio || 0;
+    const reportStats = {
+      totalReports: apiUser.reportsCount || 0,
+      rejectedReports: apiUser.rejectedReports || 0,
+      verifiedReports: Math.max(0, (apiUser.reportsCount || 0) - (apiUser.rejectedReports || 0)),
+      pendingReports: apiUser.pendingReports || 0,
+      rejectRatio
+    };
+    riskScore = apiUser.riskScore || reputationUtils.calculateRiskScore(reportStats);
+    reputationStatus = apiUser.reputationStatus || reputationUtils.calculateStatus(riskScore, rejectRatio, {
+      suspicious: { riskScore: 30, rejectRatio: 30 },
+      warning: { riskScore: 50, rejectRatio: 50 },
+      blacklisted: { riskScore: 70, rejectRatio: 70 }
+    });
+    tier = apiUser.tier || reputationUtils.calculateUserTier(reportStats);
+  } else {
+    // For admin and regular users, set reputation data to undefined
+    reputationStatus = undefined;
+    riskScore = undefined;
+    tier = undefined;
+    rejectRatio = undefined;
+  }
 
   return {
     id: apiUser.userId,
@@ -106,7 +135,12 @@ const mapApiUserToLocal = (apiUser: any): User => {
     reportsCount: apiUser.reportsCount || 0,
     lastActive: apiUser.lastActive || 'Unknown',
     photoUrl: extractPhotoUrl(apiUser),
-    roleNames: roleNames // Preserve the full roleNames array
+    roleNames: roleNames,
+    reputationStatus,
+    riskScore,
+    tier,
+    rejectRatio,
+    rejectedReports: apiUser.rejectedReports || 0
   };
 };
 
@@ -148,6 +182,86 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
       case 'inactive': return <Clock className="w-4 h-4" />;
       case 'suspended': return <Ban className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
+    }
+  };
+
+  const getReputationStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'normal':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            ✅ Normal
+          </span>
+        );
+      case 'suspicious':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            ⚠️ Suspicious
+          </span>
+        );
+      case 'warning':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 border border-orange-200">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            ⚠️ Warning
+          </span>
+        );
+      case 'blacklisted':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+            <Ban className="w-3 h-3 mr-1" />
+            ❌ Blacklisted
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+            <Clock className="w-3 h-3 mr-1" />
+            Unknown
+          </span>
+        );
+    }
+  };
+
+  const getTierBadge = (tier?: string) => {
+    switch (tier) {
+      case 'platinum':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+            <Award className="w-3 h-3 mr-1" />
+            🏆 Platinum
+          </span>
+        );
+      case 'gold':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+            <Award className="w-3 h-3 mr-1" />
+            🥇 Gold
+          </span>
+        );
+      case 'silver':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+            <Award className="w-3 h-3 mr-1" />
+            🥈 Silver
+          </span>
+        );
+      case 'bronze':
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+            <Award className="w-3 h-3 mr-1" />
+            🥉 Bronze
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+            <Award className="w-3 h-3 mr-1" />
+            Unranked
+          </span>
+        );
     }
   };
 
@@ -229,6 +343,51 @@ const UserRow: React.FC<UserRowProps> = ({ user, onViewProfile, onEdit, onBlackl
             </div>
           )}
         </div>
+      </td>
+
+      {/* Reputation & Risk Column */}
+      <td className="px-6 py-5 whitespace-nowrap">
+        {user.role === 'cj' ? (
+          <div className="space-y-2">
+            {/* Reputation Status Badge */}
+            <div className="flex items-center">
+              {getReputationStatusBadge(user.reputationStatus)}
+            </div>
+            
+            {/* Tier Badge */}
+            <div className="flex items-center">
+              {getTierBadge(user.tier)}
+            </div>
+            
+            {/* Risk Score and Reject Ratio */}
+            <div className="flex items-center space-x-3 text-xs">
+              <div className="flex items-center space-x-1">
+                <span className="text-gray-500">Risk:</span>
+                <span className={`font-bold ${
+                  (user.riskScore || 0) >= 70 ? 'text-red-600' :
+                  (user.riskScore || 0) >= 50 ? 'text-orange-600' :
+                  (user.riskScore || 0) >= 30 ? 'text-yellow-600' : 'text-green-600'
+                }`}>
+                  {user.riskScore?.toFixed(0) || 0}%
+                </span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <span className="text-gray-500">Reject:</span>
+                <span className={`font-bold ${
+                  (user.rejectRatio || 0) >= 70 ? 'text-red-600' :
+                  (user.rejectRatio || 0) >= 50 ? 'text-orange-600' :
+                  (user.rejectRatio || 0) >= 30 ? 'text-yellow-600' : 'text-green-600'
+                }`}>
+                  {user.rejectRatio?.toFixed(0) || 0}%
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center">
+            <span className="text-sm text-gray-400 font-medium">N/A</span>
+          </div>
+        )}
       </td>
       {/* Enhanced Actions Column */}
       <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
@@ -935,6 +1094,12 @@ const UserManagement: React.FC = () => {
                       )}
                     </div>
                   </th>
+                  <th className="px-8 py-6 text-left text-sm font-bold text-gray-800 uppercase tracking-wide">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span>Reputation & Risk</span>
+                    </div>
+                  </th>
                   <th className="px-8 py-6 text-center text-sm font-bold text-gray-800 uppercase tracking-wide">
                     <div className="flex items-center justify-center space-x-2">
                       <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
@@ -969,6 +1134,12 @@ const UserManagement: React.FC = () => {
                       <td className="px-8 py-6 whitespace-nowrap">
                         <div className="h-4 bg-gray-300 rounded-lg w-12"></div>
                       </td>
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        <div className="space-y-2">
+                          <div className="h-6 bg-gray-300 rounded-full w-20"></div>
+                          <div className="h-6 bg-gray-300 rounded-full w-16"></div>
+                        </div>
+                      </td>
                       <td className="px-8 py-6 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end space-x-2">
                           <div className="h-9 w-9 bg-gray-300 rounded-lg"></div>
@@ -980,7 +1151,7 @@ const UserManagement: React.FC = () => {
                 ) : error ? (
                   // Enhanced Error state
                   <tr>
-                    <td colSpan={6} className="px-8 py-16 text-center">
+                    <td colSpan={7} className="px-8 py-16 text-center">
                       <div className="flex flex-col items-center space-y-6">
                         <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center">
                           <AlertCircle className="w-8 h-8 text-red-600" />
@@ -1002,7 +1173,7 @@ const UserManagement: React.FC = () => {
                 ) : mappedUsers.length === 0 ? (
                   // Enhanced Empty state
                   <tr>
-                    <td colSpan={6} className="px-8 py-16 text-center">
+                    <td colSpan={7} className="px-8 py-16 text-center">
                       <div className="flex flex-col items-center space-y-6">
                         <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center">
                           <Users className="w-8 h-8 text-gray-400" />

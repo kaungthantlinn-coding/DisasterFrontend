@@ -35,10 +35,7 @@ const actionDisplayMap: { [key: string]: string } = {
   USER_SUSPENDED: "User Suspended",
   USER_REACTIVATED: "User Reactivated",
   USER_DEACTIVATED: "User Deactivated",
-  DONATION_CREATED: "Donation Created",
-  DONATION_UPDATED: "Donation Updated",
-  ORGANIZATION_REGISTERED: "Organization Registered",
-  ORGANIZATION_UPDATED: "Organization Updated",
+  
   REPORT_POST: "Report Created",
   REPORT_PUT: "Report Updated",
   REPORT_DELETE: "Report Deleted",
@@ -201,13 +198,11 @@ const AuditLogsPage: React.FC = () => {
           Logout: ["LOGOUT"],
           Create: [
             "DONATION_CREATED",
-            "ORGANIZATION_REGISTERED",
             "REPORT_POST",
             "USER_CREATED",
           ],
           Edit: [
             "DONATION_UPDATED",
-            "ORGANIZATION_UPDATED",
             "REPORT_PUT",
             "USER_UPDATED",
           ],

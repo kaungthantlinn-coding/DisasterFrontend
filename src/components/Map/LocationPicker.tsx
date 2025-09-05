@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import { MapPin, Crosshair, Plus, Minus } from 'lucide-react';
+import { MapPin, Crosshair, Plus, Minus, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Fix for default markers in Leaflet
@@ -34,6 +34,12 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
 
+  // Search functionality state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
   // Reverse geocoding function with better error handling
   // Note: Nominatim has usage policies (https://operations.osmfoundation.org/policies/nominatim/)
   // For production, consider using a commercial service or setting up your own Nominatim instance
@@ -49,24 +55,24 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           }
         }
       );
-      
+
       // Handle different response statuses
       if (response.status === 403) {
         console.warn('Nominatim geocoding forbidden - likely due to usage limits');
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
       }
-      
+
       if (response.status === 429) {
         console.warn('Nominatim geocoding rate limited');
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
       }
-      
+
       if (!response.ok) {
         throw new Error(`Geocoding failed with status ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (data && data.display_name) {
         return data.display_name;
       } else {
@@ -76,6 +82,41 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       console.warn('Geocoding failed:', error);
       // Fallback to coordinates only
       return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    }
+  };
+
+  // Forward geocoding function for search
+  const forwardGeocode = async (query: string): Promise<any[]> => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'DisasterReportApp/1.0 (https://yourdomain.com)',
+            'Referer': window.location.origin
+          }
+        }
+      );
+
+      if (response.status === 403) {
+        console.warn('Nominatim search forbidden - likely due to usage limits');
+        return [];
+      }
+
+      if (response.status === 429) {
+        console.warn('Nominatim search rate limited');
+        return [];
+      }
+
+      if (!response.ok) {
+        throw new Error(`Search failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.warn('Search failed:', error);
+      return [];
     }
   };
 
@@ -202,7 +243,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
   // Get current location with enhanced error handling and user feedback
   const getCurrentLocation = async () => {
     if (!navigator.geolocation) {
-      toast.info('Automatic location detection not available. Please click on the map to select your location.', {
+      toast('Automatic location detection not available. Please click on the map to select your location.', {
         duration: 3000,
         icon: '📍'
       });
@@ -217,7 +258,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         try {
           const permission = await navigator.permissions.query({ name: 'geolocation' });
           if (permission.state === 'denied') {
-            toast.info('Location access not available. Please click on the map to select your location.', {
+            toast('Location access not available. Please click on the map to select your location.', {
               duration: 3000,
               icon: '📍'
             });
@@ -481,7 +522,7 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
       }
 
       // Show user-friendly info message instead of error
-      toast.info(errorMessage, {
+      toast(errorMessage, {
         duration: 4000,
         icon: '📍'
       });
@@ -504,6 +545,75 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
     }
   };
 
+  // Search functionality
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const results = await forwardGeocode(query);
+      setSearchResults(results);
+      setShowSearchResults(true);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      handleSearch(query);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  };
+
+  const handleSearchResultSelect = (result: any) => {
+    const lat = parseFloat(result.lat);
+    const lng = parseFloat(result.lon);
+    const address = result.display_name;
+
+    // Update map
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setView([lat, lng], 15);
+
+      // Remove existing marker
+      if (markerRef.current) {
+        mapInstanceRef.current.removeLayer(markerRef.current);
+      }
+
+      // Add new marker
+      const marker = L.marker([lat, lng]).addTo(mapInstanceRef.current);
+      markerRef.current = marker;
+    }
+
+    // Update form data
+    onLocationSelect(lat, lng, address);
+
+    // Clear search
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+
+    toast.success('Location selected from search!');
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowSearchResults(false);
+  };
+
   return (
     <div className="relative w-full" style={{ position: 'relative' }}>
       {/* Simple Instructions */}
@@ -511,12 +621,71 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
         <div className="flex items-center space-x-2">
           <MapPin size={16} className="text-blue-600" />
           <p className="text-sm text-blue-800">
-            <strong>Click anywhere on the map</strong> to select the disaster location
+            <strong>Search for a location</strong> or <strong>click anywhere on the map</strong> to select the disaster location
           </p>
         </div>
       </div>
 
+      {/* Search Box */}
+      <div className="mb-4 relative">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={16} className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchInputChange}
+            placeholder="Search for a location (e.g., New York, Paris, Tokyo)..."
+            className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <X size={16} className="text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
+          {isSearching && (
+            <div className="absolute inset-y-0 right-8 flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+            </div>
+          )}
+        </div>
 
+        {/* Search Results Dropdown */}
+        {showSearchResults && searchResults.length > 0 && (
+          <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto mt-1">
+            {searchResults.map((result, index) => (
+              <button
+                key={index}
+                onClick={() => handleSearchResultSelect(result)}
+                className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 focus:outline-none focus:bg-gray-50"
+              >
+                <div className="flex items-start space-x-3">
+                  <MapPin size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {result.display_name.split(',')[0]}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {result.display_name}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* No Results */}
+        {showSearchResults && searchResults.length === 0 && !isSearching && (
+          <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-xl shadow-lg p-4 mt-1">
+            <p className="text-sm text-gray-500 text-center">No locations found</p>
+          </div>
+        )}
+      </div>
 
       {/* Current location indicator */}
       {currentLocation && (

@@ -2,7 +2,8 @@ import { useParams, Link } from "react-router-dom";
 import { useEffect, useState, useRef, useMemo } from "react";
 import { ArrowLeft, MapPin, Calendar, Users } from "lucide-react";
 import { getById } from "../services/disasterReportService";
-import { DisasterReportDto, SeverityLevel } from "../types/DisasterReport";
+import { DisasterReportDto, SeverityLevel, ReportStatus } from "../types/DisasterReport";
+import { DisasterCategory } from "../types/DisasterType";
 import ReportMap from "../components/ReportMap";
 import {
   getAcceptedByReportId,
@@ -37,7 +38,24 @@ export default function ReportDetail() {
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const mapSeverity = (value: number): SeverityLevel => {
+  const mapSeverity = (value: number | string): SeverityLevel => {
+    if (typeof value === 'string') {
+      // If it's already a string, try to match it to enum values
+      switch (value.toLowerCase()) {
+        case 'low':
+          return SeverityLevel.Low;
+        case 'medium':
+          return SeverityLevel.Medium;
+        case 'high':
+          return SeverityLevel.High;
+        case 'critical':
+          return SeverityLevel.Critical;
+        default:
+          return SeverityLevel.Low;
+      }
+    }
+
+    // If it's a number, map from numeric values
     switch (value) {
       case 0:
         return SeverityLevel.Low;
@@ -52,6 +70,20 @@ export default function ReportDetail() {
     }
   };
 
+  const mapStatus = (status: string): ReportStatus => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return ReportStatus.Pending;
+      case 'verified':
+      case 'accepted':
+        return ReportStatus.Accepted;
+      case 'rejected':
+        return ReportStatus.Rejected;
+      default:
+        return ReportStatus.Pending;
+    }
+  };
+
   useEffect(() => {
     if (!id) {
       console.error("Invalid report id:", id);
@@ -63,7 +95,7 @@ export default function ReportDetail() {
         title: data.title,
         description: data.description,
         timestamp: data.timestamp,
-        status: String(data.status),
+        status: mapStatus(String(data.status)),
         latitude: data.latitude,
         longitude: data.longitude,
         address: data.address,
@@ -74,6 +106,16 @@ export default function ReportDetail() {
         disasterTypeId: data.disasterTypeId || 0,
         userId: data.userId || "Unknown",
         impactDetails: data.impactDetails || [],
+        disasterCategory: data.disasterCategory !== undefined && data.disasterCategory !== null
+          ? typeof data.disasterCategory === "string"
+            ? data.disasterCategory === "Natural" || data.disasterCategory === "0"
+              ? DisasterCategory.Natural
+              : DisasterCategory.NonNatural
+            : data.disasterCategory
+          : DisasterCategory.Natural,
+        disasterEventName: data.disasterEventName || "",
+        userEmail: data.userEmail || "",
+        coordinatePrecision: data.coordinatePrecision || 0.001,
       };
       setReport(mappedReport);
       setLoading(false);
@@ -86,7 +128,21 @@ export default function ReportDetail() {
     getAcceptedByReportId(id)
       .then((data) => {
         console.log("Assistance data:", data); // Debug the data
-        setAssistanceProvided(Array.isArray(data) ? data : []);
+        // Map API response to AssistanceItem format
+        const mappedAssistance: AssistanceItem[] = Array.isArray(data)
+          ? data.map((item: any) => ({
+              id: String(item.id || item.Id || ''),
+              userName: item.userName || item.UserName || item.user?.name || 'Anonymous',
+              createdAt: item.createdAt || item.CreatedAt || item.timestamp,
+              userId: String(item.userId || item.UserId || item.user?.id || ''),
+              supportTypeNames: item.supportTypeNames || item.SupportTypeNames || item.supportTypes,
+              type: item.type || item.Type,
+              description: item.description || item.Description,
+              urgency: item.urgency || item.Urgency,
+              urgencyLevel: item.urgencyLevel || item.UrgencyLevel,
+            }))
+          : [];
+        setAssistanceProvided(mappedAssistance);
       })
       .catch((error) => {
         console.error("Failed to fetch assistance:", error);
@@ -125,7 +181,7 @@ export default function ReportDetail() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <Link to="/" className="flex items-center text-red-500 mb-4">
         <ArrowLeft size={18} className="mr-1" /> Back to Home
       </Link>
@@ -156,18 +212,22 @@ export default function ReportDetail() {
           <div>
             <h2 className="text-lg font-semibold mb-2">Photos</h2>
             {report.photoUrls.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 {report.photoUrls.map((url, index) => (
-                  <img
-                    key={index}
-                    src={url}
-                    alt={`Disaster photo ${index + 1}`}
-                    className="w-full rounded shadow"
-                  />
+                  <div key={index} className="w-full">
+                    <img
+                      src={url}
+                      alt={`Disaster photo ${index + 1}`}
+                      className="w-full h-auto max-h-96 object-contain rounded-lg shadow-md"
+                    />
+                    <p className="text-sm text-gray-500 mt-2 text-center">
+                      Photo {index + 1} of {report.photoUrls.length}
+                    </p>
+                  </div>
                 ))}
               </div>
             ) : (
-              <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-500">
+              <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-500 rounded-lg">
                 No photos available
               </div>
             )}
@@ -215,26 +275,54 @@ export default function ReportDetail() {
         </div>
 
         <div className="w-full lg:w-80 space-y-4">
-          <div className="bg-white p-4 rounded shadow space-y-3">
-            <h2 className="font-semibold text-gray-700">Take Action</h2>
+          <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 space-y-4">
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Take Action</h2>
+              <p className="text-sm text-gray-600">Help make a difference today</p>
+            </div>
+
             <Link
               to={`/support/${report.id}`}
-              className="block w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded text-center"
+              className="group relative w-full flex items-center justify-center px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
             >
-              Support Request
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <svg className="w-5 h-5 mr-3 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span className="relative z-10">Support Request</span>
             </Link>
-            <button className="w-full border border-gray-300 hover:bg-gray-50 py-2 rounded">
-              Contact Reporter
-            </button>
+
+            <Link
+              to="/donate"
+              className="group relative w-full flex items-center justify-center px-6 py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <svg className="w-5 h-5 mr-3 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <span className="relative z-10">Make a Donation</span>
+            </Link>
           </div>
-          <div className="bg-white p-4 rounded shadow mb-4">
-            <h3 className="font-semibold mb-2">Want to Help?</h3>
-            <p className="text-sm text-gray-600 mb-3">
-              Join our community to offer assistance and connect with those in
-              need.
-            </p>
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
-              Join to Help
+
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-xl shadow-lg border border-green-100">
+            <div className="text-center mb-4">
+              <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Want to Help?</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Join our community to offer assistance and connect with those in need. Your help can make a real difference.
+              </p>
+            </div>
+
+            <button className="group relative w-full flex items-center justify-center px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 overflow-hidden">
+              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <svg className="w-5 h-5 mr-3 relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5z" />
+              </svg>
+              <span className="relative z-10">Join to Help</span>
             </button>
           </div>
           <div className="bg-white p-4 rounded shadow">

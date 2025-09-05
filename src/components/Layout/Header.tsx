@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck, Menu, ChevronDown, User, LogOut, Settings,
-  Heart, MessageCircle
+  Heart, MessageCircle, BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useRoles } from '../../hooks/useRoles';
@@ -66,7 +66,8 @@ const Header: React.FC = () => {
 
   // Poll for unread chat messages for CJ users
   useEffect(() => {
-    if (!isAuthenticated || !isCj()) return;
+    const isCjUser = user?.roles?.includes('cj') || false;
+    if (!isAuthenticated || !isCjUser) return;
 
     const updateUnreadCount = () => {
       const count = getUnreadChatCount();
@@ -77,7 +78,7 @@ const Header: React.FC = () => {
     const interval = setInterval(updateUnreadCount, 2000); // Check every 2 seconds
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, isCj]);
+  }, [isAuthenticated, user?.roles]);
 
   const getNavItems = (): NavItem[] => {
     const baseItems: NavItem[] = [
@@ -237,16 +238,9 @@ const Header: React.FC = () => {
 
 
               
-              {/* Organizations Button */}
+              
 
-              <Link
-                to="/view-organizations"
-                className="donate-button space-x-2 group"
-              >
-                <Heart size={16} className="relative z-10 group-hover:scale-110 transition-transform duration-300" />
-                <span className="relative z-10">Organizations</span>
-              </Link>
-
+           
               {/* CJ Chat Button - Only show for CJ users */}
               {isAuthenticated && isCj() && (
                 <Link
@@ -309,6 +303,14 @@ const Header: React.FC = () => {
                         </div>
                       </div>
 
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsUserDropdownOpen(false)}
+                        className="flex items-center space-x-3 w-full px-4 py-3 text-left text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+                      >
+                        <BarChart3 size={18} />
+                        <span>Dashboard</span>
+                      </Link>
                       <button
                         onClick={() => {
                           setIsSettingsOpen(true);
@@ -421,6 +423,15 @@ const Header: React.FC = () => {
                         <div className="text-sm text-gray-500">{user?.email}</div>
                       </div>
                     </div>
+
+                    <Link
+                      to="/dashboard"
+                      className="flex items-center space-x-3 text-gray-600 hover:text-blue-600 transition-colors py-2 w-full text-left"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <BarChart3 size={20} />
+                      <span className="text-lg font-medium">Dashboard</span>
+                    </Link>
 
                     {isCj() && (
                       <Link

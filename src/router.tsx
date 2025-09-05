@@ -20,7 +20,6 @@ import About from "./pages/About";
 import WhatWeDo from "./pages/WhatWeDo";
 import GetInvolved from "./pages/GetInvolved";
 import Contact from "./pages/Contact";
-import Donate from "./pages/Donate";
 import Partnership from "./pages/Partnership";
 import AvatarDebug from "./components/Debug/AvatarDebug";
 import CjChatList from "./pages/CjChatList";
@@ -29,10 +28,10 @@ import { useAuth } from "./hooks/useAuth";
 import ErrorBoundary from "./components/ErrorBoundary";
 import TokenExpirationMonitor from "./components/TokenExpirationMonitor";
 import GlobalLoader from "./components/Common/GlobalLoader";
-import Organization from "./pages/Organization";
 import "./i18n/index"; // Initialize i18n for admin panel
 import SupportRequestPage from "./pages/SupportRequestPage";
 import SupportRequestUpdateForm from "./components/SupportRequestUpdateForm";
+import DonationPage from "./admin/pages/DonationPage";
 
 // Create query client for admin
 const adminQueryClient = new QueryClient({
@@ -204,6 +203,7 @@ export const router = createBrowserRouter(
         { path: "forgot-password", element: <ForgotPasswordPage /> },
         { path: "reset-password", element: <ResetPasswordPage /> },
         { path: "terms", element: <TermsPage /> },
+        { path: "donate", element: <DonationPage /> },
         { path: "privacy", element: <PrivacyPage /> },
         {
           path: "dashboard",
@@ -214,9 +214,6 @@ export const router = createBrowserRouter(
         { path: "what-we-do", element: <WhatWeDo /> },
         { path: "get-involved", element: <GetInvolved /> },
         { path: "contact", element: <Contact /> },
-        { path: "donate", element: <Donate /> },
-        { path: "view-organizations", element: <Organization /> },
-        { path: "donate/:organizationId", element: <Donate /> },
         { path: "partnership", element: <Partnership /> },
         { path: "debug/avatar", element: <AvatarDebug /> },
         {

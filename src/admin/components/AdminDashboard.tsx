@@ -239,14 +239,7 @@ const Header: React.FC = () => {
               <LanguageSwitcher />
             </div>
             
-            {/* Donation Button */}
-            <Link
-              to="/donate"
-              className="donate-button space-x-2 group"
-            >
-              <Heart size={16} className="relative z-10 group-hover:scale-110 transition-transform duration-300" />
-              <span className="relative z-10">{t('navigation.donate')}</span>
-            </Link>
+            
 
             {isAuthenticated ? (
               /* User Profile Dropdown */
@@ -428,14 +421,7 @@ const Header: React.FC = () => {
                     <User size={20} />
                     <span>Login</span>
                   </Link>
-                  <Link
-                    to="/donate"
-                    className="flex items-center justify-center space-x-3 w-full bg-gradient-to-r from-red-600 via-red-600 to-red-700 text-white px-8 py-4 rounded-2xl hover:from-red-700 hover:via-red-700 hover:to-red-800 transition-all duration-300 font-bold shadow-lg hover:shadow-xl transform hover:scale-105 relative overflow-hidden"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Heart size={20} className="animate-pulse" />
-                    <span>{t('header.topBar.donateNow')}</span>
-                  </Link>
+                  
                 </div>
               )}
             </div>

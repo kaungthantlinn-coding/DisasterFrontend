@@ -218,21 +218,7 @@ const Dashboard: React.FC = () => {
     }
   ];
 
-  const assistanceReceived = [
-    {
-      id: 1,
-      organization: 'Red Cross',
-      type: 'Emergency Supplies',
-      date: '16/01/2024',
-      status: 'Endorsed' as const
-    },
-    {
-      id: 2,
-      organization: 'Local Volunteers',
-      type: 'Cleanup Help',
-      date: '18/01/2024'
-    }
-  ];
+  const assistanceReceived = [];
 
   // Show user dashboard
   return (
@@ -378,50 +364,7 @@ const Dashboard: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Assistance Received Section */}
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Assistance Received - Flood in Sacramento County, CA</h3>
-                  <div className="space-y-3">
-                    {assistanceReceived.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3">
-                            <div className="font-medium text-gray-900">{item.organization}</div>
-                            <div className="text-sm text-gray-600">{item.type}</div>
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1 flex items-center">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {item.date}
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          {item.status && (
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              item.status === 'Endorsed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {item.status === 'Endorsed' ? <CheckCircle className="w-3 h-3 mr-1" /> : <Clock className="w-3 h-3 mr-1" />}
-                              {item.status}
-                            </span>
-                          )}
-                          <button 
-                            onClick={() => {
-                              if (item.status === 'Endorsed') {
-                                // Navigate to assistance received detail
-                                navigate(`/assistance/received/${item.id}`);
-                              } else {
-                                // Handle endorsement logic
-                                showInfoToast('Endorsement functionality will be implemented in a future update.', 'Feature Coming Soon');
-                              }
-                            }}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1 hover:bg-blue-50 rounded transition-colors"
-                          >
-                            {item.status === 'Endorsed' ? 'View Report' : 'Endorse'}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                
               </div>
             )}
           </div>

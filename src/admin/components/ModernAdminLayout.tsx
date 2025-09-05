@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Users,
   FileText,
-  BarChart3,
   Settings,
   Building2,
   MessageSquare,
@@ -20,7 +19,8 @@ import {
   ChevronDown,
   Zap,
   Shield,
-  Activity
+  Activity,
+  DollarSign
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { NotificationAPI } from '../../services/Notification';
@@ -93,36 +93,24 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       icon: <Users className="w-5 h-5" />,
       label: 'Users',
       path: '/admin/users',
-      //badge: '1.2k'
-    },
-    {
-      icon: <Building2 className="w-5 h-5" />,
-      label: 'Organizations',
-      path: '/admin/organizations',
       badge: undefined
     },
     {
-      icon: <Building2 className="w-5 h-5" />,
-      label: 'Donation Verification',
-      path: '/admin/donation-verification',
+      icon: <DollarSign className="w-5 h-5" />,
+      label: 'Donations',
+      path: '/admin/donations',
       badge: undefined
     },
     {
       icon: <FileText className="w-5 h-5" />,
       label: 'Reports',
       path: '/admin/reports',
-      badge: '23'
+      badge: undefined
     },
     {
       icon: <MessageSquare className="w-5 h-5" />,
       label: 'Support',
       path: '/admin/support-requests',
-      badge: '5'
-    },
-    {
-      icon: <BarChart3 className="w-5 h-5" />,
-      label: 'Analytics',
-      path: '/admin/analytics',
       badge: undefined
     },
     {
@@ -159,7 +147,6 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     };
   }, [sidebarOpen]);
 
-  // Admin notifications (polling with fallback)
   const {
     data: adminNotifications = [],
     isLoading: notifLoading,
@@ -179,7 +166,7 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         }
       }
     },
-    refetchInterval: 15000, // poll every 15s; replace with SignalR later
+    refetchInterval: 15000,
     initialData: [],
   });
 
@@ -345,8 +332,7 @@ const ModernAdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
                                 await refetchNotifications();
                               } catch (e) {}
                               setShowNotifications(false);
-                              // Deep link to review page if notification has a disasterReportId
-                              if (n.disasterReportId) {
+                                              if (n.disasterReportId) {
                                 navigate(`/admin/reports/review/${n.disasterReportId}`);
                               } else {
                                 navigate('/admin/reports');

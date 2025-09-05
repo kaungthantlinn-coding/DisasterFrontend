@@ -22,7 +22,27 @@ import {
   Mail,
   Edit,
   Trash2,
+  FileText,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  BarChart3,
+  PieChart,
+  TrendingDown,
 } from "lucide-react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar, Line, Pie } from "react-chartjs-2";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -51,10 +71,63 @@ interface FilterState {
   location: string;
 }
 
+interface ReportMetrics {
+  totalReports: number;
+  pendingReports: number;
+  verifiedReports: number;
+  rejectedReports: number;
+}
+
+interface AdminStatCardProps {
+  icon: React.ReactNode;
+  title: string;
+  value: string | number;
+  change?: string;
+  changeType?: "increase" | "decrease" | "neutral";
+  bgGradient: string;
+  iconBg: string;
+}
+
 // Helpers to map DTO values to UI strings
 const toUiSeverity = (
-  level: SeverityLevel
+  level: SeverityLevel | string | number | any
 ): "low" | "medium" | "high" | "critical" => {
+  if (level == null) {
+    return "low";
+  }
+  if (typeof level === "number") {
+    switch (level) {
+      case 0:
+        return "low";
+      case 1:
+        return "medium";
+      case 2:
+        return "high";
+      case 3:
+        return "critical";
+      default:
+        return "low";
+    }
+  }
+  if (typeof level === "string") {
+    const normalizedLevel = level.toLowerCase().trim();
+    switch (normalizedLevel) {
+      case "low":
+      case "0":
+        return "low";
+      case "medium":
+      case "1":
+        return "medium";
+      case "high":
+      case "2":
+        return "high";
+      case "critical":
+      case "3":
+        return "critical";
+      default:
+        return "low";
+    }
+  }
   switch (level) {
     case SeverityLevel.Low:
       return "low";
@@ -145,11 +218,69 @@ const getTypeIcon = (type: string) => {
     case "landslide":
       return "⛰️";
     default:
-      return "⚠️";
+      return "🌍";
   }
 };
 
+const AdminStatCard: React.FC<AdminStatCardProps> = ({
+  icon,
+  title,
+  value,
+  change,
+  changeType = "neutral",
+  bgGradient,
+  iconBg,
+}) => {
+  const getChangeIcon = () => {
+    switch (changeType) {
+      case "increase":
+        return <ArrowUpRight className="w-3 h-3" />;
+      case "decrease":
+        return <ArrowDownRight className="w-3 h-3" />;
+      default:
+        return <Minus className="w-3 h-3" />;
+    }
+  };
+
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl ${bgGradient} p-6 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <p className="text-white/80 text-sm font-medium mb-2">{title}</p>
+          <p className="text-3xl font-bold tracking-tight mb-1">{value}</p>
+          {change && (
+            <div className="flex items-center text-white/90 text-xs font-medium">
+              {getChangeIcon()}
+              <span className="ml-1">{change}</span>
+            </div>
+          )}
+        </div>
+        <div
+          className={`p-3 ${iconBg} rounded-xl bg-white/20 backdrop-blur-sm`}
+        >
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ReportManagement: React.FC = () => {
+  // Register Chart.js components
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    LineElement,
+    PointElement,
+    ArcElement,
+    Title,
+    Tooltip,
+    Legend
+  );
+
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const [selectedReports, setSelectedReports] = useState<DisasterReportDto[]>(
@@ -202,6 +333,79 @@ const ReportManagement: React.FC = () => {
   });
 
   const reports: DisasterReportDto[] = dtoReports;
+
+  // Calculate metrics
+  const metrics: ReportMetrics = useMemo(() => {
+    const totalReports = reports.length;
+    const pendingReports = reports.filter(
+      (r) => toUiStatus(r.status) === "pending"
+    ).length;
+    const verifiedReports = reports.filter(
+      (r) => toUiStatus(r.status) === "verified"
+    ).length;
+    const rejectedReports = reports.filter(
+      (r) => toUiStatus(r.status) === "rejected"
+    ).length;
+
+    return {
+      totalReports,
+      pendingReports,
+      verifiedReports,
+      rejectedReports,
+    };
+  }, [reports]);
+
+  // Calculate disaster types distribution for real-time pie chart
+  const disasterTypesDistribution = useMemo(() => {
+    const typeCounts: Record<string, number> = {};
+
+    reports.forEach((report) => {
+      const typeName = report.disasterTypeName || "Other";
+      const normalizedType = typeSlug(typeName);
+      typeCounts[normalizedType] = (typeCounts[normalizedType] || 0) + 1;
+    });
+
+    // Convert to array format for Chart.js
+    const labels = Object.keys(typeCounts);
+    const data = Object.values(typeCounts);
+
+    // Define colors for different disaster types
+    const colorMap: Record<string, string> = {
+      earthquake: "rgba(59, 130, 246, 0.8)", // blue
+      flood: "rgba(34, 197, 94, 0.8)", // green
+      fire: "rgba(239, 68, 68, 0.8)", // red
+      cyclone: "rgba(245, 158, 11, 0.8)", // amber
+      landslide: "rgba(139, 69, 19, 0.8)", // brown
+      other: "rgba(107, 114, 128, 0.8)", // gray
+      tsunami: "rgba(6, 182, 212, 0.8)", // cyan
+      drought: "rgba(251, 191, 36, 0.8)", // yellow
+      storm: "rgba(147, 51, 234, 0.8)", // purple
+      hurricane: "rgba(236, 72, 153, 0.8)", // pink
+    };
+
+    const borderColorMap: Record<string, string> = {
+      earthquake: "rgba(59, 130, 246, 1)",
+      flood: "rgba(34, 197, 94, 1)",
+      fire: "rgba(239, 68, 68, 1)",
+      cyclone: "rgba(245, 158, 11, 1)",
+      landslide: "rgba(139, 69, 19, 1)",
+      other: "rgba(107, 114, 128, 1)",
+      tsunami: "rgba(6, 182, 212, 1)",
+      drought: "rgba(251, 191, 36, 1)",
+      storm: "rgba(147, 51, 234, 1)",
+      hurricane: "rgba(236, 72, 153, 1)",
+    };
+
+    const backgroundColors = labels.map(label => colorMap[label] || colorMap.other);
+    const borderColors = labels.map(label => borderColorMap[label] || borderColorMap.other);
+
+    return {
+      labels: labels.map(label => label.charAt(0).toUpperCase() + label.slice(1)),
+      data,
+      backgroundColors,
+      borderColors,
+    };
+  }, [reports]);
 
   const handleSelectReport = (reportId: string) => {
     setSelectedReports((prev) => {
@@ -472,10 +676,10 @@ const ReportManagement: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              {/* <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 <Download className="w-4 h-4 mr-2" />
                 Export Reports
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -483,6 +687,50 @@ const ReportManagement: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Metrics Dashboard */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-6">
+            Dashboard Metrics
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <AdminStatCard
+              icon={<FileText className="w-5 h-5" />}
+              title="Total Reports"
+              value={metrics.totalReports}
+              change="+12% from last week"
+              changeType="increase"
+              bgGradient="bg-gradient-to-br from-blue-500 to-blue-600"
+              iconBg="bg-blue-400"
+            />
+            <AdminStatCard
+              icon={<Clock className="w-5 h-5" />}
+              title="Pending Reports"
+              value={metrics.pendingReports}
+              change="+3 since yesterday"
+              changeType="increase"
+              bgGradient="bg-gradient-to-br from-yellow-500 to-orange-500"
+              iconBg="bg-yellow-400"
+            />
+            <AdminStatCard
+              icon={<CheckCircle className="w-5 h-5" />}
+              title="Verified Reports"
+              value={metrics.verifiedReports}
+              change="+8% from last week"
+              changeType="increase"
+              bgGradient="bg-gradient-to-br from-green-500 to-green-600"
+              iconBg="bg-green-400"
+            />
+            <AdminStatCard
+              icon={<XCircle className="w-5 h-5" />}
+              title="Rejected Reports"
+              value={metrics.rejectedReports}
+              change="-2% this month"
+              changeType="decrease"
+              bgGradient="bg-gradient-to-br from-red-500 to-red-600"
+              iconBg="bg-red-400"
+            />
+          </div>
+        </div>
         {/* Search and Filters */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
@@ -933,12 +1181,122 @@ const ReportManagement: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Charts Section */}
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold text-gray-900 tracking-tight mb-8">
+            Disaster Reports Analytics
+          </h2>
+
+          {/* Monthly Reports Chart */}
+          
+           
+
+          {/* Disaster Types and Status Distribution */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <PieChart className="w-5 h-5 mr-2 text-purple-600" />
+                Disaster Types Distribution
+              </h3>
+              <div className="h-80 flex items-center justify-center">
+                {disasterTypesDistribution.data.length > 0 ? (
+                  <Pie
+                    data={{
+                      labels: disasterTypesDistribution.labels,
+                      datasets: [
+                        {
+                          data: disasterTypesDistribution.data,
+                          backgroundColor: disasterTypesDistribution.backgroundColors,
+                          borderColor: disasterTypesDistribution.borderColors,
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: "bottom" as const,
+                          labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                ) : (
+                  <div className="text-center text-gray-500">
+                    <PieChart className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <p>No disaster reports available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <BarChart3 className="w-5 h-5 mr-2 text-indigo-600" />
+                Reports by Status
+              </h3>
+              <div className="h-80">
+                <Bar
+                  data={{
+                    labels: ["Pending", "Verified", "Rejected"],
+                    datasets: [
+                      {
+                        label: "Report Count",
+                        data: [
+                          metrics.pendingReports,
+                          metrics.verifiedReports,
+                          metrics.rejectedReports,
+                        ],
+                        backgroundColor: [
+                          "rgba(245, 158, 11, 0.8)",
+                          "rgba(34, 197, 94, 0.8)",
+                          "rgba(239, 68, 68, 0.8)",
+                        ],
+                        borderColor: [
+                          "rgba(245, 158, 11, 1)",
+                          "rgba(34, 197, 94, 1)",
+                          "rgba(239, 68, 68, 1)",
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        display: false,
+                      },
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          stepSize: 5,
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Report Detail Modal */}
       {showReportModal && selectedReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl max-w-7xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -953,76 +1311,78 @@ const ReportManagement: React.FC = () => {
               </div>
             </div>
             <div className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  <h3 className="text-2xl font-semibold text-gray-900 mb-6">
                     {selectedReport.title}
                   </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-500">
-                        Type:
-                      </span>
-                      <span className="text-sm text-gray-900 capitalize">
-                        {typeSlug(selectedReport.disasterTypeName)}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-500">
-                        Status:
-                      </span>
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                          toUiStatus(selectedReport.status)
-                        )}`}
-                      >
-                        {toUiStatus(selectedReport.status)
-                          .charAt(0)
-                          .toUpperCase() +
-                          toUiStatus(selectedReport.status).slice(1)}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-500">
-                        Severity:
-                      </span>
-                      <div className="flex items-center space-x-2">
-                        <div
-                          className={`w-3 h-3 rounded-full ${getSeverityColor(
-                            toUiSeverity(selectedReport.severity)
-                          )}`}
-                        ></div>
-                        <span className="text-sm text-gray-900 capitalize">
-                          {toUiSeverity(selectedReport.severity)}
+                  <div className="space-y-6">
+                    <div className="space-y-6">
+                      <div className="flex flex-col space-y-2">
+                        <span className="text-lg font-medium text-gray-600">
+                          Type:
+                        </span>
+                        <span className="text-lg text-gray-900 capitalize font-semibold">
+                          {typeSlug(selectedReport.disasterTypeName)}
                         </span>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-500">
-                        Location:
-                      </span>
-                      <span className="text-sm text-gray-900">
-                        {selectedReport.address}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-500">
-                        Submitted:
-                      </span>
-                      <span className="text-sm text-gray-900">
+                      <div className="flex flex-col space-y-2">
+                        <span className="text-lg font-medium text-gray-600">
+                          Status:
+                        </span>
+                        <span
+                          className={`inline-flex items-center px-4 py-2 rounded-full text-lg font-semibold w-fit ${getStatusColor(
+                            toUiStatus(selectedReport.status)
+                          )}`}
+                        >
+                          {toUiStatus(selectedReport.status)
+                            .charAt(0)
+                            .toUpperCase() +
+                            toUiStatus(selectedReport.status).slice(1)}
+                        </span>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <span className="text-lg font-medium text-gray-600">
+                          Severity:
+                        </span>
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className={`w-5 h-5 rounded-full ${getSeverityColor(
+                              toUiSeverity(selectedReport.severity)
+                            )}`}
+                          ></div>
+                          <span className="text-lg text-gray-900 capitalize font-semibold">
+                            {toUiSeverity(selectedReport.severity)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col space-y-2">
+                        <span className="text-lg font-medium text-gray-600">
+                          Location:
+                        </span>
+                        <span className="text-lg text-gray-900 font-semibold">
+                          {selectedReport.address}
+                        </span>
+
                         {Array.isArray(selectedReport.impactDetails) &&
                           selectedReport.impactDetails.length > 0 && (
                             <div className="mt-6">
-                              <h4 className="text-md font-semibold text-gray-900 mb-3">
+                              <h5 className="text-xl font-semibold text-gray-900 mb-4">
                                 Impact Details
-                              </h4>
-                              <div className="overflow-x-auto -mx-2 sm:mx-0">
-                                <table className="min-w-full text-sm">
+                              </h5>
+                              <div className="bg-gray-50 rounded-lg p-4">
+                                <table className="w-full text-base">
                                   <thead>
-                                    <tr className="text-left text-gray-500">
-                                      <th className="py-2 pr-4">Types</th>
-                                      <th className="py-2 pr-4">Severity</th>
-                                      <th className="py-2">Description</th>
+                                    <tr className="text-left text-gray-700 border-b">
+                                      <th className="py-3 pr-4 font-semibold">
+                                        Types
+                                      </th>
+                                      <th className="py-3 pr-4 font-semibold">
+                                        Severity
+                                      </th>
+                                      <th className="py-3 font-semibold">
+                                        Description
+                                      </th>
                                     </tr>
                                   </thead>
                                   <tbody className="text-gray-900">
@@ -1030,9 +1390,9 @@ const ReportManagement: React.FC = () => {
                                       (d, i) => (
                                         <tr
                                           key={d.id ?? i}
-                                          className="border-t"
+                                          className="border-b border-gray-200"
                                         >
-                                          <td className="py-2 pr-4">
+                                          <td className="py-3 pr-4">
                                             {d.impactTypes &&
                                             d.impactTypes.length > 0
                                               ? d.impactTypes
@@ -1043,12 +1403,12 @@ const ReportManagement: React.FC = () => {
                                               ? d.impactTypeIds.join(", ")
                                               : "-"}
                                           </td>
-                                          <td className="py-2 pr-4 capitalize">
+                                          <td className="py-3 pr-4 capitalize">
                                             {typeof d.severity === "number"
                                               ? toUiSeverity(d.severity)
                                               : "-"}
                                           </td>
-                                          <td className="py-2">
+                                          <td className="py-3">
                                             {d.description || "-"}
                                           </td>
                                         </tr>
@@ -1059,6 +1419,14 @@ const ReportManagement: React.FC = () => {
                               </div>
                             </div>
                           )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col space-y-2">
+                      <span className="text-lg font-medium text-gray-600">
+                        Submitted:
+                      </span>
+                      <span className="text-lg text-gray-900 font-semibold">
                         {selectedReport.timestamp
                           ? new Date(selectedReport.timestamp).toLocaleString()
                           : "-"}
@@ -1107,7 +1475,7 @@ const ReportManagement: React.FC = () => {
                         <h4 className="text-md font-semibold text-gray-900 mb-3">
                           Attachments
                         </h4>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 gap-3">
                           {selectedReport.photoUrls.map((url, idx) => (
                             <div
                               key={idx}
@@ -1116,7 +1484,7 @@ const ReportManagement: React.FC = () => {
                               <img
                                 src={buildImageUrl(url)}
                                 alt={`Attachment ${idx + 1}`}
-                                className="w-full h-32 object-cover"
+                                className="w-full h-80 object-cover rounded-lg"
                                 loading="lazy"
                               />
                             </div>

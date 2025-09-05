@@ -30,6 +30,7 @@ import {
 // Components
 import Header from "../components/Layout/Header";
 import Footer from "../components/Layout/Footer";
+import ReportsMapView from "../components/ReportsMapView";
 
 // Service and Types
 import {
@@ -64,6 +65,7 @@ const Reports: React.FC = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list" | "map">("grid");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [reports, setReports] = useState<DisasterReportDto[]>([]);
+  const [mapReports, setMapReports] = useState<DisasterReportDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,8 +76,10 @@ const Reports: React.FC = () => {
     "fire",
     "earthquake",
     "storm",
+    "hurricane",
     "landslide",
     "accident",
+    "transportation accident",
     "other",
   ];
   const severityLevels = ["all", "low", "medium", "high", "critical"];
@@ -126,6 +130,7 @@ const Reports: React.FC = () => {
         }));
 
         setReports(normalizedReports);
+        setMapReports(normalizedReports); // Set map data based on user role
       } catch (err: any) {
         setError(err.message || "Failed to fetch reports. Please try again.");
         console.error(err);
@@ -169,6 +174,7 @@ const Reports: React.FC = () => {
         normalizedReports.map((r) => ({ id: r.id, severity: r.severity }))
       );
       setReports(normalizedReports);
+      setMapReports(normalizedReports); // Update map data on refresh
     } catch (err: any) {
       setError(err.message || "Failed to refresh reports. Please try again.");
       console.error(err);
@@ -202,6 +208,8 @@ const Reports: React.FC = () => {
       // Severity filter
       if (
         selectedSeverity !== "all" &&
+        report.severity &&
+        typeof report.severity === 'string' &&
         report.severity.toUpperCase() !== selectedSeverity.toUpperCase()
       ) {
         return false;
@@ -240,14 +248,11 @@ const Reports: React.FC = () => {
           );
         case "severity":
           const severityOrder = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0 };
-          return (
-            (severityOrder[
-              a.severity.toUpperCase() as keyof typeof severityOrder
-            ] || 0) -
-            (severityOrder[
-              b.severity.toUpperCase() as keyof typeof severityOrder
-            ] || 0)
-          );
+          const aSeverity = a.severity && typeof a.severity === 'string' ? a.severity.toUpperCase() : '';
+          const bSeverity = b.severity && typeof b.severity === 'string' ? b.severity.toUpperCase() : '';
+          const aOrder = severityOrder[aSeverity as keyof typeof severityOrder] ?? 0;
+          const bOrder = severityOrder[bSeverity as keyof typeof severityOrder] ?? 0;
+          return aOrder - bOrder;
         case "location":
           return a.address.localeCompare(b.address);
         default:
@@ -310,10 +315,14 @@ const Reports: React.FC = () => {
         return <Mountain {...iconProps} />;
       case "storm":
         return <Wind {...iconProps} />;
+      case "hurricane":
+        return <span style={{ fontSize: "16px" }}>🌀</span>;
       case "landslide":
         return <Mountain {...iconProps} />;
       case "accident":
         return <Truck {...iconProps} />;
+      case "transportation accident":
+        return <span style={{ fontSize: "16px" }}>🚛</span>;
       default:
         return <AlertTriangle {...iconProps} />;
     }
@@ -369,7 +378,52 @@ const Reports: React.FC = () => {
     }
   };
 
-  const getSeverityText = (severity: SeverityLevel) => {
+  // Convert numeric severity to string
+  const convertSeverityToString = (severity: SeverityLevel | number | string | any): string => {
+    if (severity == null) {
+      return "Low";
+    }
+    
+    if (typeof severity === 'number') {
+      switch (severity) {
+        case 0:
+          return "Low";
+        case 1:
+          return "Medium";
+        case 2:
+          return "High";
+        case 3:
+          return "Critical";
+        default:
+          return "Low";
+      }
+    } 
+    
+    if (typeof severity === 'string') {
+      const normalizedSeverity = severity.toLowerCase().trim();
+      switch (normalizedSeverity) {
+        case "low":
+        case "0":
+          return "Low";
+        case "medium":
+        case "1":
+          return "Medium";
+        case "high":
+        case "2":
+          return "High";
+        case "critical":
+        case "3":
+          return "Critical";
+        default:
+          // If it's already properly capitalized, return as is
+          if (["Low", "Medium", "High", "Critical"].includes(severity)) {
+            return severity;
+          }
+          return "Low";
+      }
+    }
+    
+    // Handle enum values
     switch (severity) {
       case SeverityLevel.Low:
         return "Low";
@@ -380,8 +434,12 @@ const Reports: React.FC = () => {
       case SeverityLevel.Critical:
         return "Critical";
       default:
-        return "Unknown";
+        return "Low";
     }
+  };
+
+  const getSeverityText = (severity: SeverityLevel | number | string) => {
+    return convertSeverityToString(severity);
   };
 
   return (
@@ -415,8 +473,8 @@ const Reports: React.FC = () => {
               {filteredAndSortedReports
                 .filter(
                   (r) =>
-                    r.severity.toUpperCase() === "CRITICAL" ||
-                    r.severity.toUpperCase() === "HIGH"
+                    (r.severity && typeof r.severity === 'string' && r.severity.toUpperCase() === "CRITICAL") ||
+                    (r.severity && typeof r.severity === 'string' && r.severity.toUpperCase() === "HIGH")
                 )
                 .slice(0, 3)
                 .map((report) => (
@@ -445,16 +503,16 @@ const Reports: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="absolute top-4 right-4">
-                        <div
-                          className={`inline-flex items-center px-3 py-1 rounded-full ${getSeverityColor(
-                            report.severity
-                          )} text-white text-sm font-semibold`}
-                        >
-                          <AlertTriangle size={14} className="mr-1" />
-                          {report.severity}
-                        </div>
-                      </div>
+                          <div className="absolute top-4 right-4">
+                            <div
+                              className={`inline-flex items-center px-3 py-1 rounded-full ${getSeverityColor(
+                                report.severity
+                              )} text-white text-sm font-semibold`}
+                            >
+                              <AlertTriangle size={14} className="mr-1" />
+                              {convertSeverityToString(report.severity)}
+                            </div>
+                          </div>
                     </div>
                     <div className="p-6">
                       <h3 className="text-xl font-bold text-gray-900 mb-3">
@@ -514,9 +572,12 @@ const Reports: React.FC = () => {
                   </div>
                   <div className="text-3xl font-bold text-gray-900 mb-2">
                     {
-                      filteredAndSortedReports.filter(
-                        (r) => r.status === ReportStatus.Accepted
-                      ).length
+                      filteredAndSortedReports.filter((r) => {
+                        if (r.status == null) return false;
+                        // Handle different status formats
+                        const status = typeof r.status === 'string' ? r.status.toLowerCase() : String(r.status).toLowerCase();
+                        return status === 'verified' || status === 'accepted' || status === '1';
+                      }).length
                     }
                   </div>
                   <div className="text-gray-600 font-medium">
@@ -530,9 +591,12 @@ const Reports: React.FC = () => {
                   </div>
                   <div className="text-3xl font-bold text-gray-900 mb-2">
                     {
-                      filteredAndSortedReports.filter(
-                        (r) => r.status === ReportStatus.Rejected
-                      ).length
+                      filteredAndSortedReports.filter((r) => {
+                        if (r.status == null) return false;
+                        // Handle different status formats
+                        const status = typeof r.status === 'string' ? r.status.toLowerCase() : String(r.status).toLowerCase();
+                        return status === 'rejected' || status === '2';
+                      }).length
                     }
                   </div>
                   <div className="text-gray-600 font-medium">
@@ -847,118 +911,21 @@ const Reports: React.FC = () => {
                       <p className="text-gray-600">
                         Interactive map showing{" "}
                         {isOnlyUser() ? "accepted" : "all"} disaster report
-                        locations
+                        locations with real-time data
                       </p>
                     </div>
-                    <div className="relative">
-                      <div className="h-96 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Map size={32} className="text-blue-600" />
-                          </div>
-                          <h4 className="text-xl font-semibold text-gray-900 mb-2">
-                            Interactive Map
-                          </h4>
-                          <p className="text-gray-600 mb-6 max-w-md">
-                            Map integration would show all{" "}
-                            {filteredAndSortedReports.length} of{" "}
-                            {isOnlyUser() ? "accepted" : "all"} reports with
-                            interactive markers
-                          </p>
-                          <div className="flex flex-wrap gap-2 justify-center">
-                            {Array.from(
-                              new Set(
-                                filteredAndSortedReports.map(
-                                  (r) => r.disasterTypeName
-                                )
-                              )
-                            ).map((type) => (
-                              <div
-                                key={type}
-                                className={`inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r ${getDisasterColor(
-                                  type
-                                )} text-white text-sm font-semibold`}
-                              >
-                                {getDisasterIcon(type)}
-                                <span className="ml-2 capitalize">{type}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-xs">
-                        <h5 className="font-semibold text-gray-900 mb-3">
-                          Legend
-                        </h5>
-                        <div className="space-y-2">
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                            <span className="text-sm text-gray-600">
-                              Critical (
-                              {
-                                filteredAndSortedReports.filter(
-                                  (r) => r.severity.toUpperCase() === "CRITICAL"
-                                ).length
-                              }
-                              )
-                            </span>
-                          </div>
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                            <span className="text-sm text-gray-600">
-                              High (
-                              {
-                                filteredAndSortedReports.filter(
-                                  (r) => r.severity.toUpperCase() === "HIGH"
-                                ).length
-                              }
-                              )
-                            </span>
-                          </div>
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                            <span className="text-sm text-gray-600">
-                              Medium (
-                              {
-                                filteredAndSortedReports.filter(
-                                  (r) => r.severity.toUpperCase() === "MEDIUM"
-                                ).length
-                              }
-                              )
-                            </span>
-                          </div>
-                          <div className="flex items-center">
-                            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                            <span className="text-sm text-gray-600">
-                              Low (
-                              {
-                                filteredAndSortedReports.filter(
-                                  (r) => r.severity.toUpperCase() === "LOW"
-                                ).length
-                              }
-                              )
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
+                    <ReportsMapView
+                      reports={mapReports}
+                      height="600px"
+                    />
                     <div className="p-6 border-t border-gray-100 bg-gray-50">
                       <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex items-center space-x-4">
-                          <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            <MapPin size={16} className="mr-2" />
-                            Show All Markers
-                          </button>
-                          <button className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-                            <Filter size={16} className="mr-2" />
-                            Filter by Severity
-                          </button>
-                        </div>
                         <div className="text-sm text-gray-600">
-                          Showing {filteredAndSortedReports.length} of{" "}
+                          Showing {mapReports.length} of{" "}
                           {isOnlyUser() ? "accepted" : "all"} reports on map
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Click markers to view report details
                         </div>
                       </div>
                     </div>
@@ -997,7 +964,7 @@ const Reports: React.FC = () => {
                               )} text-white text-sm font-semibold`}
                             >
                               <AlertTriangle size={14} className="mr-1" />
-                              {report.severity}
+                              {convertSeverityToString(report.severity)}
                             </div>
                           </div>
                         </div>
@@ -1100,7 +1067,7 @@ const Reports: React.FC = () => {
                                 <AlertTriangle size={14} className="mr-1" />
                                 {getSeverityText(report.severity)}
                                 <span className="ml-2 capitalize">
-                                  {report.severity}
+                                  {convertSeverityToString(report.severity)}
                                 </span>
                               </div>
                             </div>
