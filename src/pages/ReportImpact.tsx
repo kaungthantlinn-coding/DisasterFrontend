@@ -9,7 +9,7 @@ import { DisasterCategory, DisasterTypeDto } from "../types/DisasterType";
 import { DisasterTypeService } from "../services/disasterTypeService";
 import { ImpactTypeDto } from "../types/ImpactType";
 import { ImpactTypeService } from "../services/ImpactTypeService";
-import { Camera, MapPin, X, CheckCircle, User, Mail, Send } from "lucide-react";
+import { Camera, MapPin, X, CheckCircle } from "lucide-react";
 import { LocationPicker } from "../components/Map";
 import {
   createDisasterReport,
@@ -22,31 +22,6 @@ import { NotificationAPI } from "../services/Notification";
 import { NotificationType } from "../types/Notification";
 import { Footer, Header } from "@/components/Layout";
 import { DisasterEventSelector } from "@/components/Common";
-
-interface ReportImpactFormData {
-  // Personal Information
-  fullName: string;
-  email: string;
-
-  // Disaster Details
-  title: string;
-  disasterCategory: DisasterCategory | undefined;
-  disasterTypeId: number | undefined;
-  newDisasterTypeName: string;
-  disasterEventName: string;
-  severity: SeverityLevel;
-  timestamp: string;
-  description: string;
-
-  // Location & Impact
-  latitude: number;
-  longitude: number;
-  address: string;
-  impactTypes: ImpactTypeDto[];
-  impactDescription: string;
-  impactSeverity: SeverityLevel;
-  photos: File[];
-}
 
 interface Props {
   authToken: string;
@@ -107,9 +82,11 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     address: "",
     coordinatePrecision: 0.001,
     impactDetails: [],
-    photos: [],
     photoUrls: [],
   });
+
+  // Local state for handling photo files before upload
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
 
   const resetForm = () => {
     setStep(1);
@@ -135,9 +112,9 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
       address: "",
       coordinatePrecision: 0.001,
       impactDetails: [],
-      photos: [],
       photoUrls: [],
     });
+    setPhotoFiles([]);
     setPrefillDone(false);
     setReportDataFetched(false);
   };
@@ -234,12 +211,12 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
               : undefined,
           disasterTypeId: report.disasterTypeId || undefined,
           newDisasterTypeName: "",
-          disasterEventName: report.disasterEventName || "",
+          disasterEventName: report.disasterEventName ?? "",
           latitude: report.latitude ?? 0,
           longitude: report.longitude ?? 0,
           address: report.address || "",
           coordinatePrecision: report.coordinatePrecision ?? 0.001,
-          photos: [],
+          photoUrls: report.photoUrls || [],
           impactDetails:
             report.impactDetails?.map((detail) => ({
               impactTypeIds: detail.impactTypeIds || [],
@@ -274,7 +251,6 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           );
           setSelectedImpacts(uniqueImpacts);
 
-          // Set impact severities
           // Set impact severities
           setImpactSeverities(impactSeverityMap);
 
@@ -441,7 +417,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
     console.log("📸 Photo upload started");
     const filesArray = Array.from(e.target.files);
     const maxPhotosAllowed = 10;
-    const currentCount = formData.photos.length;
+    const currentCount = photoFiles.length;
     const availableSlots = maxPhotosAllowed - currentCount;
     const filesToAdd = filesArray.slice(0, availableSlots);
     const filteredFiles = filesToAdd.filter(
@@ -453,21 +429,15 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
         photos: "Some files were skipped because they exceed 10MB size limit.",
       }));
     }
-    setFormData((prev) => ({
-      ...prev,
-      photos: [...prev.photos, ...filteredFiles],
-    }));
+    setPhotoFiles((prev) => [...prev, ...filteredFiles]);
     e.target.value = "";
   };
 
   const removePhoto = (index: number) => {
-    setFormData((prev) => {
-      const newPhotos = [...prev.photos];
+    setPhotoFiles((prev) => {
+      const newPhotos = [...prev];
       newPhotos.splice(index, 1);
-      return {
-        ...prev,
-        photos: newPhotos,
-      };
+      return newPhotos;
     });
   };
 
@@ -611,7 +581,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           );
         });
       });
-      formData.photos.forEach((photo, index) => {
+      photoFiles.forEach((photo) => {
         if (photo instanceof File) {
           submissionFormData.append("Photos", photo);
         }
@@ -736,7 +706,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
           );
         });
       });
-      formData.photos.forEach((photo, index) => {
+      photoFiles.forEach((photo) => {
         if (photo instanceof File) {
           submissionFormData.append("Photos", photo);
         }
@@ -1103,7 +1073,7 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                   onChange={(value) =>
                     setFormData((prev) => ({
                       ...prev,
-                      disasterEventName: value,
+                      disasterEventName: value ?? undefined,
                     }))
                   }
                   error={errors.disasterEventName}
@@ -1447,15 +1417,15 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                     </p>
                   </label>
                 </div>
-                {formData.photos.length > 0 && (
+                {photoFiles.length > 0 && (
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-6">
-                    {formData.photos.map((photo, index) => (
+                    {photoFiles.map((photo, index) => (
                       <div key={index} className="relative group">
                         <img
                           src={
                             photo instanceof File
                               ? URL.createObjectURL(photo)
-                              : photo.url
+                              : (photo as any).url
                           }
                           alt={`Upload ${index + 1}`}
                           className="w-full h-24 object-cover rounded-xl"
@@ -1617,17 +1587,17 @@ const ReportImpact: React.FC<Props> = ({ authToken, onSuccess }) => {
                         Photos
                       </label>
                       <p className="text-sm text-gray-600 mb-2">
-                        {formData.photos.length} photos
+                        {photoFiles.length} photos
                       </p>
-                      {formData.photos.length > 0 && (
+                      {photoFiles.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                          {formData.photos.map((photo, index) => (
+                          {photoFiles.map((photo, index) => (
                             <div key={index} className="relative">
                               <img
                                 src={
                                   photo instanceof File
                                     ? URL.createObjectURL(photo)
-                                    : photo.url
+                                    : (photo as any).url
                                 }
                                 alt={`Preview ${index + 1}`}
                                 className="w-full h-20 object-cover rounded-lg"

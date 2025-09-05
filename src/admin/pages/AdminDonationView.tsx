@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
-import { useAuthStore } from "../../stores/authStore";
 import toast from "react-hot-toast";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -12,7 +9,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  Legend,
   BarChart,
   Bar,
 } from "recharts";
@@ -40,8 +36,6 @@ export default function AdminDonationView() {
 
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
-
-  const token = useAuthStore((s) => s.accessToken);
 
   // ===== Fetchers =====
   const fetchPending = async () => {
@@ -333,7 +327,7 @@ export default function AdminDonationView() {
                             cx="50%"
                             cy="50%"
                             outerRadius={80}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : 0}%`}
                             labelLine={false}
                           >
                             {summary.byType.map((_: any, idx: number) => (
@@ -344,7 +338,7 @@ export default function AdminDonationView() {
                             ))}
                           </Pie>
                           <Tooltip 
-                            formatter={(value) => [formatCurrency(value), 'Amount']}
+                            formatter={(value) => [typeof value === 'number' ? formatCurrency(value) : value, 'Amount']}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -359,9 +353,9 @@ export default function AdminDonationView() {
                         <BarChart data={summary.monthlyStats}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                           <XAxis dataKey="Month" />
-                          <YAxis tickFormatter={(value) => `${value/1000}k`} />
+                          <YAxis tickFormatter={(value) => typeof value === 'number' ? `${value/1000}k` : `${value}`} />
                           <Tooltip 
-                            formatter={(value) => [formatCurrency(value), 'Amount']}
+                            formatter={(value) => [typeof value === 'number' ? formatCurrency(value) : value, 'Amount']}
                           />
                           <Bar
                             dataKey="Amount"
