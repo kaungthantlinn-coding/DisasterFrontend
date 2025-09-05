@@ -10,7 +10,7 @@ import { useAuthStore } from "../stores/authStore";
 interface SupportRequestFormData {
   fullName: string;
   email: string;
-  urgencyLevel: "immediate" | "within_24h" | "within_week" | "non_urgent";
+  urgencyLevel: "immediate" | "within_24h" | "within_week" | "non_urgent" | "";
   description: string;
   assistanceTypes: string[];
   otherAssistanceType: string;
@@ -66,12 +66,11 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
     string | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFormTouched, setIsFormTouched] = useState(false);
 
   const [formData, setFormData] = useState<SupportRequestFormData>({
     fullName: user?.name || "",
     email: user?.email || "",
-    urgencyLevel: "non_urgent",
+    urgencyLevel: "",
     description: "",
     assistanceTypes: [],
     otherAssistanceType: "",
@@ -92,22 +91,7 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
     });
   }, [id, accessToken, user]);
 
-  // Debug: Log formData changes
-  useEffect(() => {
-    console.log("Current formData:", {
-      urgencyLevel: formData.urgencyLevel,
-      assistanceTypes: formData.assistanceTypes,
-      otherAssistanceType: formData.otherAssistanceType,
-      status: formData.status,
-    });
-  }, [
-    formData.urgencyLevel,
-    formData.assistanceTypes,
-    formData.otherAssistanceType,
-    formData.status,
-  ]);
-
-  // 🔹 Validate supportRequestId and accessToken
+  // 🔹 Validate supportRequestId
   useEffect(() => {
     if (
       !numericSupportRequestId ||
@@ -117,12 +101,8 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
       console.warn("Invalid support request ID:", id);
       setErrors({ fetch: "Invalid support request ID." });
       navigate("/dashboard");
-    } else if (!accessToken) {
-      console.warn("No access token available");
-      setErrors({ fetch: "You must be logged in to view this request." });
-      navigate("/login");
     }
-  }, [numericSupportRequestId, accessToken, navigate, id]);
+  }, [numericSupportRequestId, navigate, id]);
 
   // 🔹 Fetch Assistance Types
   useEffect(() => {
@@ -131,9 +111,9 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
         setLoadingAssistanceTypes(true);
         const types = await SupportRequestService.getAllSupportType();
         console.log("Fetched Assistance Types (Raw):", types);
-        const normalizedTypes = types
-          .map((t: string) => t?.toLowerCase().trim())
-          .filter((t: string | undefined): t is string => !!t);
+        const normalizedTypes = types.map((t: string) =>
+          t.toLowerCase().trim()
+        );
         setAssistanceTypes(normalizedTypes);
         console.log("Normalized Assistance Types:", normalizedTypes);
         setAssistanceTypesError(null);
@@ -155,10 +135,7 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
     if (
       numericSupportRequestId &&
       !isNaN(numericSupportRequestId) &&
-      numericSupportRequestId > 0 &&
-      accessToken && // Ensure accessToken is not null
-      !isFormTouched &&
-      !loadingAssistanceTypes
+      numericSupportRequestId > 0
     ) {
       console.log("Fetching support request for ID:", numericSupportRequestId);
       const fetchSupportRequest = async () => {
@@ -166,78 +143,56 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
           setIsLoading(true);
           const request = await SupportRequestService.getById(
             numericSupportRequestId,
-            accessToken // TypeScript now accepts this as string
+            accessToken
           );
           console.log("Fetched Support Request (Raw):", request);
-          console.log("Raw urgencyLevel from API:", request.urgencyLevel);
-          console.log("Raw supportTypeIds from API:", request.supportTypeIds);
-          console.log("Raw status from API:", request.status);
 
           const validUrgencyLevels = [
             "immediate",
             "within_24h",
             "within_week",
             "non_urgent",
+            "",
           ];
-          const urgencyMapFromApi: {
-            [key: string]: SupportRequestFormData["urgencyLevel"];
-          } = {
-            immediate: "immediate",
-            within_24h: "within_24h",
-            within24h: "within_24h",
-            "within 24 hours": "within_24h",
-            within_week: "within_week",
-            withinweek: "within_week",
-            "within a week": "within_week",
-            non_urgent: "non_urgent",
-            nonurgent: "non_urgent",
-            "non-urgent": "non_urgent",
-            "1": "immediate",
-            "2": "within_24h",
-            "3": "within_week",
-            "4": "non_urgent",
-          };
-          const rawUrgency = request.urgencyLevel
-            ? String(request.urgencyLevel).toLowerCase().trim()
+          const urgencyLevel = validUrgencyLevels.includes(
+            request.urgencyLevel?.toLowerCase()
+          )
+            ? (request.urgencyLevel.toLowerCase() as SupportRequestFormData["urgencyLevel"])
             : "";
-          const urgencyLevel = urgencyMapFromApi[rawUrgency] || "non_urgent";
-          console.log("Normalized urgencyLevel:", urgencyLevel);
 
           const validStatuses: SupportRequestFormData["status"][] = [
             "pending",
             "in_progress",
             "completed",
           ];
-          const status = validStatuses.includes(
-            request.status as SupportRequestFormData["status"]
-          )
-            ? (request.status as SupportRequestFormData["status"])
+          const status = validStatuses.includes(request.status)
+            ? request.status
             : "pending";
-          console.log("Normalized status:", status);
 
+          // Normalize assistance types
           const normalizedAssistanceTypes = Array.isArray(
-            request.supportTypeIds
+            request.supportTypeNames
           )
-            ? request.supportTypeIds
-                .map((id: number) => {
-                  const index = id - 1;
-                  if (index >= 0 && index < assistanceTypes.length) {
-                    return assistanceTypes[index];
-                  }
-                  console.warn(
-                    `Invalid supportTypeId: ${id}, no matching assistance type in assistanceTypes:`,
-                    assistanceTypes
-                  );
-                  return undefined;
-                })
-                .filter((type): type is string => !!type)
+            ? request.supportTypeNames.map((type: string) =>
+                type.toLowerCase().trim()
+              )
+            : Array.isArray(request.assistanceTypes)
+            ? request.assistanceTypes.map((type: string) =>
+                type.toLowerCase().trim()
+              )
+            : request.supportTypeName
+            ? request.supportTypeName
+                .split(",")
+                .map((type: string) => type.toLowerCase().trim())
             : [];
+
           console.log(
             "Normalized Assistance Types:",
             normalizedAssistanceTypes
           );
           console.log("Available Assistance Types:", assistanceTypes);
 
+          // Determine known types and custom types
           const knownAssistanceTypes = normalizedAssistanceTypes.filter(
             (type) => assistanceTypes.includes(type)
           );
@@ -276,18 +231,12 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
           });
           setErrors({
             fetch:
-              error.response?.status === 401 || error.response?.status === 403
-                ? "You are not authorized to view this request. Please log in."
-                : error.response?.status === 404
+              error.response?.status === 404
                 ? "Support request not found."
                 : error.response?.data?.message ||
                   "Failed to load support request. Please try again.",
           });
-          navigate(
-            error.response?.status === 401 || error.response?.status === 403
-              ? "/login"
-              : "/dashboard"
-          );
+          navigate("/dashboard");
         } finally {
           setIsLoading(false);
         }
@@ -295,15 +244,7 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
 
       fetchSupportRequest();
     }
-  }, [
-    numericSupportRequestId,
-    user,
-    accessToken,
-    navigate,
-    assistanceTypes,
-    isFormTouched,
-    loadingAssistanceTypes,
-  ]);
+  }, [numericSupportRequestId, user, accessToken, navigate, assistanceTypes]);
 
   // 🔹 Step Validation
   const validateStep = useCallback(
@@ -357,21 +298,8 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
     setCurrentStep((prev) => prev - 1);
   };
 
-  // 🔹 Handle Urgency Change
-  const handleUrgencyChange = (
-    value: SupportRequestFormData["urgencyLevel"]
-  ) => {
-    console.log("Selected urgencyLevel:", value);
-    setIsFormTouched(true);
-    setFormData((prev) => ({
-      ...prev,
-      urgencyLevel: value,
-    }));
-  };
-
   // 🔹 Handle Assistance Types
   const handleAssistanceTypeChange = (assistanceId: string) => {
-    setIsFormTouched(true);
     setFormData((prev) => ({
       ...prev,
       assistanceTypes: prev.assistanceTypes.includes(assistanceId)
@@ -384,16 +312,13 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
   const handleSubmit = useCallback(async () => {
     if (!validateStep(2)) return;
 
-    if (!accessToken) {
-      console.warn("No access token available for submission");
-      setErrors({ submit: "You must be logged in to submit this request." });
-      navigate("/login");
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
+      if (!accessToken) {
+        throw new Error("User is not authenticated. Please log in.");
+      }
+
       const assistanceTypesToSubmit = formData.assistanceTypes.includes("other")
         ? [
             ...formData.assistanceTypes.filter((type) => type !== "other"),
@@ -420,8 +345,6 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
         ),
       };
 
-      console.log("Submitting updateDto:", updateDto);
-
       if (!numericSupportRequestId) {
         throw new Error("Support request ID is required for updating.");
       }
@@ -429,7 +352,7 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
       await SupportRequestService.updateRequest(
         numericSupportRequestId,
         updateDto,
-        accessToken // TypeScript now accepts this as string
+        accessToken
       );
 
       setSubmitSuccess(true);
@@ -450,15 +373,12 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
       });
       setErrors({
         submit:
-          error.response?.status === 401 || error.response?.status === 403
-            ? "You are not authorized to update this request. Please log in."
+          error.response?.status === 403
+            ? "You are not authorized to update this request."
             : error.response?.data?.message ||
               error.message ||
               "Failed to update support request. Please try again.",
       });
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        navigate("/login");
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -622,13 +542,12 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
                         <input
                           type="text"
                           value={formData.fullName}
-                          onChange={(e) => {
-                            setIsFormTouched(true);
+                          onChange={(e) =>
                             setFormData((prev) => ({
                               ...prev,
                               fullName: e.target.value,
-                            }));
-                          }}
+                            }))
+                          }
                           className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                           placeholder="Enter your full name"
                         />
@@ -651,13 +570,12 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
                         <input
                           type="email"
                           value={formData.email}
-                          onChange={(e) => {
-                            setIsFormTouched(true);
+                          onChange={(e) =>
                             setFormData((prev) => ({
                               ...prev,
                               email: e.target.value,
-                            }));
-                          }}
+                            }))
+                          }
                           className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                           placeholder="your.email@example.com"
                         />
@@ -678,7 +596,7 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
                     Request Details
                   </h2>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-4">
                       Support Request ID
                     </label>
                     <input
@@ -700,15 +618,13 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
                             name="urgencyLevel"
                             value={level.id}
                             checked={formData.urgencyLevel === level.id}
-                            onChange={(e) => {
-                              console.log(
-                                `Radio clicked: value=${e.target.value}, checked=${e.target.checked}`
-                              );
-                              handleUrgencyChange(
-                                e.target
-                                  .value as SupportRequestFormData["urgencyLevel"]
-                              );
-                            }}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                urgencyLevel: e.target
+                                  .value as SupportRequestFormData["urgencyLevel"],
+                              }))
+                            }
                             className="sr-only"
                           />
                           <div
@@ -760,27 +676,40 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
                     )}
                     {!loadingAssistanceTypes && !assistanceTypesError && (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {[...assistanceTypes, "other"].map((type) => (
-                          <label key={type} className="cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={formData.assistanceTypes.includes(type)}
-                              onChange={() => handleAssistanceTypeChange(type)}
-                              className="sr-only"
-                            />
-                            <div
-                              className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
-                                formData.assistanceTypes.includes(type)
-                                  ? "border-blue-500 bg-blue-50 text-blue-700"
-                                  : "border-gray-200 hover:border-gray-300 bg-white"
-                              }`}
-                            >
-                              <span className="text-sm font-medium">
-                                {type}
-                              </span>
-                            </div>
-                          </label>
-                        ))}
+                        {[...assistanceTypes, "other"].map((type) => {
+                          const isOther = type.toLowerCase() === "other";
+                          const isSelected = isOther
+                            ? formData.assistanceTypes.includes("other") ||
+                              formData.otherAssistanceType.trim() !== ""
+                            : formData.assistanceTypes.includes(
+                                type.toLowerCase()
+                              );
+                          return (
+                            <label key={type} className="cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() =>
+                                  handleAssistanceTypeChange(
+                                    isOther ? "other" : type.toLowerCase()
+                                  )
+                                }
+                                className="sr-only"
+                              />
+                              <div
+                                className={`p-3 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
+                                  isSelected
+                                    ? "border-blue-500 bg-blue-50 text-blue-700"
+                                    : "border-gray-200 hover:border-gray-300 bg-white"
+                                }`}
+                              >
+                                <span className="text-sm font-medium">
+                                  {type}
+                                </span>
+                              </div>
+                            </label>
+                          );
+                        })}
                       </div>
                     )}
                     {errors.assistanceTypes && (
@@ -788,7 +717,8 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
                         {errors.assistanceTypes}
                       </p>
                     )}
-                    {formData.assistanceTypes.includes("other") && (
+                    {(formData.assistanceTypes.includes("other") ||
+                      formData.otherAssistanceType.trim()) && (
                       <div className="mt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Please specify the type of assistance needed *
@@ -796,13 +726,12 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
                         <input
                           type="text"
                           value={formData.otherAssistanceType}
-                          onChange={(e) => {
-                            setIsFormTouched(true);
+                          onChange={(e) =>
                             setFormData((prev) => ({
                               ...prev,
                               otherAssistanceType: e.target.value,
-                            }));
-                          }}
+                            }))
+                          }
                           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                           placeholder="Enter the type of assistance you need"
                         />
@@ -820,13 +749,12 @@ const SupportRequestUpdateForm: React.FC<SupportRequestUpdateFormProps> = ({
                     </label>
                     <textarea
                       value={formData.description}
-                      onChange={(e) => {
-                        setIsFormTouched(true);
+                      onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
                           description: e.target.value,
-                        }));
-                      }}
+                        }))
+                      }
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors"
                       rows={6}
                       maxLength={1000}

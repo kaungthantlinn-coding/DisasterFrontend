@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Calendar, MapPin, AlertTriangle, Users, Eye, Share2 } from 'lucide-react';
 import { DisasterDetailModal } from './DisasterDetailModal';
 
@@ -43,6 +44,7 @@ export const DisasterNewsCards: React.FC<DisasterNewsCardsProps> = ({
   disasters = [],
   onViewDetails
 }) => {
+  const { t } = useTranslation();
   const [selectedDisaster, setSelectedDisaster] = useState<DisasterEvent | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -183,7 +185,7 @@ export const DisasterNewsCards: React.FC<DisasterNewsCardsProps> = ({
                   className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
                 >
                   <Eye className="h-4 w-4" />
-                  View Details
+{t('home.disasters.reportCard.viewDetails')}
                 </button>
                 <button className="flex items-center gap-1 text-gray-600 hover:text-gray-800 text-sm">
                   <Share2 className="h-4 w-4" />

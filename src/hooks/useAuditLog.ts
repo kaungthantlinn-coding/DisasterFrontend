@@ -110,12 +110,21 @@ export const useAuditLogStats = () => {
     setError(null);
 
     try {
-      const response = await api.get("/audit-logs/stats");
+      const response = await api.get("/audit-logs/stats", { timeout: 5000 });
       setStats(response.data);
     } catch (err: any) {
+      console.warn("Audit stats API failed, using fallback data:", err.message);
       setError(
         err.response?.data?.message || "Failed to fetch audit log statistics"
       );
+      // Use fallback stats when API times out or fails
+      setStats({
+        totalLogs: 0,
+        todayLogs: 0,
+        criticalLogs: 0,
+        userActions: 0,
+        systemActions: 0,
+      });
     } finally {
       setIsLoading(false);
     }

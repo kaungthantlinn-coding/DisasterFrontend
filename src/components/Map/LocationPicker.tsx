@@ -55,22 +55,22 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
           }
         }
       );
-
+      
       // Handle different response statuses
       if (response.status === 403) {
         console.warn('Nominatim geocoding forbidden - likely due to usage limits');
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
       }
-
+      
       if (response.status === 429) {
         console.warn('Nominatim geocoding rate limited');
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
       }
-
+      
       if (!response.ok) {
         throw new Error(`Geocoding failed with status ${response.status}`);
       }
-
+      
       const data = await response.json();
 
       if (data && data.display_name) {
@@ -616,7 +616,8 @@ const LocationPicker: React.FC<LocationPickerProps> = ({
 
   return (
     <div className="relative w-full" style={{ position: 'relative' }}>
-      {/* Simple Instructions */}
+      {/* Simple Instructions */
+}
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
         <div className="flex items-center space-x-2">
           <MapPin size={16} className="text-blue-600" />

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import { RealWorldDisaster } from '../../types';
 import { format } from 'date-fns';
@@ -93,6 +94,7 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
   className = "",
   loading = false,
 }) => {
+  const { t } = useTranslation();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -250,7 +252,7 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
               font-size: 12px;
               font-weight: 500;
             ">
-              View Details
+${t('home.disasters.reportCard.viewDetails')}
             </a>
             ` : ''}
           </div>
@@ -277,7 +279,7 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
       });
 
       // Add hover effects
-      marker.on('mouseover', function() {
+      marker.on('mouseover', function(this: L.Marker) {
         const iconElement = this.getElement();
         if (iconElement) {
           const markerDiv = iconElement.querySelector('div');
@@ -288,7 +290,7 @@ const DisasterMap: React.FC<DisasterMapProps> = ({
         }
       });
 
-      marker.on('mouseout', function() {
+      marker.on('mouseout', function(this: L.Marker) {
         const iconElement = this.getElement();
         if (iconElement) {
           const markerDiv = iconElement.querySelector('div');

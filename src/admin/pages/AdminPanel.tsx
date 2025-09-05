@@ -292,7 +292,6 @@ const AdminPanel: React.FC = () => {
       current: location.pathname === '/admin/analytics',
       badge: null
     },
-     
     
     
     {
@@ -456,7 +455,9 @@ const AdminPanel: React.FC = () => {
           />
           <QuickActionCard
             icon={<Building2 className="w-6 h-6" />}
-            
+            title="Manage Organizations"
+            description="Add, edit, or remove partner organizations and manage their information and partnerships."
+            link="/admin/organizations"
             color="from-orange-500 to-orange-600"
           />
           <QuickActionCard

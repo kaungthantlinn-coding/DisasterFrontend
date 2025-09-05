@@ -571,17 +571,16 @@ const AdminSupportRequestManagement: React.FC = () => {
         id,
         newStatus
       );
+      console.log("Updated request from API:", updatedRequest);
+      console.log("New status sent:", newStatus);
+
+      const normalizedRequest = {
+        ...updatedRequest,
+        status: newStatus,
+      };
 
       setRequests((prev) =>
-        prev.map((req) =>
-          req.id === id
-            ? {
-                ...req, // Preserve existing fields
-                ...updatedRequest, // Apply updated fields
-                status: newStatus, // Ensure status is updated
-              }
-            : req
-        )
+        prev.map((req) => (req.id === id ? normalizedRequest : req))
       );
 
       const metricsData = await SupportRequestService.getMetrics();
@@ -869,7 +868,7 @@ const AdminSupportRequestManagement: React.FC = () => {
             <div className="space-y-4">
               {filteredRequests.map((request) => (
                 <SupportRequestCard
-                  key={request.id}
+                  key={`${request.id}-${request.status}`}
                   request={request}
                   onStatusChange={handleStatusChange}
                   onViewDetails={handleViewDetails}

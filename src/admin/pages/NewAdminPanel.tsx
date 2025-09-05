@@ -15,10 +15,9 @@ import AdminSupportRequestManagement from './AdminSupportRequestManagement';
 import AdminDonationView from './AdminDonationView';
 
 import ReportReview from './ReportReview';
-
+import OrganizationManagement from '../components/OrganizationManagement';
 
 const NewAdminPanel: React.FC = () => {
-  
   return (
     <ModernAdminLayout>
       {/* Use Routes/Route for simpler routing or renderContent for role-based routing */}
@@ -28,12 +27,14 @@ const NewAdminPanel: React.FC = () => {
         <Route path="/users/review" element={<UserReviewManagement />} />
         <Route path="/donations" element={<AdminDonationView />} />
         <Route path="/reports" element={<ReportManagement />} />
+        <Route path="/donation-verification" element={<AdminDonationView />} />
         {/* Deep-link review route (nested under /admin) */}
         <Route path="reports/review/:id" element={<ReportReview />} />
         <Route path="/support-requests" element={<AdminSupportRequestManagement />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/audit-logs" element={<AuditLogsPage />} />
         <Route path="/settings" element={<SystemSettings />} />
+        <Route path="/organizations" element={<OrganizationManagement />} />
       </Routes>
     </ModernAdminLayout>
   );

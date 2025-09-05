@@ -236,11 +236,16 @@ const Header: React.FC = () => {
                 <span className="relative z-10">Donate</span>
               </Link>
 
+              {/* Organizations Button */}
 
-              
-              
+              <Link
+                to="/view-organizations"
+                className="donate-button space-x-2 group"
+              >
+                <Heart size={16} className="relative z-10 group-hover:scale-110 transition-transform duration-300" />
+                <span className="relative z-10">Organizations</span>
+              </Link>
 
-           
               {/* CJ Chat Button - Only show for CJ users */}
               {isAuthenticated && isCj() && (
                 <Link

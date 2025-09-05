@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
@@ -40,6 +41,7 @@ import Header from '../components/Layout/Header';
 import Footer from '../components/Layout/Footer';
 
 const CJDashboard: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'response' | 'analytics'>('overview');
   const [isLoading, setIsLoading] = useState(false);
@@ -430,12 +432,12 @@ const CJDashboard: React.FC = () => {
                             </div>
                           </div>
                           
-                          <div className="mt-6 flex space-x-3">
-                            <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                          <div className="flex space-x-3 mt-6">
+                            <button className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
                               Contact Team
                             </button>
                             <button className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
-                              View Details
+                              {t('home.disasters.reportCard.viewDetails')}
                             </button>
                           </div>
                         </div>

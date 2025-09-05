@@ -131,7 +131,11 @@
       "volunteers": "Active Volunteers",
       "activeDisasters": "Active Disasters",
       "activeDisastersDescription": "Currently monitored worldwide",
+<<<<<<< HEAD
       "criticalEvents": "Critical Events",
+=======
+      "criticalEvents": "Critical Events", 
+>>>>>>> 2700e95ecc96f5fa98021118a0ddedae54f5dfc4
       "criticalEventsDescription": "Requiring immediate attention",
       "responseTeams": "Response Teams",
       "responseTeamsDescription": "Active response operations",

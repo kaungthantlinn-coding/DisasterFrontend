@@ -28,10 +28,14 @@ import { useAuth } from "./hooks/useAuth";
 import ErrorBoundary from "./components/ErrorBoundary";
 import TokenExpirationMonitor from "./components/TokenExpirationMonitor";
 import GlobalLoader from "./components/Common/GlobalLoader";
+import Organization from "./pages/Organization";
 import "./i18n/index"; // Initialize i18n for admin panel
 import SupportRequestPage from "./pages/SupportRequestPage";
 import SupportRequestUpdateForm from "./components/SupportRequestUpdateForm";
+<<<<<<< HEAD
 import DonationPage from "./admin/pages/DonationPage";
+=======
+>>>>>>> 2700e95ecc96f5fa98021118a0ddedae54f5dfc4
 
 // Create query client for admin
 const adminQueryClient = new QueryClient({
@@ -214,6 +218,12 @@ export const router = createBrowserRouter(
         { path: "what-we-do", element: <WhatWeDo /> },
         { path: "get-involved", element: <GetInvolved /> },
         { path: "contact", element: <Contact /> },
+<<<<<<< HEAD
+=======
+        { path: "donate", element: <Donate /> },
+        { path: "view-organizations", element: <Organization /> },
+        { path: "donate/:organizationId", element: <Donate /> },
+>>>>>>> 2700e95ecc96f5fa98021118a0ddedae54f5dfc4
         { path: "partnership", element: <Partnership /> },
         { path: "debug/avatar", element: <AvatarDebug /> },
         {
